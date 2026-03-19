@@ -1,0 +1,135 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../models/hat.dart';
+
+class ShopifyService {
+  static const String storeUrl = 'https://raftermhatco.com/api/2024-01/graphql.json';
+  static const String storefrontToken = 'd094605eefb28f21b4b2be0e1bd2e56c';
+
+  static Future<List<dynamic>> searchHats({
+    String? hatType,
+    String? crownShape,
+    double? crownHeight,
+    String? brimShape,
+    String? brimWidth,
+  }) async {
+    // Shopify's Storefront Search API does not allow querying custom metafields 
+    // directly unless they are specifically whitelisted in the admin settings.
+    // Instead, we will fetch the first 100 active products and filter them locally.
+
+    final String query = '''
+      query {
+        products(first: 250, query: "status:active") {
+          edges {
+            node {
+              id
+              title
+              description
+              onlineStoreUrl
+              featuredImage {
+                url
+              }
+              variants(first: 1) {
+                edges {
+                  node {
+                    price {
+                      amount
+                      currencyCode
+                    }
+                  }
+                }
+              }
+              crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
+              brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
+              crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
+              brimWidth: metafield(namespace: "custom", key: "brim_width") { value }
+              material: metafield(namespace: "custom", key: "material") { value }
+              feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
+              backstrap: metafield(namespace: "custom", key: "backstrap") { value }
+            }
+          }
+        }
+      }
+    ''';
+
+    try {
+      final response = await http.post(
+        Uri.parse(storeUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': storefrontToken,
+        },
+        body: jsonEncode({'query': query}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['errors'] != null) {
+           throw Exception('GraphQL Error: \${data["errors"]}');
+        }
+        
+        final List<dynamic> allProducts = data['data']['products']['edges'].map((p) => p['node']).toList();
+        
+        // --- Client Side Filtering ---
+        final filteredProducts = allProducts.where((product) {
+          
+          bool matches = false; // We want an OR search. If it matches ANYTHING, include it.
+          
+          // If the user selected "Any" for everything (or first load), return all
+          if (hatType == null && crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+            return true;
+          }
+
+          // Helper to safely extract metafield string value from JSON array
+          String getMetafieldValue(dynamic metafieldEntry) {
+            if (metafieldEntry == null || metafieldEntry['value'] == null) return "";
+            try {
+              // Values are often stored as '["Cattlemen"]'
+              var parsed = jsonDecode(metafieldEntry['value']);
+              if (parsed is List && parsed.isNotEmpty) {
+                 return parsed.first.toString();
+              }
+              return parsed.toString();
+            } catch (e) {
+               return metafieldEntry['value'].toString();
+            }
+          }
+
+          final prodCrownShape = getMetafieldValue(product['crownShape']);
+          final prodBrimShape = getMetafieldValue(product['brimShape']);
+          final prodCrownHeight = getMetafieldValue(product['crownHeight']);
+          final prodBrimWidth = getMetafieldValue(product['brimWidth']);
+          final prodHatType = getMetafieldValue(product['feltStrawOrBallcap']);
+
+          // If a hat type is selected (and it's not "Any Type"), filter strictly by type first
+          if (hatType != null && hatType != 'Any Type') {
+             // We do a strict contain because it is a primary categorization
+             if (!prodHatType.toLowerCase().contains(hatType.toLowerCase())) {
+                 return false; // Skip this product immediately if it's the wrong type
+             }
+             // If ONLY the hat type was selected (no shapes/heights), include it now that type matches
+             if (crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+                 return true;
+             }
+          }
+
+          if (crownShape != null && crownShape.isNotEmpty && prodCrownShape.contains(crownShape)) matches = true;
+          if (brimShape != null && brimShape.isNotEmpty && prodBrimShape.contains(brimShape)) matches = true;
+          if (crownHeight != null && crownHeight > 0 && prodCrownHeight.contains(crownHeight.toString())) matches = true;
+          if (brimWidth != null && brimWidth.isNotEmpty && prodBrimWidth.contains(brimWidth)) matches = true;
+
+          return matches;
+
+        }).toList();
+
+        return filteredProducts;
+
+      } else {
+        throw Exception('Failed to load products: \${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error querying Shopify: \$e');
+      return [];
+    }
+  }
+}
