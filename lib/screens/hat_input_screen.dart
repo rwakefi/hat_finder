@@ -461,8 +461,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             mainAxisSpacing: 16,
             childAspectRatio: MediaQuery.of(context).size.width > 700 ? 1.1 : (MediaQuery.of(context).size.width < 400 ? 1.4 : 0.75),
             children: [
-              _buildStyleCard('Western', 'Classic cowboy and western styles.', Icons.star),
-              _buildStyleCard('Not Western', 'Fedoras, trilbys, and other dress hats.', Icons.business),
+              _buildStyleCard('Western', 'Classic cowboy and western styles.', imagePath: 'assets/images/western.jpg'),
+              _buildStyleCard('Not Western', 'Fedoras, trilbys, and other dress hats.', imagePath: 'assets/images/not_western.jpg'),
             ],
           ),
         ),
@@ -470,7 +470,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildStyleCard(String name, String description, IconData icon) {
+  Widget _buildStyleCard(String name, String description, {String? imagePath, IconData? icon}) {
     final isSelected = selectedWesternStyle == name;
     return Card(
       elevation: isSelected ? 8 : 2,
@@ -499,11 +499,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Container(
                   color: Colors.white,
-                  child: Icon(
-                    icon,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  ),
+                  child: imagePath != null
+                      ? Image.asset(imagePath, fit: BoxFit.contain)
+                      : Icon(
+                          icon ?? Icons.style,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        ),
                 ),
               ),
             ),
