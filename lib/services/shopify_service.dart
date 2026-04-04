@@ -10,9 +10,9 @@ class ShopifyService {
     String? hatType,
     String? westernStyle,
     String? crownShape,
-    double? crownHeight,
+    List<double>? crownHeights,
     String? brimShape,
-    String? brimWidth,
+    List<String>? brimWidths,
   }) async {
     // Shopify's Storefront Search API does not allow querying custom metafields 
     // directly unless they are specifically whitelisted in the admin settings.
@@ -81,7 +81,7 @@ class ShopifyService {
           bool matches = false; // We want an OR search. If it matches ANYTHING, include it.
           
           // If the user selected "Any" for everything (or first load), return all
-          if (hatType == null && westernStyle == null && crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+          if (hatType == null && westernStyle == null && crownShape == null && brimShape == null && crownHeights == null && brimWidths == null) {
             return true;
           }
 
@@ -126,14 +126,14 @@ class ShopifyService {
           }
 
           // If ONLY the primary categories were selected (no shapes/heights), include it now that type/style match
-          if (crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+          if (crownShape == null && brimShape == null && crownHeights == null && brimWidths == null) {
               return true;
           }
 
           if (crownShape != null && crownShape.isNotEmpty && prodCrownShape.contains(crownShape)) matches = true;
           if (brimShape != null && brimShape.isNotEmpty && prodBrimShape.contains(brimShape)) matches = true;
-          if (crownHeight != null && crownHeight > 0 && prodCrownHeight.contains(crownHeight.toString())) matches = true;
-          if (brimWidth != null && brimWidth.isNotEmpty && prodBrimWidth.contains(brimWidth)) matches = true;
+          if (crownHeights != null && crownHeights.isNotEmpty && crownHeights.any((ch) => ch > 0 && prodCrownHeight.contains(ch.toString()))) matches = true;
+          if (brimWidths != null && brimWidths.isNotEmpty && brimWidths.any((bw) => prodBrimWidth.contains(bw))) matches = true;
 
           return matches;
 

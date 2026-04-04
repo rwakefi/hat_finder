@@ -18,10 +18,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
   String? selectedWesternStyle;
 
   HatShapeInfo? selectedCrownShape;
-  double? targetCrownHeight;
+  List<double> targetCrownHeights = [];
 
   HatShapeInfo? selectedBrimShape;
-  String? targetBrimWidth;
+  List<String> targetBrimWidths = [];
 
   /// Returns the correct crown shape list based on the selected hat type.
   List<HatShapeInfo> get _currentCrownShapes {
@@ -163,9 +163,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           hatType: selectedHatType?.name,
           westernStyle: selectedWesternStyle,
           crownShape: selectedCrownShape?.name,
-          crownHeight: targetCrownHeight,
+          crownHeights: targetCrownHeights.isNotEmpty ? targetCrownHeights : null,
           brimShape: selectedBrimShape?.name,
-          brimWidth: targetBrimWidth,
+          brimWidths: targetBrimWidths.isNotEmpty ? targetBrimWidths : null,
         ),
       ),
     );
@@ -849,10 +849,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
           const SizedBox(height: 24),
           _buildMeasurementDropdown(
             label: 'Crown Height',
-            value: targetCrownHeight,
+            selectedItems: targetCrownHeights,
             min: 4.25,
             max: 5.0,
-            onChanged: (val) => setState(() => targetCrownHeight = val),
+            onChanged: (val) => setState(() => targetCrownHeights = val),
           ),
           const SizedBox(height: 32),
           const Divider(),
@@ -925,9 +925,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           const SizedBox(height: 24),
           _buildDropdown(
             label: 'Brim Width',
-            value: targetBrimWidth,
+            selectedItems: targetBrimWidths,
             items: brimWidths,
-            onChanged: (val) => setState(() => targetBrimWidth = val),
+            onChanged: (val) => setState(() => targetBrimWidths = val),
           ),
           const SizedBox(height: 50), // Padding to prevent the button from covering the last item
         ],
@@ -956,9 +956,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildDropdown({
     required String label,
-    required String? value,
+    required List<String> selectedItems,
     required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required ValueChanged<List<String>> onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -975,31 +975,50 @@ class _HatInputScreenState extends State<HatInputScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Radio<String?>(
-                  value: null,
-                  groupValue: value,
-                  onChanged: onChanged,
+                Checkbox(
+                  value: selectedItems.isEmpty,
+                  onChanged: (val) {
+                    if (val == true) {
+                      onChanged([]);
+                    }
+                  },
                   activeColor: Theme.of(context).colorScheme.primary,
                 ),
                 GestureDetector(
-                  onTap: () => onChanged(null),
+                  onTap: () => onChanged([]),
                   child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             ...items.map((item) {
+              final isSelected = selectedItems.contains(item);
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Radio<String?>(
-                    value: item,
-                    groupValue: value,
-                    onChanged: onChanged,
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: (val) {
+                      final newItems = List<String>.from(selectedItems);
+                      if (val == true) {
+                        newItems.add(item);
+                      } else {
+                        newItems.remove(item);
+                      }
+                      onChanged(newItems);
+                    },
                     activeColor: Theme.of(context).colorScheme.primary,
                   ),
                   GestureDetector(
-                    onTap: () => onChanged(item),
-                    child: Text(item, style: TextStyle(fontWeight: value == item ? FontWeight.bold : FontWeight.normal)),
+                    onTap: () {
+                      final newItems = List<String>.from(selectedItems);
+                      if (isSelected) {
+                        newItems.remove(item);
+                      } else {
+                        newItems.add(item);
+                      }
+                      onChanged(newItems);
+                    },
+                    child: Text(item, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                   ),
                 ],
               );
@@ -1012,10 +1031,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildMeasurementDropdown({
     required String label,
-    required double? value,
+    required List<double> selectedItems,
     required double min,
     required double max,
-    required ValueChanged<double?> onChanged,
+    required ValueChanged<List<double>> onChanged,
   }) {
     final List<double> increments = [];
     for (double i = min; i <= max + 0.01; i += 0.25) {
@@ -1037,31 +1056,50 @@ class _HatInputScreenState extends State<HatInputScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Radio<double?>(
-                  value: null,
-                  groupValue: value,
-                  onChanged: onChanged,
+                Checkbox(
+                  value: selectedItems.isEmpty,
+                  onChanged: (val) {
+                    if (val == true) {
+                      onChanged([]);
+                    }
+                  },
                   activeColor: Theme.of(context).colorScheme.primary,
                 ),
                 GestureDetector(
-                  onTap: () => onChanged(null),
+                  onTap: () => onChanged([]),
                   child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
             ...increments.map((val) {
+              final isSelected = selectedItems.contains(val);
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Radio<double?>(
-                    value: val,
-                    groupValue: value,
-                    onChanged: onChanged,
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: (checked) {
+                      final newItems = List<double>.from(selectedItems);
+                      if (checked == true) {
+                        newItems.add(val);
+                      } else {
+                        newItems.remove(val);
+                      }
+                      onChanged(newItems);
+                    },
                     activeColor: Theme.of(context).colorScheme.primary,
                   ),
                   GestureDetector(
-                    onTap: () => onChanged(val),
-                    child: Text(formatMeasurement(val), style: TextStyle(fontWeight: value == val ? FontWeight.bold : FontWeight.normal)),
+                    onTap: () {
+                      final newItems = List<double>.from(selectedItems);
+                      if (isSelected) {
+                        newItems.remove(val);
+                      } else {
+                        newItems.add(val);
+                      }
+                      onChanged(newItems);
+                    },
+                    child: Text(formatMeasurement(val), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                   ),
                 ],
               );

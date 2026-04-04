@@ -9,18 +9,18 @@ class HatResultsScreen extends StatefulWidget {
   final String? hatType;
   final String? westernStyle;
   final String? crownShape;
-  final double? crownHeight;
+  final List<double>? crownHeights;
   final String? brimShape;
-  final String? brimWidth;
+  final List<String>? brimWidths;
 
   const HatResultsScreen({
     super.key,
     this.hatType,
     this.westernStyle,
     this.crownShape,
-    this.crownHeight,
+    this.crownHeights,
     this.brimShape,
-    this.brimWidth,
+    this.brimWidths,
   });
 
   @override
@@ -37,9 +37,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       hatType: widget.hatType,
       westernStyle: widget.westernStyle,
       crownShape: widget.crownShape,
-      crownHeight: widget.crownHeight,
+      crownHeights: widget.crownHeights,
       brimShape: widget.brimShape,
-      brimWidth: widget.brimWidth,
+      brimWidths: widget.brimWidths,
     );
   }
 
@@ -351,8 +351,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           _buildSummaryChip('Type', widget.hatType ?? 'Any'),
           if (widget.westernStyle != null)
             _buildSummaryChip('Style', widget.westernStyle!),
-          _buildSummaryChip('Crown', '${widget.crownShape ?? 'Any'} (${widget.crownHeight != null ? formatMeasurement(widget.crownHeight!) : 'Any'})'),
-          _buildSummaryChip('Brim', '${widget.brimShape ?? 'Any'} (${widget.brimWidth ?? 'Any'})'),
+          _buildSummaryChip('Crown', '${widget.crownShape ?? 'Any'} (${widget.crownHeights != null ? widget.crownHeights!.map((h) => formatMeasurement(h)).join(", ") : 'Any'})'),
+          _buildSummaryChip('Brim', '${widget.brimShape ?? 'Any'} (${widget.brimWidths != null ? widget.brimWidths!.join(", ") : 'Any'})'),
         ],
       ),
     );
