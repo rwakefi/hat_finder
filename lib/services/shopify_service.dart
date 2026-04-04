@@ -47,6 +47,7 @@ class ShopifyService {
               material: metafield(namespace: "custom", key: "material") { value }
               feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
               backstrap: metafield(namespace: "custom", key: "backstrap") { value }
+              stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
             }
           }
         }
@@ -71,13 +72,16 @@ class ShopifyService {
         
         final List<dynamic> allProducts = data['data']['products']['edges'].map((p) => p['node']).toList();
         
+        final List<String> westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
+        final List<String> notWesternProfiles = ['0', '2', '16', '18', '40', '41', '50', '9G'];
+
         // --- Client Side Filtering ---
         final filteredProducts = allProducts.where((product) {
           
           bool matches = false; // We want an OR search. If it matches ANYTHING, include it.
           
           // If the user selected "Any" for everything (or first load), return all
-          if (hatType == null && crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+          if (hatType == null && westernStyle == null && crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
             return true;
           }
 
@@ -101,6 +105,7 @@ class ShopifyService {
           final prodCrownHeight = getMetafieldValue(product['crownHeight']);
           final prodBrimWidth = getMetafieldValue(product['brimWidth']);
           final prodHatType = getMetafieldValue(product['feltStrawOrBallcap']);
+          final prodStetsonProfile = getMetafieldValue(product['stetsonProfile']);
 
           // If a hat type is selected (and it's not "Any Type"), filter strictly by type first
           if (hatType != null && hatType != 'Any Type') {
@@ -108,10 +113,21 @@ class ShopifyService {
              if (!prodHatType.toLowerCase().contains(hatType.toLowerCase())) {
                  return false; // Skip this product immediately if it's the wrong type
              }
-             // If ONLY the hat type was selected (no shapes/heights), include it now that type matches
-             if (crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
-                 return true;
-             }
+          }
+
+          if (westernStyle != null && westernStyle.isNotEmpty) {
+            bool matchesStyle = false;
+            if (westernStyle == 'Western' && westernProfiles.contains(prodStetsonProfile)) {
+              matchesStyle = true;
+            } else if (westernStyle == 'Not Western' && notWesternProfiles.contains(prodStetsonProfile)) {
+              matchesStyle = true;
+            }
+            if (!matchesStyle) return false; // Filter strictly by style if selected
+          }
+
+          // If ONLY the primary categories were selected (no shapes/heights), include it now that type/style match
+          if (crownShape == null && brimShape == null && crownHeight == null && brimWidth == null) {
+              return true;
           }
 
           if (crownShape != null && crownShape.isNotEmpty && prodCrownShape.contains(crownShape)) matches = true;
