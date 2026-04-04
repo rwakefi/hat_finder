@@ -8,6 +8,7 @@ class ShopifyService {
 
   static Future<List<dynamic>> searchHats({
     String? hatType,
+    String? westernStyle,
     String? crownShape,
     double? crownHeight,
     String? brimShape,

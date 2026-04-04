@@ -15,6 +15,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   int _currentPageIndex = 0;
 
   HatShapeInfo? selectedHatType;
+  String? selectedWesternStyle;
 
   HatShapeInfo? selectedCrownShape;
   double? targetCrownHeight;
@@ -94,6 +95,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
     super.dispose();
   }
 
+  List<Widget> get _pages {
+    final pages = <Widget>[_buildVisualHatTypeSelection()];
+    if (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw') {
+      pages.add(_buildVisualWesternSelection());
+    }
+    pages.addAll([
+      _buildVisualCrownSelection(),
+      _buildVisualBrimSelection(),
+      _buildDetailsSelection(),
+    ]);
+    return pages;
+  }
+
   void _nextPage({bool overrideValidation = false}) {
     FocusScope.of(context).unfocus();
     if (!overrideValidation) {
@@ -103,13 +117,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
         );
         return;
       }
-      if (_currentPageIndex == 1 && selectedCrownShape == null) {
+      bool hasWestern = (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw');
+      int westernIndex = hasWestern ? 1 : -1;
+      int crownIndex = hasWestern ? 2 : 1;
+      int brimIndex = hasWestern ? 3 : 2;
+
+      if (_currentPageIndex == westernIndex && selectedWesternStyle == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a Style first.')),
+        );
+        return;
+      }
+      if (_currentPageIndex == crownIndex && selectedCrownShape == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a Crown Shape first.')),
         );
         return;
       }
-      if (_currentPageIndex == 2 && selectedBrimShape == null) {
+      if (_currentPageIndex == brimIndex && selectedBrimShape == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a Brim Shape first.')),
         );
@@ -136,6 +161,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       MaterialPageRoute(
         builder: (context) => HatResultsScreen(
           hatType: selectedHatType?.name,
+          westernStyle: selectedWesternStyle,
           crownShape: selectedCrownShape?.name,
           crownHeight: targetCrownHeight,
           brimShape: selectedBrimShape?.name,
@@ -177,12 +203,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 onPageChanged: (index) {
                   setState(() => _currentPageIndex = index);
                 },
-                children: [
-                  _buildVisualHatTypeSelection(),
-                  _buildVisualCrownSelection(),
-                  _buildVisualBrimSelection(),
-                  _buildDetailsSelection(),
-                ],
+                children: _pages,
               ),
             ),
           ],
@@ -194,10 +215,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildProgressBar() {
     return LinearProgressIndicator(
-      value: (_currentPageIndex + 1) / 4.0,
+      value: (_currentPageIndex + 1) / _pages.length.toDouble(),
       backgroundColor: Colors.grey[200],
       valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
     );
+  }
+
+  String get _navButtonText {
+    if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
+    bool hasWestern = (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw');
+    if (_currentPageIndex == 0) return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
+    int westernIndex = hasWestern ? 1 : -1;
+    int crownIndex = hasWestern ? 2 : 1;
+    if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
+    if (_currentPageIndex == crownIndex) return 'Next: Brim Shape';
+    return 'Next: Details';
   }
 
   Widget _buildBottomNav() {
@@ -218,14 +250,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FilledButton(
-               onPressed: _currentPageIndex < 3 ? _nextPage : _submitSearch,
+               onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
                style: FilledButton.styleFrom(
                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
               ),
               child: Text(
-                _currentPageIndex < 3 
-                  ? (_currentPageIndex == 0 ? 'Next: Crown Shape' : _currentPageIndex == 1 ? 'Next: Brim Shape' : 'Next: Details') 
-                  : 'Find Hats',
+                _navButtonText,
                 style: const TextStyle(fontSize: 18),
               ),
             ),
@@ -237,8 +267,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildVisualHatTypeSelection() {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = screenWidth > 700 ? 4 : 2;
-    final double aspect = screenWidth > 700 ? 1.1 : 0.75; // Adjusted aspect ratio to be taller
+    final int columns = screenWidth > 700 ? 4 : (screenWidth < 400 ? 1 : 2);
+    final double aspect = screenWidth > 700 ? 1.1 : (screenWidth < 400 ? 1.4 : 0.75);
 
     return Column(
       children: [
@@ -394,10 +424,130 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  Widget _buildVisualWesternSelection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Select Style',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Choose between a traditional Western look or other styles.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: GridView.count(
+            crossAxisCount: MediaQuery.of(context).size.width > 700 ? 4 : (MediaQuery.of(context).size.width < 400 ? 1 : 2),
+            padding: const EdgeInsets.all(16),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: MediaQuery.of(context).size.width > 700 ? 1.1 : (MediaQuery.of(context).size.width < 400 ? 1.4 : 0.75),
+            children: [
+              _buildStyleCard('Western', 'Classic cowboy and western styles.', Icons.star),
+              _buildStyleCard('Not Western', 'Fedoras, trilbys, and other dress hats.', Icons.business),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStyleCard(String name, String description, IconData icon) {
+    final isSelected = selectedWesternStyle == name;
+    return Card(
+      elevation: isSelected ? 8 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          width: isSelected ? 3 : 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() {
+            selectedWesternStyle = name;
+            selectedCrownShape = null;
+          });
+          _nextPage();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 8,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Container(
+                  color: Colors.white,
+                  child: Icon(
+                    icon,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildVisualCrownSelection() {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = 3; // Fixed to 3 columns per user request
-    final double aspect = screenWidth > 700 ? 0.75 : 0.60;
+    final int columns = screenWidth > 900 ? 4 : (screenWidth > 600 ? 3 : 2);
+    final double aspect = screenWidth > 900 ? 0.8 : (screenWidth > 600 ? 0.75 : 0.55);
 
     return Column(
       children: [
@@ -911,8 +1061,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
   Widget _buildVisualBrimSelection() {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = 3;
-    final double aspect = screenWidth > 700 ? 0.75 : 0.60;
+    final int columns = screenWidth > 900 ? 4 : (screenWidth > 600 ? 3 : 2);
+    final double aspect = screenWidth > 900 ? 0.8 : (screenWidth > 600 ? 0.75 : 0.65);
 
     return Column(
       children: [

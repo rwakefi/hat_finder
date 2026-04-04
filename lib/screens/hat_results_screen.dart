@@ -7,6 +7,7 @@ import '../models/hat.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final String? hatType;
+  final String? westernStyle;
   final String? crownShape;
   final double? crownHeight;
   final String? brimShape;
@@ -15,6 +16,7 @@ class HatResultsScreen extends StatefulWidget {
   const HatResultsScreen({
     super.key,
     this.hatType,
+    this.westernStyle,
     this.crownShape,
     this.crownHeight,
     this.brimShape,
@@ -33,6 +35,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     super.initState();
     _hatsFuture = ShopifyService.searchHats(
       hatType: widget.hatType,
+      westernStyle: widget.westernStyle,
       crownShape: widget.crownShape,
       crownHeight: widget.crownHeight,
       brimShape: widget.brimShape,
@@ -102,10 +105,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: MediaQuery.of(context).size.width > 700 ? 3 : 2,
+                    crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : (MediaQuery.of(context).size.width > 550 ? 2 : 1),
                     crossAxisSpacing: 18, // Increased spacing
                     mainAxisSpacing: 18,
-                    mainAxisExtent: widget.hatType == 'Ballcap' ? 560 : 600, // Reduced based on new spacing
+                    mainAxisExtent: MediaQuery.of(context).size.width > 550 ? (widget.hatType == 'Ballcap' ? 560 : 600) : 520, // Reduced height on single column
                   ),
                   itemCount: hats.length,
                   itemBuilder: (context, index) {
@@ -346,6 +349,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         runSpacing: 16,
         children: [
           _buildSummaryChip('Type', widget.hatType ?? 'Any'),
+          if (widget.westernStyle != null)
+            _buildSummaryChip('Style', widget.westernStyle!),
           _buildSummaryChip('Crown', '${widget.crownShape ?? 'Any'} (${widget.crownHeight != null ? formatMeasurement(widget.crownHeight!) : 'Any'})'),
           _buildSummaryChip('Brim', '${widget.brimShape ?? 'Any'} (${widget.brimWidth ?? 'Any'})'),
         ],
