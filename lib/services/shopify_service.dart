@@ -73,7 +73,7 @@ class ShopifyService {
         final List<dynamic> allProducts = data['data']['products']['edges'].map((p) => p['node']).toList();
         
         final List<String> westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
-        final List<String> notWesternProfiles = ['0', '2', '16', '18', '40', '41', '50', '9G'];
+        final List<String> notWesternProfiles = ['0', '0170', '2', '16', '18', '40', '41', '50', '9G'];
 
         // --- Client Side Filtering ---
         final filteredProducts = allProducts.where((product) {
