@@ -969,33 +969,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
+          spacing: 16.0,
+          runSpacing: 4.0,
           children: [
-            ChoiceChip(
-              label: const Text('Any'),
-              selected: value == null,
-              onSelected: (bool selected) {
-                if (selected) onChanged(null);
-              },
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-              labelStyle: TextStyle(
-                color: value == null ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
-                fontWeight: value == null ? FontWeight.bold : FontWeight.normal,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Radio<String?>(
+                  value: null,
+                  groupValue: value,
+                  onChanged: onChanged,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                ),
+                GestureDetector(
+                  onTap: () => onChanged(null),
+                  child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
             ...items.map((item) {
-              return ChoiceChip(
-                label: Text(item),
-                selected: value == item,
-                onSelected: (bool selected) {
-                  if (selected) onChanged(item);
-                },
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                labelStyle: TextStyle(
-                  color: value == item ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
-                  fontWeight: value == item ? FontWeight.bold : FontWeight.normal,
-                ),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Radio<String?>(
+                    value: item,
+                    groupValue: value,
+                    onChanged: onChanged,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  GestureDetector(
+                    onTap: () => onChanged(item),
+                    child: Text(item, style: TextStyle(fontWeight: value == item ? FontWeight.bold : FontWeight.normal)),
+                  ),
+                ],
               );
             }),
           ],
@@ -1025,33 +1031,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
+          spacing: 16.0,
+          runSpacing: 4.0,
           children: [
-            ChoiceChip(
-              label: const Text('Any'),
-              selected: value == null,
-              onSelected: (bool selected) {
-                if (selected) onChanged(null);
-              },
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-              labelStyle: TextStyle(
-                color: value == null ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
-                fontWeight: value == null ? FontWeight.bold : FontWeight.normal,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Radio<double?>(
+                  value: null,
+                  groupValue: value,
+                  onChanged: onChanged,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                ),
+                GestureDetector(
+                  onTap: () => onChanged(null),
+                  child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
             ...increments.map((val) {
-              return ChoiceChip(
-                label: Text(formatMeasurement(val)),
-                selected: value == val,
-                onSelected: (bool selected) {
-                  if (selected) onChanged(val);
-                },
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                labelStyle: TextStyle(
-                  color: value == val ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
-                  fontWeight: value == val ? FontWeight.bold : FontWeight.normal,
-                ),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Radio<double?>(
+                    value: val,
+                    groupValue: value,
+                    onChanged: onChanged,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  GestureDetector(
+                    onTap: () => onChanged(val),
+                    child: Text(formatMeasurement(val), style: TextStyle(fontWeight: value == val ? FontWeight.bold : FontWeight.normal)),
+                  ),
+                ],
               );
             }),
           ],
