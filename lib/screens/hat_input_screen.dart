@@ -960,48 +960,47 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.75,
-      child: DropdownButtonFormField<String?>(
-        decoration: InputDecoration(
-          labelText: null,
-          hintText: 'Select $label (Optional)',
-          hintStyle: const TextStyle(color: Colors.black54),
-          filled: true,
-          fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label:',
+          style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: [
+            ChoiceChip(
+              label: const Text('Any'),
+              selected: value == null,
+              onSelected: (bool selected) {
+                if (selected) onChanged(null);
+              },
+              selectedColor: Theme.of(context).colorScheme.primaryContainer,
+              labelStyle: TextStyle(
+                color: value == null ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
+                fontWeight: value == null ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            ...items.map((item) {
+              return ChoiceChip(
+                label: Text(item),
+                selected: value == item,
+                onSelected: (bool selected) {
+                  if (selected) onChanged(item);
+                },
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                labelStyle: TextStyle(
+                  color: value == item ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
+                  fontWeight: value == item ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }),
+          ],
         ),
-      ),
-      value: value,
-      dropdownColor: Theme.of(context).scaffoldBackgroundColor,
-      selectedItemBuilder: (BuildContext context) {
-        return [null, ...items].map<Widget>((String? item) {
-          return Text(
-            item ?? '$label:',
-            style: const TextStyle(color: Color(0xFF2B1D14), fontWeight: FontWeight.w600),
-          );
-        }).toList();
-      },
-      items: [
-        DropdownMenuItem<String?>(
-          value: null,
-          child: Text('Any', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
-        ),
-        ...items.map((shape) {
-          return DropdownMenuItem<String?>(
-            value: shape,
-            child: Text(shape, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
-          );
-        }).toList(),
       ],
-      onChanged: onChanged,
-     ),
     );
   }
 
@@ -1017,48 +1016,47 @@ class _HatInputScreenState extends State<HatInputScreen> {
       increments.add(i);
     }
     
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.75,
-      child: DropdownButtonFormField<double?>(
-        decoration: InputDecoration(
-          labelText: null,
-          hintText: 'Select $label (Optional)',
-          hintStyle: const TextStyle(color: Colors.black54),
-          filled: true,
-          fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label:',
+          style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: [
+            ChoiceChip(
+              label: const Text('Any'),
+              selected: value == null,
+              onSelected: (bool selected) {
+                if (selected) onChanged(null);
+              },
+              selectedColor: Theme.of(context).colorScheme.primaryContainer,
+              labelStyle: TextStyle(
+                color: value == null ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
+                fontWeight: value == null ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            ...increments.map((val) {
+              return ChoiceChip(
+                label: Text(formatMeasurement(val)),
+                selected: value == val,
+                onSelected: (bool selected) {
+                  if (selected) onChanged(val);
+                },
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                labelStyle: TextStyle(
+                  color: value == val ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.black87,
+                  fontWeight: value == val ? FontWeight.bold : FontWeight.normal,
+                ),
+              );
+            }),
+          ],
         ),
-      ),
-      value: value,
-      dropdownColor: Theme.of(context).scaffoldBackgroundColor,
-      selectedItemBuilder: (BuildContext context) {
-        return [null, ...increments].map<Widget>((double? val) {
-          return Text(
-            val == null ? '$label:' : formatMeasurement(val),
-            style: const TextStyle(color: Color(0xFF2B1D14), fontWeight: FontWeight.w600),
-          );
-        }).toList();
-      },
-      items: [
-        DropdownMenuItem<double?>(
-          value: null,
-          child: Text('Any', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
-        ),
-        ...increments.map((val) {
-          return DropdownMenuItem<double?>(
-            value: val,
-            child: Text(formatMeasurement(val), style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
-          );
-        }).toList(),
       ],
-      onChanged: onChanged,
-     ),
     );
   }
   Widget _buildVisualBrimSelection() {
