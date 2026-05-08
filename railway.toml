@@ -1,0 +1,25 @@
+# railway.toml — Root-level Railway configuration for hat_finder
+#
+# Repository structure (monorepo):
+#   /                  → Flutter frontend (Android/iOS app)
+#   /backend           → Python backend (Railway service: hat_finder)
+#
+# The Python backend service is deployed with its root directory set to
+# "backend/" inside the Railway dashboard (or via the rootDirectory setting
+# below). Railpack detects requirements.txt and builds accordingly.
+#
+# To add a second Railway service for the Flutter web frontend, create a
+# separate service pointing at the repo root with a Flutter build pack.
+
+[build]
+# Railpack auto-detects Python via requirements.txt in the root directory.
+# No custom build command is required; pip install -r requirements.txt runs
+# automatically.
+builder = "railpack"
+
+[deploy]
+startCommand = "python main.py"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
