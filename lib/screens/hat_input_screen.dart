@@ -23,6 +23,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
   HatShapeInfo? selectedBrimShape;
   List<String> targetBrimWidths = [];
 
+  late Future<List<dynamic>> _allProductsFuture;
+
+  String _metaValue(dynamic entry) {
+    if (entry == null || entry['value'] == null) return '—';
+    try {
+      final parsed = jsonDecode(entry['value'] as String);
+      if (parsed is List && parsed.isNotEmpty) return parsed.first.toString();
+      return parsed.toString();
+    } catch (_) {
+      return entry['value'].toString();
+    }
+  }
+
   /// Returns the correct crown shape list based on the selected hat type.
   List<HatShapeInfo> get _currentCrownShapes {
     final typeName = selectedHatType?.name;
@@ -38,6 +51,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   void initState() {
     super.initState();
+    _allProductsFuture = ShopifyService.searchHats();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showInstructionsDialog();
     });
@@ -575,201 +589,230 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ),
         ),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: aspect, // Tighter ratio on wide screens to remove white space at the bottom
-      ),
-      itemCount: _currentCrownShapes.length,
-      itemBuilder: (context, index) {
-        final shape = _currentCrownShapes[index];
-        final isSelected = selectedCrownShape?.name == shape.name;
+          child: FutureBuilder<List<dynamic>>(
+            future: _allProductsFuture,
+            builder: (context, snapshot) {
+              return GridView.builder(
+                padding: const EdgeInsets.all(16.0),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: aspect,
+                ),
+                itemCount: _currentCrownShapes.length,
+                itemBuilder: (context, index) {
+                  final shape = _currentCrownShapes[index];
+                  final isSelected = selectedCrownShape?.name == shape.name;
 
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          color: Colors.white, // Force white background to match hat images
-          elevation: isSelected ? 8 : 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-              width: 3,
-            ),
-          ),
-          child: InkWell(
-            onTap: () {
-              setState(() => selectedCrownShape = shape);
-              _nextPage(); // Automatically advance to next page on selection
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                  child: Text(
-                    shape.name,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cinzel(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20, // Reduced from 30 to prevent overflow in grid
-                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                  // Find matching product image
+                  String? imageUrl;
+                  if (snapshot.hasData) {
+                    try {
+                      final matchingProduct = snapshot.data!.firstWhere(
+                        (p) => _metaValue(p['crownShape']).toLowerCase().contains(shape.name.toLowerCase()),
+                        orElse: () => null,
+                      );
+                      imageUrl = matchingProduct?['featuredImage']?['url'];
+                    } catch (e) {
+                      print('Error finding matching image: \$e');
+                    }
+                  }
+
+                  return Card(
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.white,
+                    elevation: isSelected ? 8 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        width: 3,
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
-                    child: Image.asset(
-                      shape.imagePath,
-                      fit: BoxFit.contain, // Changed from cover to contain to ensure full image is visible when padded
-                      alignment: Alignment.topCenter, // Align image to top to remove white space below title
-                      errorBuilder: (context, error, stackTrace) {
-                         return Container(
-                           color: Colors.grey[200],
-                           child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                         );
+                    child: InkWell(
+                      onTap: () {
+                        setState(() => selectedCrownShape = shape);
+                        _nextPage();
                       },
-                    ),
-                  ),
-                ),
-                if (shape.galleryImages.isNotEmpty)
-                  Builder(
-                    builder: (context) {
-                      final ScrollController scrollController = ScrollController();
-                      return SizedBox(
-                        height: 70, // Reduced from 80
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () {
-                                scrollController.animateTo(
-                                  scrollController.offset - 100,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            child: Text(
+                              shape.name,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cinzel(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                              ),
                             ),
-                            Expanded(
-                              child: ListView.builder(
-                                controller: scrollController,
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                itemCount: shape.galleryImages.length,
-                                itemBuilder: (context, galleryIndex) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return Dialog(
-                                              backgroundColor: Colors.transparent,
-                                              insetPadding: const EdgeInsets.all(16),
-                                              child: Stack(
-                                                alignment: Alignment.center,
-                                                children: [
-                                                  InteractiveViewer(
-                                                    panEnabled: true,
-                                                    minScale: 0.5,
-                                                    maxScale: 4,
-                                                    child: Image.asset(
-                                                      shape.galleryImages[galleryIndex],
-                                                      fit: BoxFit.contain,
-                                                      errorBuilder: (context, error, stackTrace) => Container(
-                                                        color: Colors.white,
-                                                        child: const Padding(
-                                                          padding: EdgeInsets.all(32.0),
-                                                          child: Icon(Icons.image, size: 100, color: Colors.grey),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
+                              child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.topCenter,
+                                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                                      shape.imagePath,
+                                      fit: BoxFit.contain,
+                                      alignment: Alignment.topCenter,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    shape.imagePath,
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.topCenter,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                    ),
+                                  ),
+                            ),
+                          ),
+                          if (shape.galleryImages.isNotEmpty)
+                            Builder(
+                              builder: (context) {
+                                final ScrollController scrollController = ScrollController();
+                                return SizedBox(
+                                  height: 70,
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_left),
+                                        onPressed: () {
+                                          scrollController.animateTo(
+                                            scrollController.offset - 100,
+                                            duration: const Duration(milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        },
+                                      ),
+                                      Expanded(
+                                        child: ListView.builder(
+                                          controller: scrollController,
+                                          scrollDirection: Axis.horizontal,
+                                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                                          itemCount: shape.galleryImages.length,
+                                          itemBuilder: (context, galleryIndex) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8.0),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (BuildContext context) {
+                                                      return Dialog(
+                                                        backgroundColor: Colors.transparent,
+                                                        insetPadding: const EdgeInsets.all(16),
+                                                        child: Stack(
+                                                          alignment: Alignment.center,
+                                                          children: [
+                                                            InteractiveViewer(
+                                                              panEnabled: true,
+                                                              minScale: 0.5,
+                                                              maxScale: 4,
+                                                              child: Image.asset(
+                                                                shape.galleryImages[galleryIndex],
+                                                                fit: BoxFit.contain,
+                                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                                  color: Colors.white,
+                                                                  child: const Padding(
+                                                                    padding: EdgeInsets.all(32.0),
+                                                                    child: Icon(Icons.image, size: 100, color: Colors.grey),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Positioned(
+                                                              top: 8,
+                                                              right: 8,
+                                                              child: Container(
+                                                                decoration: const BoxDecoration(
+                                                                  color: Colors.black54,
+                                                                  shape: BoxShape.circle,
+                                                                ),
+                                                                child: IconButton(
+                                                                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                                                  onPressed: () {
+                                                                    Navigator.of(context).pop();
+                                                                  },
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
-                                                      ),
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Image.asset(
+                                                    shape.galleryImages[galleryIndex],
+                                                    width: 70,
+                                                    height: 70,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) => Container(
+                                                      width: 80,
+                                                      height: 80,
+                                                      color: Colors.grey[200],
+                                                      child: const Icon(Icons.image, size: 30, color: Colors.grey),
                                                     ),
                                                   ),
-                                                  Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: Container(
-                                                      decoration: const BoxDecoration(
-                                                        color: Colors.black54,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: IconButton(
-                                                        icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                                                        onPressed: () {
-                                                          Navigator.of(context).pop();
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                                ),
                                               ),
                                             );
                                           },
-                                        );
-                                      },
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.asset(
-                                          shape.galleryImages[galleryIndex],
-                                            width: 70, // Reduced from 80
-                                            height: 70, // Reduced from 80
-                                            fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
-                                            width: 80,
-                                            height: 80,
-                                            color: Colors.grey[200],
-                                            child: const Icon(Icons.image, size: 30, color: Colors.grey),
-                                          ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_right),
+                                        onPressed: () {
+                                          scrollController.animateTo(
+                                            scrollController.offset + 100,
+                                            duration: const Duration(milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
+                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            child: Text(
+                              shape.description,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected 
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
+                                    : Colors.black54,
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: () {
-                                scrollController.animateTo(
-                                  scrollController.offset + 100,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                  child: Text(
-                    shape.description,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
-                          : Colors.black54,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-          ),
+                  );
+                },
+              );
+            },
+          )
+   ),
         ),
       ],
     );
@@ -1137,91 +1180,118 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ],
           ),
         ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: aspect,
-      ),
-      itemCount: brimShapes.length,
-      itemBuilder: (context, index) {
-        final shape = brimShapes[index];
-        final isSelected = selectedBrimShape?.name == shape.name;
+          child: FutureBuilder<List<dynamic>>(
+            future: _allProductsFuture,
+            builder: (context, snapshot) {
+              return GridView.builder(
+                padding: const EdgeInsets.all(16.0),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: aspect,
+                ),
+                itemCount: brimShapes.length,
+                itemBuilder: (context, index) {
+                  final shape = brimShapes[index];
+                  final isSelected = selectedBrimShape?.name == shape.name;
 
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          color: Colors.white,
-          elevation: isSelected ? 8 : 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-              width: 3,
-            ),
-          ),
-          child: InkWell(
-            onTap: () {
-              setState(() => selectedBrimShape = shape);
-              _nextPage();
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                  child: Text(
-                    shape.name,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cinzel(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20, // Reduced from 30 to prevent overflow in grid
-                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                  // Find matching product image
+                  String? imageUrl;
+                  if (snapshot.hasData) {
+                    try {
+                      final matchingProduct = snapshot.data!.firstWhere(
+                        (p) => _metaValue(p['brimShape']).toLowerCase().contains(shape.name.toLowerCase()),
+                        orElse: () => null,
+                      );
+                      imageUrl = matchingProduct?['featuredImage']?['url'];
+                    } catch (e) {
+                      print('Error finding matching image: \$e');
+                    }
+                  }
+
+                  return Card(
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.white,
+                    elevation: isSelected ? 8 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        width: 3,
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
-                    child: Image.asset(
-                      shape.imagePath,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.topCenter,
-                      errorBuilder: (context, error, stackTrace) {
-                         return Container(
-                           color: Colors.grey[200],
-                           child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                         );
+                    child: InkWell(
+                      onTap: () {
+                        setState(() => selectedBrimShape = shape);
+                        _nextPage();
                       },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            child: Text(
+                              shape.name,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cinzel(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
+                              child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.topCenter,
+                                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                                      shape.imagePath,
+                                      fit: BoxFit.contain,
+                                      alignment: Alignment.topCenter,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    shape.imagePath,
+                                    fit: BoxFit.contain,
+                                    alignment: Alignment.topCenter,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                    ),
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
+                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            child: Text(
+                              shape.description,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected 
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
+                                    : Colors.black54,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                  child: Text(
-                    shape.description,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
-                          : Colors.black54,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-          ),
+                  );
+                },
+              );
+            },
+          )
         ),
       ],
     );
