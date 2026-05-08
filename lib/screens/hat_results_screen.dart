@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/shopify_service.dart';
+import '../services/database_service.dart';
 import '../models/hat.dart';
 
 class HatResultsScreen extends StatefulWidget {
@@ -277,6 +278,25 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                     )
                                   else
                                     const SizedBox(),
+                                  IconButton(
+                                    icon: const Icon(Icons.bookmark_border, color: Color(0xFFC7B08B)),
+                                    onPressed: () async {
+                                      final success = await DatabaseService.saveHat(
+                                        name: title,
+                                        price: priceStr,
+                                        url: productUrl,
+                                        brand: widget.westernStyle,
+                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(success ? 'Saved to Favorites!' : 'Failed to save.'),
+                                            backgroundColor: success ? Colors.green : Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
                                   const SizedBox(width: 8),
                                   ElevatedButton(
                                     onPressed: openProduct,
