@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/hat.dart';
+import 'database_service.dart';
+
 
 class ShopifyService {
-  static const String storeUrl = 'https://raftermhatco.com/api/2024-01/graphql.json';
-  static const String storefrontToken = 'd094605eefb28f21b4b2be0e1bd2e56c';
+  static const String storeUrl = 'https://moonridgecompany.com/api/2024-01/graphql.json';
+  static const String storefrontToken = '3f15b1c10825b9bf7ed36d09141b7534';
 
   static Future<List<dynamic>> searchHats({
     String? hatType,
@@ -55,14 +57,14 @@ class ShopifyService {
     ''';
 
     try {
-      final response = await http.post(
-        Uri.parse(storeUrl),
+      // Call our Railway backend instead of Shopify directly
+      final response = await http.get(
+        Uri.parse('${DatabaseService.baseUrl}/api/shopify_products'),
         headers: {
           'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': storefrontToken,
         },
-        body: jsonEncode({'query': query}),
       );
+
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

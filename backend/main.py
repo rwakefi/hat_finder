@@ -6,9 +6,12 @@ import pg8000
 import urllib.parse
 from typing import List, Optional
 from contextlib import asynccontextmanager
+import httpx
 
 PORT = int(os.environ.get("PORT", 8080))
 DATABASE_URL = os.environ.get("DATABASE_URL")
+SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
+SHOPIFY_STORE_URL = "https://moonridgecompany.com"
 
 def get_db_connection():
     if not DATABASE_URL:
@@ -126,6 +129,64 @@ def get_hats():
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+@app.get("/api/shopify_products")
+async def get_shopify_products():
+    if not SHOPIFY_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="SHOPIFY_ACCESS_TOKEN not set in backend")
+    
+    url = f"{SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json"
+    
+    query = """
+    query {
+      products(first: 250) {
+        edges {
+          node {
+            id
+            title
+            description
+            onlineStoreUrl
+            featuredImage {
+              url
+            }
+            variants(first: 1) {
+              edges {
+                node {
+                  price {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+            }
+            crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
+            brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
+            crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
+            brimWidth: metafield(namespace: "custom", key: "brim_width") { value }
+            material: metafield(namespace: "custom", key: "material") { value }
+            feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
+            backstrap: metafield(namespace: "custom", key: "backstrap") { value }
+            stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
+          }
+        }
+      }
+    }
+    """
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json={"query": query}, headers=headers)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

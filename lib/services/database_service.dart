@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class DatabaseService {
   // TODO: Replace with your actual Railway URL after deployment
-  static const String baseUrl = 'https://YOUR-RAILWAY-URL.up.railway.app';
+  static const String baseUrl = 'https://hatfinder-production.up.railway.app';
 
   static Future<bool> saveHat({
     required String name,
