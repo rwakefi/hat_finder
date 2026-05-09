@@ -152,13 +152,11 @@ async def get_shopify_products():
             variants(first: 1) {
               edges {
                 node {
-                  price {
-                    amount
-                    currencyCode
-                  }
+                  price
                 }
               }
             }
+
             crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
             brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
             crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
