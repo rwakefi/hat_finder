@@ -11,7 +11,7 @@ import httpx
 PORT = int(os.environ.get("PORT", 8080))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
-SHOPIFY_STORE_URL = "https://moonridgecompany.com"
+SHOPIFY_STORE_URL = "https://raftermhatco.myshopify.com"
 
 def get_db_connection():
     if not DATABASE_URL:

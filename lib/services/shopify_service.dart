@@ -147,7 +147,7 @@ class ShopifyService {
         throw Exception('Failed to load products: \${response.statusCode}');
       }
     } catch (e) {
-      print('Error querying Shopify: \$e');
+      print('Error querying Shopify: $e');
       return [];
     }
   }
