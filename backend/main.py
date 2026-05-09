@@ -1,8 +1,11 @@
-import http.server
-import json
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import os
 import pg8000
 import urllib.parse
+from typing import List, Optional
+from contextlib import asynccontextmanager
 
 PORT = int(os.environ.get("PORT", 8080))
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -56,80 +59,74 @@ def init_db():
     finally:
         conn.close()
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length)
-        payload = json.loads(post_data) if post_data else {}
-
-        if self.path == '/api/save_hat':
-            res = self.save_hat(payload)
-            self.send_success(res)
-        else:
-            self.send_error(404, "Not Found")
-
-    def do_GET(self):
-        if self.path == '/api/hats':
-            res = self.get_hats()
-            self.send_success(res)
-        else:
-            super().do_GET()
-
-    def send_success(self, data):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
-
-    def save_hat(self, data):
-        conn = get_db_connection()
-        if not conn:
-            return {"status": "error", "message": "DB connection failed"}
-        try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO found_hats (name, brand, price, size, url) VALUES (%s, %s, %s, %s, %s)",
-                (data.get('name'), data.get('brand'), data.get('price'), data.get('size'), data.get('url'))
-            )
-            conn.commit()
-            return {"status": "success", "message": "Hat saved successfully"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-        finally:
-            conn.close()
-
-    def get_hats(self):
-        conn = get_db_connection()
-        if not conn:
-            return []
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, name, brand, price, size, url, created_at FROM found_hats ORDER BY created_at DESC")
-            rows = cursor.fetchall()
-            results = []
-            for row in rows:
-                results.append({
-                    "id": row[0],
-                    "name": row[1],
-                    "brand": row[2],
-                    "price": row[3],
-                    "size": row[4],
-                    "url": row[5],
-                    "created_at": str(row[6])
-                })
-            return results
-        except Exception as e:
-            print(f"❌ Error fetching hats: {e}")
-            return []
-        finally:
-            conn.close()
-
-def run():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run database initialization on startup
     init_db()
-    server_address = ('', PORT)
-    httpd = http.server.HTTPServer(server_address, Handler)
-    print(f"Starting backend on port {PORT}...")
-    httpd.serve_forever()
+    yield
 
-if __name__ == '__main__':
-    run()
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORS for all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class Hat(BaseModel):
+    name: str
+    brand: Optional[str] = None
+    price: Optional[str] = None
+    size: Optional[str] = None
+    url: Optional[str] = None
+
+@app.post("/api/save_hat")
+def save_hat(hat: Hat):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO found_hats (name, brand, price, size, url) VALUES (%s, %s, %s, %s, %s)",
+            (hat.name, hat.brand, hat.price, hat.size, hat.url)
+        )
+        conn.commit()
+        return {"status": "success", "message": "Hat saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.get("/api/hats")
+def get_hats():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, brand, price, size, url, created_at FROM found_hats ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        results = []
+        for row in rows:
+            results.append({
+                "id": row[0],
+                "name": row[1],
+                "brand": row[2],
+                "price": row[3],
+                "size": row[4],
+                "url": row[5],
+                "created_at": str(row[6])
+            })
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)

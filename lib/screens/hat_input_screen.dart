@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
 import 'hat_results_screen.dart';
+import 'dart:convert';
+import '../services/shopify_service.dart';
 
 class HatInputScreen extends StatefulWidget {
   const HatInputScreen({super.key});
@@ -811,8 +813,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 },
               );
             },
-          )
-   ),
+          ),
         ),
       ],
     );
@@ -1180,6 +1181,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ],
           ),
         ),
+        Expanded(
           child: FutureBuilder<List<dynamic>>(
             future: _allProductsFuture,
             builder: (context, snapshot) {
@@ -1291,7 +1293,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 },
               );
             },
-          )
+          ),
         ),
       ],
     );
