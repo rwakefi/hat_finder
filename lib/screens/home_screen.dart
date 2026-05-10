@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'hat_input_screen.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -52,6 +53,20 @@ class HomeScreen extends StatelessWidget {
                         icon: const Icon(Icons.search),
                         label: const Text('Start Searching'),
                         style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const ChatScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.smart_toy),
+                        label: const Text('Ask the AI Stylist'),
+                        style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),

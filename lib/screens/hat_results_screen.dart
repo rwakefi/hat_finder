@@ -130,8 +130,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     try {
                       final variant = hat['variants']?['edges']?[0]?['node'];
                       if (variant != null) {
-                        final amount = variant['price']['amount'];
-                        priceStr = '\$${double.parse(amount).toStringAsFixed(2)}';
+                        final priceData = variant['price'];
+                        if (priceData is String) {
+                          priceStr = '\$${double.parse(priceData).toStringAsFixed(2)}';
+                        } else if (priceData != null && priceData['amount'] != null) {
+                          final amount = priceData['amount'];
+                          priceStr = '\$${double.parse(amount.toString()).toStringAsFixed(2)}';
+                        }
                       }
                     } catch (e) {
                       debugPrint('Price parse error for "$title": $e');

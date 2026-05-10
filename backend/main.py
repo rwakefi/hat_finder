@@ -186,6 +186,18 @@ async def get_shopify_products():
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+class ChatRequest(BaseModel):
+    query: str
+
+@app.post("/api/chat")
+async def chat_with_agent(request: ChatRequest):
+    from agents import router_agent
+    try:
+        response = await router_agent(request.query)
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
