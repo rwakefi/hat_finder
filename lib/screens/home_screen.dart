@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'hat_input_screen.dart';
 import 'chat_screen.dart';
+import 'head_shape_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,70 +10,150 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final logoHeight = (constraints.maxHeight * 0.30).clamp(100.0, 220.0);
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/images/logo.png',
-                        height: logoHeight,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Find Your Perfect Hat',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 36,
+          final logoHeight = (constraints.maxHeight * 0.22).clamp(100.0, 180.0);
+          
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF4A3525), // Softer, warmer brown
+                  Color(0xFF1E140E), // Deeper brown
+                ],
+              ),
+            ),
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 50.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Top Section: Logo
+                        Padding(
+                          padding: const EdgeInsets.only(top: 30.0),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: logoHeight,
+                            color: const Color(0xFFCBB593), // Tan color for a lighter, golden look
+                          ),
+                        ),
+                        
+                        // Middle Section: Content
+                        Column(
+                          children: [
+                            Text(
+                              'FIND YOUR PERFECT HAT',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.playfairDisplaySc(
+                                textStyle: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFCBB593), // Tan
+                                  letterSpacing: 4,
+                                ),
+                              ),
                             ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Search or identify hats based on their Crown and Brim properties.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 20, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 48),
-                      FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const HatInputScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.search),
-                        label: const Text('Start Searching'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Discover luxury hats tailored to your unique style and shape.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFFF5F0E8), // Off-white
+                                height: 1.6,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const ChatScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.smart_toy),
-                        label: const Text('Ask the AI Stylist'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        
+                        // Bottom Section: Actions
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (context) => const HatInputScreen()),
+                                  );
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFFCBB593), // Tan
+                                  foregroundColor: const Color(0xFF2B1D14), // Espresso
+                                  padding: const EdgeInsets.symmetric(vertical: 20),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(2), // Sharp corners
+                                  ),
+                                ),
+                                child: const Text(
+                                  'SEARCH BY HAT SHAPE',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'For those who know what style they are looking for',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: const Color(0xFFF5F0E8).withOpacity(0.7),
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32), // More space between sections
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (context) => const HeadShapeScreen()),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFCBB593), // Tan
+                                  side: const BorderSide(color: Color(0xFFCBB593), width: 1),
+                                  padding: const EdgeInsets.symmetric(vertical: 20),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'SEARCH BY HEAD SHAPE',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'For those who have no idea what hat might look good on them',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: const Color(0xFFF5F0E8).withOpacity(0.7),
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -79,7 +161,6 @@ class HomeScreen extends StatelessWidget {
           );
         },
       ),
-
     );
   }
 }

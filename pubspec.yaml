@@ -37,6 +37,10 @@ dependencies:
   http: any
   url_launcher: any
   google_fonts: any
+  permission_handler: ^12.0.1
+  app_tracking_transparency: ^2.0.6+1
+  shared_preferences: ^2.5.5
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:

@@ -54,56 +54,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   void initState() {
     super.initState();
     _allProductsFuture = ShopifyService.searchHats();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showInstructionsDialog();
-    });
   }
 
-  void _showInstructionsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          title: Text(
-            'How to Find Your Hat',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: const SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('1. First, select the type of hat you are looking for (Felt, Straw, Ballcap).'),
-                SizedBox(height: 8),
-                Text('2. Next, select the Crown Shape you want from the visual grid.'),
-                SizedBox(height: 8),
-                Text('3. Tap "Next: Details" to proceed.'),
-                SizedBox(height: 8),
-                Text('4. Optionally, select a Crown Height, Brim Shape, or Brim Width.'),
-                SizedBox(height: 8),
-                Text('5. Tap "Find Hats" to search our inventory for matches!'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Close',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 
   @override
   void dispose() {
@@ -567,34 +520,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final int columns = screenWidth > 900 ? 4 : (screenWidth > 600 ? 3 : 2);
     final double aspect = screenWidth > 900 ? 0.8 : (screenWidth > 600 ? 0.75 : 0.55);
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Select your desired Crown Shape below to get started.',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Select your desired Crown Shape below to get started.',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: () {
-                  setState(() => selectedCrownShape = null);
-                  _nextPage(overrideValidation: true);
-                },
-                child: const Text('Any Crown'),
-              ),
-            ],
+                const SizedBox(width: 8),
+                FilledButton.tonal(
+                  onPressed: () {
+                    setState(() => selectedCrownShape = null);
+                    _nextPage(overrideValidation: true);
+                  },
+                  child: const Text('Any Crown'),
+                ),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<dynamic>>(
+          FutureBuilder<List<dynamic>>(
             future: _allProductsFuture,
             builder: (context, snapshot) {
               return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
@@ -624,12 +579,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   return Card(
                     clipBehavior: Clip.antiAlias,
                     color: Colors.white,
-                    elevation: isSelected ? 8 : 2,
+                    elevation: isSelected ? 4 : 1,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(2), // Sharp corners for luxury feel
                       side: BorderSide(
-                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                        width: 3,
+                        color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
+                        width: 2,
                       ),
                     ),
                     child: InkWell(
@@ -640,42 +595,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                            child: Text(
-                              shape.name,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.cinzel(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
-                              ),
-                            ),
-                          ),
                           Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
-                              child: imageUrl != null
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.topCenter,
-                                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                                      shape.imagePath,
-                                      fit: BoxFit.contain,
-                                      alignment: Alignment.topCenter,
-                                    ),
-                                  )
-                                : Image.asset(
+                            child: imageUrl != null
+                              ? Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover, // Dramatic crop for Free People look
+                                  alignment: Alignment.center,
+                                  errorBuilder: (context, error, stackTrace) => Image.asset(
                                     shape.imagePath,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.topCenter,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                    ),
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
                                   ),
+                                )
+                              : Image.asset(
+                                  shape.imagePath,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.center,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                  ),
+                                ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            color: Colors.white,
+                            child: Text(
+                              shape.name.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.playfairDisplaySc(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isSelected ? const Color(0xFFCBB593) : Colors.black87,
+                                letterSpacing: 1.5,
+                              ),
                             ),
                           ),
                           if (shape.galleryImages.isNotEmpty)
@@ -814,8 +767,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               );
             },
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
