@@ -80,8 +80,6 @@ class ShopifyService {
         // --- Client Side Filtering ---
         final filteredProducts = allProducts.where((product) {
           
-          bool matches = false; // We want an OR search. If it matches ANYTHING, include it.
-          
           // If the user selected "Any" for everything (or first load), return all
           if (hatType == null && westernStyle == null && crownShape == null && brimShape == null && crownHeights == null && brimWidths == null) {
             return true;
@@ -132,10 +130,23 @@ class ShopifyService {
               return true;
           }
 
-          if (crownShape != null && crownShape.isNotEmpty && prodCrownShape.contains(crownShape)) matches = true;
-          if (brimShape != null && brimShape.isNotEmpty && prodBrimShape.contains(brimShape)) matches = true;
-          if (crownHeights != null && crownHeights.isNotEmpty && crownHeights.any((ch) => ch > 0 && prodCrownHeight.contains(ch.toString()))) matches = true;
-          if (brimWidths != null && brimWidths.isNotEmpty && brimWidths.any((bw) => prodBrimWidth.contains(bw))) matches = true;
+          // --- Categorical AND logic ---
+          // A product must match ALL selected filters. 
+          // (Within a multi-select list like crownHeights, matching ANY chosen height is sufficient).
+          bool matches = true;
+
+          if (crownShape != null && crownShape.isNotEmpty) {
+            if (!prodCrownShape.contains(crownShape)) matches = false;
+          }
+          if (brimShape != null && brimShape.isNotEmpty) {
+            if (!prodBrimShape.contains(brimShape)) matches = false;
+          }
+          if (crownHeights != null && crownHeights.isNotEmpty) {
+            if (!crownHeights.any((ch) => ch > 0 && prodCrownHeight.contains(ch.toString()))) matches = false;
+          }
+          if (brimWidths != null && brimWidths.isNotEmpty) {
+            if (!brimWidths.any((bw) => prodBrimWidth.contains(bw))) matches = false;
+          }
 
           return matches;
 

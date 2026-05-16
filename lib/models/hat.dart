@@ -39,7 +39,7 @@ const List<HatShapeInfo> feltCrownShapes = [
   HatShapeInfo('Minnick', 'assets/images/crowns/minnick.png', 'A sharper, more defined cattleman crease.', galleryImages: ['assets/images/crowns/minnick.png', 'assets/images/crowns/cattleman.png']),
   HatShapeInfo('Brick', 'assets/images/crowns/brick.png', 'Squared-off crease, great for a wider profile.', galleryImages: ['assets/images/crowns/brick.png', 'assets/images/crowns/square_top.png']),
   HatShapeInfo('Walker', 'assets/images/crowns/walker.png', 'Low profile, traditional box crease.', galleryImages: ['assets/images/crowns/walker.png']),
-  HatShapeInfo('Texas Punch', 'assets/images/crowns/texas_punch.png', 'Distinctive high pinched front.', galleryImages: ['assets/images/crowns/texas_punch.png', 'assets/images/crowns/cattleman.png']),
+  HatShapeInfo('West Texas Punch', 'assets/images/crowns/texas_punch.png', 'Distinctive high pinched front.', galleryImages: ['assets/images/crowns/texas_punch.png', 'assets/images/crowns/cattleman.png']),
   HatShapeInfo('Gus', 'assets/images/crowns/gus.png', 'High slanted back with three prominent dimples.', galleryImages: ['assets/images/crowns/gus.png', 'assets/images/crowns/teardrop.png']),
   HatShapeInfo('Cool Hand Luke', 'assets/images/crowns/cool_hand_luke.png', 'Iconic rounded, slightly sloping top.', galleryImages: ['assets/images/crowns/cool_hand_luke.png']),
   HatShapeInfo('Teardrop', 'assets/images/crowns/teardrop.png', 'Classic fedora-style teardrop pinch.', galleryImages: ['assets/images/crowns/teardrop.png', 'assets/images/crowns/gus.png']),

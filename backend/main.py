@@ -4,11 +4,15 @@ from pydantic import BaseModel
 import os
 import pg8000
 import urllib.parse
+import httpx
 from typing import List, Optional
 from contextlib import asynccontextmanager
-import httpx
+from dotenv import load_dotenv
 
-PORT = int(os.environ.get("PORT", 8080))
+# Load environment variables from .env file
+load_dotenv()
+
+PORT = int(os.environ.get("PORT", 8081))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
 SHOPIFY_STORE_URL = os.environ.get("SHOPIFY_STORE_URL", "https://raftermhatco.myshopify.com")
