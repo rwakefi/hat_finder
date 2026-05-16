@@ -864,27 +864,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
       future: _allProductsFuture,
       builder: (context, snapshot) {
         List<HatShapeInfo> sortedShapes = List.from(_currentCrownShapes);
-        Map<String, List<String>> shopifyImagesMap = {};
+        Map<String, List<Map<String, String>>> shopifyProductsMap = {};
         
         if (snapshot.hasData) {
           try {
             for (var shape in sortedShapes) {
-              final shopifyImages = snapshot.data!
+              final shopifyProducts = snapshot.data!
                   .where((p) {
                     final crown = _metaValue(p['crownShape']).toLowerCase();
                     final name = shape.name.toLowerCase();
                     return crown.contains(name.replaceAll("'s", "").trim()) || 
                            name.contains(crown.trim());
                   })
-                  .map((p) => p['featuredImage']?['url'] as String?)
-                  .whereType<String>()
+                  .where((p) => p['featuredImage']?['url'] != null)
+                  .map((p) => {
+                    'url': p['featuredImage']['url'] as String,
+                    'title': (p['title'] ?? '') as String,
+                  })
                   .toList();
-              shopifyImagesMap[shape.name] = shopifyImages;
+              shopifyProductsMap[shape.name] = shopifyProducts;
             }
             
             sortedShapes.sort((a, b) {
-              final aHasShopify = (shopifyImagesMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
-              final bHasShopify = (shopifyImagesMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
+              final aHasShopify = (shopifyProductsMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
+              final bHasShopify = (shopifyProductsMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
               return bHasShopify.compareTo(aHasShopify);
             });
           } catch (e) {}
@@ -900,9 +903,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
               ),
             ),
-            // Carousel — image fills the card edge-to-edge
+            // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             Expanded(
-              child: PageView.builder(
+              child: Stack(
+                children: [
+                  PageView.builder(
                 controller: _crownCarouselController,
                 onPageChanged: (index) {
                   setState(() {
@@ -914,14 +919,25 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 itemBuilder: (context, index) {
                   final shape = sortedShapes[index];
                   final isSelected = selectedCrownShape?.name == shape.name;
-                  final shopifyImages = shopifyImagesMap[shape.name] ?? [];
-                  final String? imageUrl = shopifyImages.isNotEmpty ? shopifyImages.first : null;
+                  final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
+                  final String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
+                  final String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
                   final bool isFlipped = _flippedCardIndex == index;
+                  final bool isCentered = index == _currentCrownCarouselIndex;
 
                   return Padding(
                     padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
                     child: GestureDetector(
                       onTap: () {
+                        if (!isCentered) {
+                          // Tapped a peekaboo card — scroll to it instead of flipping
+                          _crownCarouselController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeInOut,
+                          );
+                          return;
+                        }
                         setState(() {
                           if (isFlipped) {
                             _flippedCardIndex = null; // flip back
@@ -1122,16 +1138,56 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         // Image — naturally sized to fit width, sits at top
                                         Flexible(
                                           fit: FlexFit.loose,
-                                          child: Transform.translate(
-                                            offset: const Offset(0, -15), // Shifting hat up to reduce top dead space
-                                            child: imageUrl != null
-                                                ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
-                                                : Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
+                                          child: Stack(
+                                            children: [
+                                              Transform.translate(
+                                                offset: const Offset(0, -15), // Shifting hat up to reduce top dead space
+                                                child: imageUrl != null
+                                                    ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
+                                                    : Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
+                                              ),
+                                              // Product name overlay — subtle, below the hat
+                                              if (productTitle != null && productTitle.isNotEmpty)
+                                                Positioned(
+                                                  bottom: 25,
+                                                  left: 12,
+                                                  right: 12,
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        'Example:',
+                                                        textAlign: TextAlign.center,
+                                                        style: GoogleFonts.montserrat(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Colors.grey[600],
+                                                          letterSpacing: 1.5,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        productTitle,
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: GoogleFonts.cormorantGaramond(
+                                                          fontSize: 20,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: const Color(0xFF6B6058),
+                                                          fontStyle: FontStyle.italic,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                         ),
                                         // Label + description — pulled up tight under the hat
                                         Transform.translate(
-                                          offset: const Offset(0, -10),
+                                          offset: const Offset(0, -16),
                                           child: Padding(
                                             padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                                             child: Column(
@@ -1168,10 +1224,86 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   );
                 },
               ),
+                  // Left arrow — subtle swipe hint
+                  if (_currentCrownCarouselIndex > 0)
+                    Positioned(
+                      left: 2,
+                      top: 0,
+                      bottom: 20,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            _crownCarouselController.previousPage(
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.7),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              size: 18,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Right arrow — subtle swipe hint
+                  if (_currentCrownCarouselIndex < sortedShapes.length - 1)
+                    Positioned(
+                      right: 2,
+                      top: 0,
+                      bottom: 20,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            _crownCarouselController.nextPage(
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.7),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             // Dots — hugging the bottom of the card
             Padding(
-              padding: const EdgeInsets.only(top: 6.0, bottom: 0),
+              padding: const EdgeInsets.only(top: 2.0, bottom: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -1190,59 +1322,64 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            // Next Up + Skip — full width row below dots
+            // Next Up + Skip — centered layout
             Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
+              padding: const EdgeInsets.only(top: 6.0, bottom: 10.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    // Left: Next Up label + hat name
-                    if (_currentCrownCarouselIndex + 1 < sortedShapes.length)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            'NEXT UP: ',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[500],
-                              letterSpacing: 1.8,
-                            ),
-                          ),
-                          Text(
-                            sortedShapes[_currentCrownCarouselIndex + 1].name,
-                            style: GoogleFonts.cormorantGaramond(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2D2926),
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      const SizedBox(),
-                    const Spacer(),
+                    // Left spacer — matches SKIP width for centering
+                    const SizedBox(width: 50),
+                    // Center: Next Up label + hat name
+                    Expanded(
+                      child: (_currentCrownCarouselIndex + 1 < sortedShapes.length)
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  'NEXT UP: ',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500],
+                                    letterSpacing: 1.8,
+                                  ),
+                                ),
+                                Text(
+                                  sortedShapes[_currentCrownCarouselIndex + 1].name,
+                                  style: GoogleFonts.cormorantGaramond(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2D2926),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const SizedBox(),
+                    ),
                     // Right: Skip
-                    GestureDetector(
-                      onTap: () {
-                        setState(() => selectedCrownShape = null);
-                        _nextPage(overrideValidation: true);
-                      },
-                      child: Text(
-                        'SKIP',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF559C99),
-                          letterSpacing: 1.8,
-                          decoration: TextDecoration.underline,
-                          decorationColor: const Color(0xFF559C99),
+                    SizedBox(
+                      width: 50,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => selectedCrownShape = null);
+                          _nextPage(overrideValidation: true);
+                        },
+                        child: Text(
+                          'SKIP',
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF559C99),
+                            letterSpacing: 1.8,
+                            decoration: TextDecoration.underline,
+                            decorationColor: const Color(0xFF559C99),
+                          ),
                         ),
                       ),
                     ),
