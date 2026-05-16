@@ -25,7 +25,6 @@ class HomeScreen extends StatelessWidget {
                       Image.asset(
                         'assets/images/logo.png',
                         height: logoHeight,
-                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 24),
                       Text(
@@ -33,6 +32,7 @@ class HomeScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: const Color(0xFFA88467), // Heritage Gold
                               fontSize: 36,
                             ),
                       ),
@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
                       const Text(
                         'Search or identify hats based on their Crown and Brim properties.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 20, color: Colors.grey),
+                        style: TextStyle(fontSize: 20, color: Color(0xFFE8D9C8)),
                       ),
                       const SizedBox(height: 48),
                       FilledButton.icon(
@@ -49,11 +49,15 @@ class HomeScreen extends StatelessWidget {
                             MaterialPageRoute(builder: (context) => const HatInputScreen()),
                           );
                         },
-                        icon: const Icon(Icons.search),
+                        icon: const Icon(Icons.search, color: Colors.white),
                         label: const Text('Start Searching'),
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          backgroundColor: const Color(0xFFA88467), // Heritage Gold
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(0), // Sharp edges
+                          ),
                         ),
                       ),
                     ],

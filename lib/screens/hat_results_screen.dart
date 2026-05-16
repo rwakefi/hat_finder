@@ -59,17 +59,20 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/logo.png',
-          height: 55.2, // Increased by 15% from 48
-          color: const Color(0xFFC7B08B),
+        title: Text(
+          'MOON RIDGE',
+          style: GoogleFonts.tenorSans(
+            letterSpacing: 6.0,
+            fontSize: 20,
+            color: const Color(0xFFA88467),
+          ),
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
           _buildSearchSummary(),
-          const Divider(height: 1),
+          const Divider(height: 1, color: Color(0xFFA88467)),
           Expanded(
             child: FutureBuilder<List<dynamic>>(
               future: _hatsFuture,
@@ -79,9 +82,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Checking Shopify Inventory...'),
+                        CircularProgressIndicator(color: Color(0xFFA88467)),
+                        SizedBox(height: 24),
+                        Text(
+                          'Consulting Master Inventory...',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -94,7 +103,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
                       child: Text(
-                        'No matches found for any of these dimensions in your store right now.\n\n(Try adjusting the shapes or sizes)',
+                        'No matches found for any of these dimensions in our collection right now.\n\n(Try adjusting the shapes or sizes)',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
@@ -107,9 +116,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : (MediaQuery.of(context).size.width > 550 ? 2 : 1),
-                    crossAxisSpacing: 18, // Increased spacing
-                    mainAxisSpacing: 18,
-                    mainAxisExtent: MediaQuery.of(context).size.width > 550 ? (widget.hatType == 'Ballcap' ? 560 : 600) : 520, // Reduced height on single column
+                    crossAxisSpacing: 24, 
+                    mainAxisSpacing: 24,
+                    mainAxisExtent: MediaQuery.of(context).size.width > 550 ? (widget.hatType == 'Ballcap' ? 660 : 700) : 620, 
                   ),
                   itemCount: hats.length,
                   itemBuilder: (context, index) {
@@ -158,80 +167,49 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
                     return Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFFFCF9F5), Color(0xFFF5F0E8)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                        color: const Color(0xFF312110),
+                        borderRadius: BorderRadius.circular(0), // Sharp edges for premium feel
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.5),
-                          width: 1.5,
+                          color: const Color(0xFFA88467).withOpacity(0.3),
+                          width: 1.0,
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: openProduct,
-                        borderRadius: BorderRadius.circular(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             // Title at the very top
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+                              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                               child: Text(
-                                title,
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 22, // Increased from 18
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF2B1D14), // Darker for better contrast
-                                  height: 1.2, // Improved line spacing
-                                  letterSpacing: 0.5,
+                                title.toUpperCase(),
+                                style: GoogleFonts.tenorSans(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFFA88467),
+                                  height: 1.2,
+                                  letterSpacing: 2.0,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             // Hero image section
-                            SizedBox(
-                              height: 220, // Reduced from 260
+                            Expanded(
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  // Soft shadow under image
-                                  if (imageUrl != null)
-                                    Positioned.fill(
-                                      top: 40,
-                                      bottom: 20,
-                                      child: Center(
-                                        child: Container(
-                                          width: 220,
-                                          height: 180,
-                                          decoration: BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.05),
-                                                blurRadius: 40,
-                                                spreadRadius: 5,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   imageUrl != null
                                       ? Center(
-                                          child: Image.network(
-                                            imageUrl,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey, size: 48),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(24.0),
+                                            child: Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey, size: 48),
+                                            ),
                                           ),
                                         )
                                       : const Icon(Icons.image, color: Colors.grey, size: 48),
@@ -239,8 +217,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               ),
                             ),
                             // Attributes Section
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            Container(
+                              color: const Color(0xFFE8D9C8).withOpacity(0.05),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 children: isBallcap
                                     ? [
@@ -257,29 +236,26 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                       ],
                               ),
                             ),
-                            const Spacer(),
                             // Price + CTA row
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   if (priceStr.isNotEmpty)
-                                    Expanded(
-                                      child: Text(
-                                        priceStr,
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF2B1D14), // High contrast
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                    Text(
+                                      priceStr,
+                                      style: GoogleFonts.lora(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFFE8D9C8),
                                       ),
                                     )
                                   else
                                     const SizedBox(),
+                                  const Spacer(),
                                   IconButton(
-                                    icon: const Icon(Icons.bookmark_border, color: Color(0xFFC7B08B)),
+                                    icon: const Icon(Icons.bookmark_border, color: Color(0xFFA88467)),
                                     onPressed: () async {
                                       final success = await DatabaseService.saveHat(
                                         name: title,
@@ -290,24 +266,21 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text(success ? 'Saved to Favorites!' : 'Failed to save.'),
-                                            backgroundColor: success ? Colors.green : Colors.red,
+                                            content: Text(success ? 'Added to Registry' : 'Failed to save.'),
+                                            backgroundColor: success ? const Color(0xFFA88467) : Colors.red,
                                           ),
                                         );
                                       }
                                     },
                                   ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton(
+                                  const SizedBox(width: 12),
+                                  TextButton(
                                     onPressed: openProduct,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFC7B08B),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                                      elevation: 3,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFFA88467),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
                                     ),
-                                    child: const Text('Shop Now →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), // Refined text
+                                    child: const Text('VIEW DETAILS →', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                                   ),
                                 ],
                               ),

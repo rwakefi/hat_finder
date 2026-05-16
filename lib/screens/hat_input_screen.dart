@@ -54,56 +54,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   void initState() {
     super.initState();
     _allProductsFuture = ShopifyService.searchHats();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showInstructionsDialog();
-    });
   }
 
-  void _showInstructionsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          title: Text(
-            'How to Find Your Hat',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: const SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('1. First, select the type of hat you are looking for (Felt, Straw, Ballcap).'),
-                SizedBox(height: 8),
-                Text('2. Next, select the Crown Shape you want from the visual grid.'),
-                SizedBox(height: 8),
-                Text('3. Tap "Next: Details" to proceed.'),
-                SizedBox(height: 8),
-                Text('4. Optionally, select a Crown Height, Brim Shape, or Brim Width.'),
-                SizedBox(height: 8),
-                Text('5. Tap "Find Hats" to search our inventory for matches!'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Close',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   void dispose() {
@@ -201,8 +153,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ? IconButton(
                 icon: const Icon(
                   Icons.arrow_back, 
-                  color: Color(0xFFC7B08B),
-                  size: 28.8, // 24 * 1.2 = 28.8
+                  color: Color(0xFFA88467),
+                  size: 28.8,
                 ),
                 onPressed: _previousPage,
               )
@@ -233,7 +185,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return LinearProgressIndicator(
       value: (_currentPageIndex + 1) / _pages.length.toDouble(),
       backgroundColor: Colors.grey[200],
-      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFA88467)),
     );
   }
 
@@ -250,16 +202,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: const Color(0xFF312110),
+        border: Border(
+          top: BorderSide(color: const Color(0xFFA88467).withOpacity(0.2)),
+        ),
       ),
       child: SafeArea(
         child: Row(
@@ -268,11 +216,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
             FilledButton(
                onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
                style: FilledButton.styleFrom(
-                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                 backgroundColor: const Color(0xFFA88467),
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 60),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
               ),
               child: Text(
-                _navButtonText,
-                style: const TextStyle(fontSize: 18),
+                _navButtonText.toUpperCase(),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2.0),
               ),
             ),
           ],
@@ -294,21 +245,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Select Hat Type',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                  'SELECT MATERIAL',
+                  style: GoogleFonts.tenorSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 2.5,
+                    color: const Color(0xFFA88467),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton.tonal(
+              TextButton(
                 onPressed: () {
                   setState(() => selectedHatType = null);
                   _nextPage(overrideValidation: true);
                 },
-                child: const Text('Any Material Type'),
+                child: const Text('SKIPS TO ALL →', style: TextStyle(color: Color(0xFFA88467), letterSpacing: 1.5)),
               ),
             ],
           ),
@@ -337,23 +289,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
               final isSelected = selectedHatType == typeInfo;
 
               return Card(
-                elevation: isSelected ? 8 : 2,
+                elevation: 0,
+                color: const Color(0xFF312110),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(0),
                   side: BorderSide(
-                    color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                    width: isSelected ? 3 : 1,
+                    color: isSelected ? const Color(0xFFA88467) : const Color(0xFFA88467).withOpacity(0.1),
+                    width: isSelected ? 2 : 1,
                   ),
                 ),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
                   onTap: () {
                     setState(() {
                       selectedHatType = typeInfo;
-                      // Reset crown selection so stale shape from a different type is cleared
                       selectedCrownShape = null;
                     });
-                    // Ballcap doesn't use crown/brim — go straight to results
                     if (typeInfo.name == 'Ballcap') {
                       _submitSearch();
                     } else {
@@ -363,69 +313,48 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Image at the top
                       Expanded(
-                        flex: 8, // Increased from 7
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                          child: Container(
-                            color: Colors.white, // Match hat image background
-                            padding: const EdgeInsets.all(0.0), // Removed padding entirely for max size
-                            child: typeInfo.imagePath != 'assets/images/placeholder.png'
-                              ? Image.asset(
-                                  typeInfo.imagePath,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.category,
-                                    size: 48,
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                                  ),
-                                )
-                              : Icon(
-                                 Icons.search,
-                                 size: 48,
-                                 color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                              ),
-                          ),
+                        flex: 8,
+                        child: Container(
+                          color: Colors.white.withOpacity(0.05),
+                          child: typeInfo.imagePath != 'assets/images/placeholder.png'
+                            ? Image.asset(
+                                typeInfo.imagePath,
+                                fit: BoxFit.contain,
+                              )
+                            : const Icon(Icons.search, size: 48, color: Color(0xFFA88467)),
                         ),
                       ),
-                      // Text underneath
                       Expanded(
-                        flex: 2, // Reduced from 3
+                        flex: 3,
                         child: Container(
-                          padding: const EdgeInsets.all(8.0),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  typeInfo.name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                    color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
-                                    fontSize: 16,
-                                  ),
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                typeInfo.name.toUpperCase(),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.tenorSans(
+                                  fontWeight: FontWeight.w400,
+                                  color: isSelected ? const Color(0xFFA88467) : const Color(0xFFE8D9C8),
+                                  fontSize: 16,
+                                  letterSpacing: 1.5,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  typeInfo.description,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    height: 1.1,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                typeInfo.description,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.lora(
+                                  fontSize: 11,
+                                  color: const Color(0xFFE8D9C8).withOpacity(0.6),
+                                  height: 1.1,
                                 ),
-                              ],
-                            ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -449,11 +378,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Select Style',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                  'SELECT HERITAGE',
+                  style: GoogleFonts.tenorSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 2.5,
+                    color: const Color(0xFFA88467),
                   ),
                 ),
               ),
@@ -489,16 +419,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildStyleCard(String name, String description, {String? imagePath, IconData? icon}) {
     final isSelected = selectedWesternStyle == name;
     return Card(
-      elevation: isSelected ? 8 : 2,
+      elevation: 0,
+      color: const Color(0xFF312110),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(0),
         side: BorderSide(
-          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-          width: isSelected ? 3 : 1,
+          color: isSelected ? const Color(0xFFA88467) : const Color(0xFFA88467).withOpacity(0.1),
+          width: isSelected ? 2 : 1,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: () {
           setState(() {
             selectedWesternStyle = name;
@@ -511,48 +441,43 @@ class _HatInputScreenState extends State<HatInputScreen> {
           children: [
             Expanded(
               flex: 8,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Container(
-                  color: Colors.white,
-                  child: imagePath != null
-                      ? Image.asset(imagePath, fit: BoxFit.contain)
-                      : Icon(
-                          icon ?? Icons.style,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                        ),
-                ),
+              child: Container(
+                color: Colors.white.withOpacity(0.05),
+                child: imagePath != null
+                    ? Image.asset(imagePath, fit: BoxFit.cover)
+                    : Icon(
+                        icon ?? Icons.style,
+                        size: 48,
+                        color: const Color(0xFFA88467),
+                      ),
               ),
             ),
             Expanded(
               flex: 4,
               child: Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
-                          fontSize: 16,
-                        ),
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      name.toUpperCase(),
+                      style: GoogleFonts.tenorSans(
+                        fontWeight: FontWeight.w400,
+                        color: isSelected ? const Color(0xFFA88467) : const Color(0xFFE8D9C8),
+                        fontSize: 16,
+                        letterSpacing: 1.5,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lora(
+                        fontSize: 11,
+                        color: const Color(0xFFE8D9C8).withOpacity(0.6),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -573,19 +498,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Select your desired Crown Shape below to get started.',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  'SELECT CROWN',
+                  style: GoogleFonts.tenorSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 2.5,
+                    color: const Color(0xFFA88467),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton.tonal(
+              TextButton(
                 onPressed: () {
                   setState(() => selectedCrownShape = null);
                   _nextPage(overrideValidation: true);
                 },
-                child: const Text('Any Crown'),
+                child: const Text('ANY SHAPE →', style: TextStyle(color: Color(0xFFA88467), letterSpacing: 1.5)),
               ),
             ],
           ),
@@ -623,13 +553,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                   return Card(
                     clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    elevation: isSelected ? 8 : 2,
+                    color: const Color(0xFF312110),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(0),
                       side: BorderSide(
-                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                        width: 3,
+                        color: isSelected ? const Color(0xFFA88467) : const Color(0xFFA88467).withOpacity(0.1),
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: InkWell(
@@ -641,15 +571,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                             child: Text(
-                              shape.name,
+                              shape.name.toUpperCase(),
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.cinzel(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                              style: GoogleFonts.tenorSans(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 18,
+                                letterSpacing: 1.5,
+                                color: isSelected ? const Color(0xFFA88467) : const Color(0xFFE8D9C8),
                               ),
                             ),
                           ),
@@ -984,13 +914,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Row(
         children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          Icon(icon, color: const Color(0xFFA88467)),
           const SizedBox(width: 12),
           Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+            title.toUpperCase(),
+            style: GoogleFonts.tenorSans(
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFFA88467),
+                  letterSpacing: 2.0,
+                  fontSize: 20,
                 ),
           ),
         ],
@@ -1026,7 +958,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       onChanged([]);
                     }
                   },
-                  activeColor: Theme.of(context).colorScheme.primary,
+                  activeColor: const Color(0xFFA88467),
                 ),
                 GestureDetector(
                   onTap: () => onChanged([]),
@@ -1050,7 +982,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       }
                       onChanged(newItems);
                     },
-                    activeColor: Theme.of(context).colorScheme.primary,
+                    activeColor: const Color(0xFFA88467),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -1107,7 +1039,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       onChanged([]);
                     }
                   },
-                  activeColor: Theme.of(context).colorScheme.primary,
+                  activeColor: const Color(0xFFA88467),
                 ),
                 GestureDetector(
                   onTap: () => onChanged([]),
@@ -1164,19 +1096,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Now, select your preferred Brim Shape.',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  'SELECT BRIM',
+                  style: GoogleFonts.tenorSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 2.5,
+                    color: const Color(0xFFA88467),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton.tonal(
+              TextButton(
                 onPressed: () {
                   setState(() => selectedBrimShape = null);
                   _nextPage(overrideValidation: true);
                 },
-                child: const Text('Any Brim'),
+                child: const Text('ANY SHAPE →', style: TextStyle(color: Color(0xFFA88467), letterSpacing: 1.5)),
               ),
             ],
           ),
@@ -1214,13 +1151,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                   return Card(
                     clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    elevation: isSelected ? 8 : 2,
+                    color: const Color(0xFF312110),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(0),
                       side: BorderSide(
-                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                        width: 3,
+                        color: isSelected ? const Color(0xFFA88467) : const Color(0xFFA88467).withOpacity(0.1),
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: InkWell(
@@ -1232,21 +1169,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                             child: Text(
-                              shape.name,
+                              shape.name.toUpperCase(),
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.cinzel(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                              style: GoogleFonts.tenorSans(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 18,
+                                letterSpacing: 1.5,
+                                color: isSelected ? const Color(0xFFA88467) : const Color(0xFFE8D9C8),
                               ),
                             ),
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0),
                               child: imageUrl != null
                                 ? Image.network(
                                     imageUrl,
@@ -1262,28 +1199,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     shape.imagePath,
                                     fit: BoxFit.contain,
                                     alignment: Alignment.topCenter,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                    ),
                                   ),
                             ),
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
+                            padding: const EdgeInsets.only(bottom: 16, left: 12, right: 12),
                             child: Text(
                               shape.description,
                               textAlign: TextAlign.center,
+                              style: GoogleFonts.lora(
+                                fontSize: 12,
+                                color: const Color(0xFFE8D9C8).withOpacity(0.6),
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isSelected 
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
-                                    : Colors.black54,
-                              ),
                             ),
                           ),
                         ],

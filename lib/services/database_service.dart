@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DatabaseService {
-  // TODO: Replace with your actual Railway URL after deployment
-  static const String baseUrl = 'https://hatfinder-production.up.railway.app';
+  // Local development URL (port 8081 as configured in backend/main.py)
+  static const String baseUrl = 'http://localhost:8081';
+  
+  // Production URL: https://hatfinder-production.up.railway.app
 
   static Future<bool> saveHat({
     required String name,
