@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class DatabaseService {
   // Local development URL (port 8081 as configured in backend/main.py)
-  static const String baseUrl = 'http://localhost:8081';
+  static const String baseUrl = 'http://127.0.0.1:8081';
   
   // Production URL: https://hatfinder-production.up.railway.app
 

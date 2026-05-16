@@ -41,6 +41,7 @@ dependencies:
   app_tracking_transparency: ^2.0.6+1
   shared_preferences: ^2.5.5
   geolocator: ^14.0.2
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:

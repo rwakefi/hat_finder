@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/home_screen.dart';
-import 'screens/permissions_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  final hasSeenPermissions = prefs.getBool('has_seen_permissions') ?? false;
-  runApp(HatFinderApp(hasSeenPermissions: hasSeenPermissions));
+  runApp(const HatFinderApp());
 }
 
 class HatFinderApp extends StatelessWidget {
-  final bool hasSeenPermissions;
-  const HatFinderApp({super.key, required this.hasSeenPermissions});
+  const HatFinderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,32 +18,27 @@ class HatFinderApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFF312110), // Deep Artisan Brown
-          secondary: const Color(0xFFA88467), // Heritage Gold
-          surface: const Color(0xFF312110),
+        brightness: Brightness.light, // Shift to Premium Light Mode
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF559C99), // Turquoise Accent
+          primary: const Color(0xFF2D2926),    // Dark Espresso
+          secondary: const Color(0xFF559C99),  // Turquoise
+          surface: Colors.white,
           onPrimary: Colors.white,
           onSecondary: Colors.white,
-          onSurface: const Color(0xFFE8D9C8), // Cream
         ),
-        scaffoldBackgroundColor: const Color(0xFF2B1D14),
-        textTheme: GoogleFonts.tenorSansTextTheme(Theme.of(context).textTheme).apply(
-          bodyColor: const Color(0xFFF5F0E8),
-          displayColor: const Color(0xFFF5F0E8),
-        ).copyWith(
-          displayLarge: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.displayLarge?.copyWith(color: const Color(0xFFF5F0E8))),
-          displayMedium: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.displayMedium?.copyWith(color: const Color(0xFFF5F0E8))),
-          displaySmall: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.displaySmall?.copyWith(color: const Color(0xFFF5F0E8))),
-          headlineLarge: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.headlineLarge?.copyWith(color: const Color(0xFFF5F0E8))),
-          headlineMedium: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.headlineMedium?.copyWith(color: const Color(0xFFF5F0E8))),
-          headlineSmall: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(color: const Color(0xFFF5F0E8))),
-          titleLarge: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(color: const Color(0xFFF5F0E8))),
-          titleMedium: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: const Color(0xFFF5F0E8))),
-          titleSmall: GoogleFonts.playfairDisplaySc(textStyle: Theme.of(context).textTheme.titleSmall?.copyWith(color: const Color(0xFFF5F0E8))),
+        scaffoldBackgroundColor: Colors.white,
+        textTheme: GoogleFonts.montserratTextTheme(Theme.of(context).textTheme).apply(
+          bodyColor: const Color(0xFF2D2926),
+          displayColor: const Color(0xFF2D2926),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF2D2926),
+          elevation: 0,
         ),
       ),
-      home: hasSeenPermissions ? const HomeScreen() : const PermissionsScreen(),
+      home: const SplashScreen(),
     );
   }
 }

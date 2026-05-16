@@ -14,7 +14,9 @@ class HatInputScreen extends StatefulWidget {
 
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
+  final PageController _crownCarouselController = PageController(viewportFraction: 0.78);
   int _currentPageIndex = 0;
+  int _currentCrownCarouselIndex = 0;
 
   HatShapeInfo? selectedHatType;
   String? selectedWesternStyle;
@@ -61,6 +63,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _crownCarouselController.dispose();
     super.dispose();
   }
 
@@ -147,44 +150,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/images/logo.png', 
-              height: 55.0, // Made bigger
-              color: const Color(0xFFCBB593), // Color from the front page (Home Screen)
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'HAT FINDER',
-              style: GoogleFonts.playfairDisplaySc(
-                fontSize: 16, // Made bigger
-                color: const Color(0xFFCBB593),
-                letterSpacing: 1.5,
+              Image.asset(
+                'assets/images/Moon Ridge Header Logo.png', 
+                height: 55.0, 
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                'HAT FINDER',
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFF2D2926),
+                  letterSpacing: 2.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
           ],
         ),
         centerTitle: true,
-        leading: _currentPageIndex > 0
-            ? IconButton(
-                icon: const Icon(
-                  Icons.arrow_back, 
-                  color: Color(0xFFC7B08B),
-                  size: 28.8, // 24 * 1.2 = 28.8
-                ),
-                onPressed: _previousPage,
-              )
-            : null,
+        leading: null,
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A3525), // Softer, warmer brown
-              Color(0xFF1E140E), // Deeper brown
-            ],
-          ),
+          color: Colors.white, // Clean, airy background
         ),
         child: SafeArea(
           child: Column(
@@ -212,7 +199,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return LinearProgressIndicator(
       value: (_currentPageIndex + 1) / _pages.length.toDouble(),
       backgroundColor: Colors.grey[200],
-      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)), // Turquoise accent
     );
   }
 
@@ -241,60 +228,93 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-               onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
-               style: TextButton.styleFrom(
-                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                 foregroundColor: Colors.white, // White text and icon
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _navButtonText.toUpperCase(),
-                    style: GoogleFonts.playfairDisplaySc(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_currentPageIndex > 0) ...[
+                OutlinedButton(
+                  onPressed: _previousPage,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2D2926),
+                    side: const BorderSide(color: Color(0xFF2D2926), width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward,
-                    size: 24,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.arrow_back, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'BACK',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+                const SizedBox(width: 12),
+              ],
+              ElevatedButton(
+                 onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
+                 style: ElevatedButton.styleFrom(
+                   backgroundColor: const Color(0xFF2D2926),
+                   foregroundColor: Colors.white,
+                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                   shape: RoundedRectangleBorder(
+                     borderRadius: BorderRadius.circular(30),
+                   ),
+                   elevation: 0,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _navButtonText.toUpperCase(),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      _currentPageIndex < _pages.length - 1 
+                          ? Icons.arrow_forward 
+                          : Icons.check,
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildVisualHatTypeSelection() {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = screenWidth > 700 ? 4 : (screenWidth < 400 ? 1 : 2);
-    final double aspect = screenWidth > 700 ? 1.1 : (screenWidth < 400 ? 1.4 : 0.75);
-
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Select a Material:',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplaySc(
+                style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFF5F0E8),
-                  letterSpacing: 1.0,
+                  color: const Color(0xFF2D2926),
                 ),
               ),
               const SizedBox(height: 8),
@@ -304,158 +324,108 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   _nextPage(overrideValidation: true);
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFCBB593),
-                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(2), // Sharp corners
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  foregroundColor: const Color(0xFF2D2926),
+                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 ),
                 child: Text(
-                  'ANY MATERIAL TYPE',
-                  style: GoogleFonts.playfairDisplaySc(
-                    fontSize: 14,
+                  'ANY MATERIAL',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Row(
+          child: GridView.count(
+            crossAxisCount: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.72, // Tall and elegant
+            children: hatTypes.map((typeInfo) {
+              final isSelected = selectedHatType == typeInfo;
+              return Card(
+                elevation: 0,
+                clipBehavior: Clip.antiAlias,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                    width: isSelected ? 3 : 1,
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      selectedHatType = typeInfo;
+                      selectedCrownShape = null;
+                    });
+                    if (typeInfo.name == 'Ballcap') {
+                      _submitSearch();
+                    } else {
+                      _nextPage();
+                    }
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: AspectRatio(
-                          aspectRatio: aspect,
-                          child: _buildHatTypeCard(hatTypes[0]),
-                        ),
+                        child: typeInfo.imagePath != 'assets/images/placeholder.png'
+                            ? Image.asset(
+                                typeInfo.imagePath,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                color: Colors.grey[50],
+                                child: const Icon(Icons.category, size: 48, color: Colors.grey),
+                              ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: AspectRatio(
-                          aspectRatio: aspect,
-                          child: _buildHatTypeCard(hatTypes[1]),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        color: Colors.white,
+                        child: Text(
+                          typeInfo.name.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2D2926),
+                            letterSpacing: 2.0,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: (screenWidth - 48) / 2,
-                        child: AspectRatio(
-                          aspectRatio: aspect,
-                          child: _buildHatTypeCard(hatTypes[2]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHatTypeCard(HatShapeInfo typeInfo) {
-    final isSelected = selectedHatType == typeInfo;
-    return Card(
-      elevation: isSelected ? 4 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(2), // Sharp corners
-        side: BorderSide(
-          color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(2),
-        onTap: () {
-          setState(() {
-            selectedHatType = typeInfo;
-            selectedCrownShape = null;
-          });
-          if (typeInfo.name == 'Ballcap') {
-            _submitSearch();
-          } else {
-            _nextPage();
-          }
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Full-bleed Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2)),
-                child: typeInfo.imagePath != 'assets/images/placeholder.png'
-                    ? Image.asset(
-                        typeInfo.imagePath,
-                        fit: BoxFit.cover, // Fill the card
-                        errorBuilder: (_, __, ___) => Container(
-                          color: Colors.white,
-                          child: const Icon(Icons.category, size: 48, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.white,
-                        child: const Icon(Icons.search, size: 48, color: Colors.grey),
-                      ),
-              ),
-            ),
-            // Text at the bottom
-            Container(
-              color: const Color(0xFF2B1D14),
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Text(
-                typeInfo.name.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.tenorSans(
-                  fontSize: 16,
-                  color: const Color(0xFFCBB593),
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildVisualWesternSelection() {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = screenWidth > 700 ? 4 : (screenWidth < 400 ? 1 : 2);
-    final double aspect = screenWidth > 700 ? 1.1 : (screenWidth < 400 ? 1.4 : 0.75);
-
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Select Style:',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplaySc(
+                style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFF5F0E8),
-                  letterSpacing: 1.0,
+                  color: const Color(0xFF2D2926),
                 ),
               ),
               const SizedBox(height: 8),
@@ -465,80 +435,119 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   _nextPage(overrideValidation: true);
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFCBB593),
-                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(2), // Sharp corners
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  foregroundColor: const Color(0xFF2D2926),
+                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 ),
                 child: Text(
                   'ANY STYLE',
-                  style: GoogleFonts.playfairDisplaySc(
-                    fontSize: 14,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
         Expanded(
           child: FutureBuilder<List<dynamic>>(
             future: _allProductsFuture,
             builder: (context, snapshot) {
-              String? westernImageUrl;
-              String? cityImageUrl;
-              String? outdoorImageUrl;
+              final styles = [
+                {'name': 'Western', 'desc': 'Classic cowboy styles.', 'fallback': 'assets/images/western.jpg'},
+                {'name': 'City', 'desc': 'Fedoras and dress hats.', 'fallback': null},
+                {'name': 'Outdoor', 'desc': 'Sun and adventure hats.', 'fallback': null},
+              ];
 
-              if (snapshot.hasData) {
-                final Set<String> usedUrls = {};
-                final List<String> westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
-                
-                try {
-                  westernImageUrl = snapshot.data!.firstWhere((p) {
-                    final profile = _metaValue(p['stetsonProfile']);
-                    final url = p['featuredImage']?['url'];
-                    final title = (p['title'] ?? '').toString().toLowerCase();
-                    return westernProfiles.contains(profile) && 
-                           url != null && 
-                           !usedUrls.contains(url) &&
-                           !title.contains('open road');
-                  }, orElse: () => null)?['featuredImage']?['url'];
-                  if (westernImageUrl != null) usedUrls.add(westernImageUrl!);
-                } catch (_) {}
+              return GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.72,
+                ),
+                itemCount: styles.length,
+                itemBuilder: (context, index) {
+                  final style = styles[index];
+                  final name = style['name'] as String;
+                  final isSelected = selectedWesternStyle == name;
+                  
+                  String? imageUrl;
+                  if (snapshot.hasData) {
+                    try {
+                      if (name == 'Western') {
+                        final westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
+                        imageUrl = snapshot.data!.firstWhere((p) {
+                          final profile = _metaValue(p['stetsonProfile']);
+                          return westernProfiles.contains(profile) && p['featuredImage']?['url'] != null;
+                        }, orElse: () => null)?['featuredImage']?['url'];
+                      } else if (name == 'City') {
+                        imageUrl = snapshot.data!.firstWhere((p) {
+                          return _metaValue(p['city']).toLowerCase() == 'true' && p['featuredImage']?['url'] != null;
+                        }, orElse: () => null)?['featuredImage']?['url'];
+                      } else if (name == 'Outdoor') {
+                        imageUrl = snapshot.data!.firstWhere((p) {
+                          return _metaValue(p['outdoors']).toLowerCase() == 'true' && p['featuredImage']?['url'] != null;
+                        }, orElse: () => null)?['featuredImage']?['url'];
+                      }
+                    } catch (_) {}
+                  }
 
-                try {
-                  cityImageUrl = snapshot.data!.firstWhere((p) {
-                    final isCity = _metaValue(p['city']).toLowerCase();
-                    final url = p['featuredImage']?['url'];
-                    return isCity == 'true' && url != null && !usedUrls.contains(url);
-                  }, orElse: () => null)?['featuredImage']?['url'];
-                  if (cityImageUrl != null) usedUrls.add(cityImageUrl!);
-                } catch (_) {}
-
-                try {
-                  outdoorImageUrl = snapshot.data!.firstWhere((p) {
-                    final isOutdoor = _metaValue(p['outdoors']).toLowerCase();
-                    final url = p['featuredImage']?['url'];
-                    return isOutdoor == 'true' && url != null && !usedUrls.contains(url);
-                  }, orElse: () => null)?['featuredImage']?['url'];
-                  if (outdoorImageUrl != null) usedUrls.add(outdoorImageUrl!);
-                } catch (_) {}
-              }
-
-              return GridView.count(
-                crossAxisCount: columns,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildStyleCard('Western', 'Classic cowboy and western styles.', fallbackImagePath: 'assets/images/western.jpg', imageUrl: westernImageUrl),
-                  _buildStyleCard('City', 'Fedoras, trilbys, and other dress hats.', fallbackImagePath: 'assets/images/city.png', imageUrl: cityImageUrl),
-                  _buildStyleCard('Outdoor', 'Sun hats, safari hats, and adventure gear.', fallbackImagePath: 'assets/images/outdoor.png', imageUrl: outdoorImageUrl),
-                ],
+                  return Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                        width: isSelected ? 3 : 1,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          selectedWesternStyle = name;
+                          selectedCrownShape = null;
+                        });
+                        _nextPage();
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: imageUrl != null
+                                ? Image.network(imageUrl, fit: BoxFit.cover)
+                                : (style['fallback'] != null
+                                    ? Image.asset(style['fallback'] as String, fit: BoxFit.cover)
+                                    : Container(
+                                        color: Colors.grey[50],
+                                        child: const Icon(Icons.style, size: 48, color: Colors.grey),
+                                      )),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            color: Colors.white,
+                            child: Text(
+                              name.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF2D2926),
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -550,11 +559,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildStyleCard(String name, String description, {String? fallbackImagePath, String? imageUrl, IconData? icon}) {
     final isSelected = selectedWesternStyle == name;
     return Card(
-      elevation: isSelected ? 4 : 1,
+      elevation: isSelected ? 0 : 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(2), // Sharp corners
+        borderRadius: BorderRadius.circular(8), // Soft rounded
         side: BorderSide(
-          color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
+          color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade300, // Turquoise selection
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -586,16 +596,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Text at the bottom
             Container(
-              color: const Color(0xFF2B1D14),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Text(
                 name.toUpperCase(),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.tenorSans(
-                  fontSize: 16,
-                  color: const Color(0xFFCBB593),
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  color: const Color(0xFF2D2926),
                   letterSpacing: 2.0,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -623,290 +636,195 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildVisualCrownSelection() {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = screenWidth > 900 ? 4 : (screenWidth > 600 ? 3 : 2);
-    final double aspect = screenWidth > 900 ? 0.8 : (screenWidth > 600 ? 0.75 : 0.55);
+    return FutureBuilder<List<dynamic>>(
+      future: _allProductsFuture,
+      builder: (context, snapshot) {
+        List<HatShapeInfo> sortedShapes = List.from(_currentCrownShapes);
+        Map<String, List<String>> shopifyImagesMap = {};
+        
+        if (snapshot.hasData) {
+          try {
+            for (var shape in sortedShapes) {
+              final shopifyImages = snapshot.data!
+                  .where((p) {
+                    final crown = _metaValue(p['crownShape']).toLowerCase();
+                    final name = shape.name.toLowerCase();
+                    return crown.contains(name.replaceAll("'s", "").trim()) || 
+                           name.contains(crown.trim());
+                  })
+                  .map((p) => p['featuredImage']?['url'] as String?)
+                  .whereType<String>()
+                  .toList();
+              shopifyImagesMap[shape.name] = shopifyImages;
+            }
+            
+            sortedShapes.sort((a, b) {
+              final aHasShopify = (shopifyImagesMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
+              final bHasShopify = (shopifyImagesMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
+              return bHasShopify.compareTo(aHasShopify);
+            });
+          } catch (e) {}
+        }
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Select Crown Shape:',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.playfairDisplaySc(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFF5F0E8),
-                    letterSpacing: 1.0,
+        return Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                children: [
+                  Text(
+                    'Select Crown Shape:',
+                    style: GoogleFonts.playfairDisplay(fontSize: 26, color: const Color(0xFF2D2926)),
                   ),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() => selectedCrownShape = null);
-                    _nextPage(overrideValidation: true);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFCBB593),
-                    side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2), // Sharp corners
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () {
+                      setState(() => selectedCrownShape = null);
+                      _nextPage(overrideValidation: true);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2D2926),
+                      side: const BorderSide(color: Color(0xFF2D2926)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    child: Text('ANY CROWN SHAPE', style: GoogleFonts.montserrat(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   ),
-                  child: Text(
-                    'ANY CROWN SHAPE',
-                    style: GoogleFonts.playfairDisplaySc(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          FutureBuilder<List<dynamic>>(
-            future: _allProductsFuture,
-            builder: (context, snapshot) {
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: aspect,
-                ),
-                itemCount: _currentCrownShapes.length,
+            // Carousel — viewportFraction < 1 so the next card peeks in
+            Expanded(
+              child: PageView.builder(
+                controller: _crownCarouselController,
+                onPageChanged: (index) => setState(() => _currentCrownCarouselIndex = index),
+                itemCount: sortedShapes.length,
                 itemBuilder: (context, index) {
-                  final shape = _currentCrownShapes[index];
+                  final shape = sortedShapes[index];
                   final isSelected = selectedCrownShape?.name == shape.name;
+                  final shopifyImages = shopifyImagesMap[shape.name] ?? [];
+                  final String? imageUrl = shopifyImages.isNotEmpty ? shopifyImages.first : null;
 
-                  // Find matching product image
-                  String? imageUrl;
-                  if (snapshot.hasData) {
-                    try {
-                      final matchingProduct = snapshot.data!.firstWhere(
-                        (p) => _metaValue(p['crownShape']).toLowerCase().contains(shape.name.toLowerCase()),
-                        orElse: () => null,
-                      );
-                      imageUrl = matchingProduct?['featuredImage']?['url'];
-                    } catch (e) {
-                      print('Error finding matching image: \$e');
-                    }
-                  }
-
-                  return Card(
-                    clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    elevation: isSelected ? 4 : 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2), // Sharp corners for luxury feel
-                      side: BorderSide(
-                        color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
-                        width: 2,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 10.0),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      elevation: 0,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(
+                          color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                          width: isSelected ? 3 : 1,
+                        ),
                       ),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() => selectedCrownShape = shape);
-                        _nextPage();
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Full-bleed Image
-                                imageUrl != null
-                                  ? Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.cover, // Fill the card
-                                      alignment: Alignment.center,
-                                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                                        shape.imagePath,
-                                        fit: BoxFit.cover,
-                                        alignment: Alignment.center,
-                                      ),
-                                    )
-                                  : Image.asset(
-                                      shape.imagePath,
-                                      fit: BoxFit.cover,
-                                      alignment: Alignment.center,
-                                      errorBuilder: (context, error, stackTrace) => Container(
-                                        color: Colors.grey[200],
-                                        child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                      ),
-                                    ),
-                                // Dark Overlay for readability
-                                Container(
-                                  color: Colors.black.withOpacity(0.3), // Soft dark overlay
+                      child: InkWell(
+                        onTap: () {
+                          setState(() => selectedCrownShape = shape);
+                          _nextPage();
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Image takes ~70% of the card
+                            Expanded(
+                              flex: 5,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: imageUrl != null
+                                      ? Image.network(imageUrl, fit: BoxFit.cover)
+                                      : Image.asset(shape.imagePath, fit: BoxFit.cover),
                                 ),
-                                // Text on top
-                                Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      shape.name.toUpperCase(),
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.tenorSans(
-                                        fontSize: 22,
-                                        color: Colors.white,
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (shape.galleryImages.isNotEmpty)
-                            Builder(
-                              builder: (context) {
-                                final ScrollController scrollController = ScrollController();
-                                return SizedBox(
-                                  height: 70,
-                                  child: Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.chevron_left),
-                                        onPressed: () {
-                                          scrollController.animateTo(
-                                            scrollController.offset - 100,
-                                            duration: const Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                          );
-                                        },
-                                      ),
-                                      Expanded(
-                                        child: ListView.builder(
-                                          controller: scrollController,
-                                          scrollDirection: Axis.horizontal,
-                                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                                          itemCount: shape.galleryImages.length,
-                                          itemBuilder: (context, galleryIndex) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(right: 8.0),
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (BuildContext context) {
-                                                      return Dialog(
-                                                        backgroundColor: Colors.transparent,
-                                                        insetPadding: const EdgeInsets.all(16),
-                                                        child: Stack(
-                                                          alignment: Alignment.center,
-                                                          children: [
-                                                            InteractiveViewer(
-                                                              panEnabled: true,
-                                                              minScale: 0.5,
-                                                              maxScale: 4,
-                                                              child: Image.asset(
-                                                                shape.galleryImages[galleryIndex],
-                                                                fit: BoxFit.contain,
-                                                                errorBuilder: (context, error, stackTrace) => Container(
-                                                                  color: Colors.white,
-                                                                  child: const Padding(
-                                                                    padding: EdgeInsets.all(32.0),
-                                                                    child: Icon(Icons.image, size: 100, color: Colors.grey),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Positioned(
-                                                              top: 8,
-                                                              right: 8,
-                                                              child: Container(
-                                                                decoration: const BoxDecoration(
-                                                                  color: Colors.black54,
-                                                                  shape: BoxShape.circle,
-                                                                ),
-                                                                child: IconButton(
-                                                                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                                                                  onPressed: () {
-                                                                    Navigator.of(context).pop();
-                                                                  },
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    },
-                                                  );
-                                                },
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  child: Image.asset(
-                                                    shape.galleryImages[galleryIndex],
-                                                    width: 70,
-                                                    height: 70,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) => Container(
-                                                      width: 80,
-                                                      height: 80,
-                                                      color: Colors.grey[200],
-                                                      child: const Icon(Icons.image, size: 30, color: Colors.grey),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.chevron_right),
-                                        onPressed: () {
-                                          scrollController.animateTo(
-                                            scrollController.offset + 100,
-                                            duration: const Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                            child: Text(
-                              shape.description,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isSelected 
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
-                                    : Colors.black54,
                               ),
                             ),
-                          ),
-                        ],
+                            // Label + description
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    shape.name.toUpperCase(),
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2926),
+                                      letterSpacing: 2.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    shape.description,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            ),
+            // Page indicator dots
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  sortedShapes.length.clamp(0, 8), // Show max 8 dots
+                  (i) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == _currentCrownCarouselIndex ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: i == _currentCrownCarouselIndex
+                          ? const Color(0xFF2D2926)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // "Next Up" label
+            if (_currentCrownCarouselIndex + 1 < sortedShapes.length)
+              Padding(
+                padding: const EdgeInsets.only(top: 6.0, bottom: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'NEXT UP:  ',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    Text(
+                      sortedShapes[_currentCrownCarouselIndex + 1].name,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 17,
+                        color: const Color(0xFF2D2926),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -1259,11 +1177,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
               Text(
                 'Select Brim Shape:',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplaySc(
+                style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFF5F0E8),
-                  letterSpacing: 1.0,
+                  color: const Color(0xFF2D2926),
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1273,17 +1190,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   _nextPage(overrideValidation: true);
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFCBB593),
-                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
+                  foregroundColor: const Color(0xFF2D2926),
+                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(2), // Sharp corners
+                    borderRadius: BorderRadius.circular(30), // Pill
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: Text(
                   'ANY BRIM SHAPE',
-                  style: GoogleFonts.playfairDisplaySc(
-                    fontSize: 14,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
                   ),
@@ -1325,12 +1242,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                   return Card(
                     clipBehavior: Clip.antiAlias,
-                    elevation: isSelected ? 4 : 1,
+                    color: Colors.white,
+                    elevation: isSelected ? 0 : 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2), // Sharp corners
+                      borderRadius: BorderRadius.circular(8), // Soft rounded
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
-                        width: 2,
+                        color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: InkWell(
@@ -1338,46 +1256,48 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         setState(() => selectedBrimShape = shape);
                         _nextPage();
                       },
-                      child: Stack(
-                        fit: StackFit.expand,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Full-bleed Image
-                          imageUrl != null
-                            ? Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover, // Fill the card
-                                alignment: Alignment.center,
-                                errorBuilder: (context, error, stackTrace) => Image.asset(
-                                  shape.imagePath,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                ),
-                              )
-                            : Image.asset(
-                                shape.imagePath,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                ),
-                              ),
-                          // Dark Overlay for readability
-                          Container(
-                            color: Colors.black.withOpacity(0.3), // Soft dark overlay
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+                              child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover, // Fill the card
+                                    alignment: Alignment.center,
+                                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                                      shape.imagePath,
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.center,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    shape.imagePath,
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                    ),
+                                  ),
+                            ),
                           ),
-                          // Text on top
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                shape.name.toUpperCase(),
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.tenorSans(
-                                  fontSize: 22,
-                                  color: Colors.white,
-                                  letterSpacing: 1.0,
-                                ),
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              shape.name.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 14,
+                                color: const Color(0xFF2D2926),
+                                letterSpacing: 1.0,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

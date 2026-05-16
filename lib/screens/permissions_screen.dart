@@ -6,6 +6,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'home_screen.dart';
 
 class PermissionsScreen extends StatefulWidget {
@@ -68,19 +69,19 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     }
   }
 
+  Future<void> _launchShop() async {
+    final Uri url = Uri.parse('https://moonridgecompany.com');
+    if (!await launchUrl(url, mode: LaunchMode.inAppBrowserView)) {
+      print("Could not launch $url");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A3525), // Softer, warmer brown
-              Color(0xFF1E140E), // Deeper brown
-            ],
-          ),
+          color: Colors.white,
         ),
         child: SafeArea(
           child: Padding(
@@ -92,12 +93,12 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 20.0),
                   child: Image.asset(
-                    'assets/images/logo.png',
+                    'assets/images/Moon Ridge Header Logo.png',
                     height: 150,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.privacy_tip,
                       size: 80,
-                      color: Color(0xFFCBB593),
+                      color: Color(0xFF2D2926),
                     ),
                   ),
                 ),
@@ -108,22 +109,21 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     Text(
                       'WELCOME TO HAT FINDER',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.playfairDisplaySc(
-                        textStyle: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFCBB593), // Tan
-                          letterSpacing: 3,
-                        ),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2D2926),
+                        letterSpacing: 2.0,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'To give you the best experience, we need a couple of permissions.',
+                    const SizedBox(height: 24),
+                    Text(
+                      'To provide you with the best hat recommendations, '
+                      'we need access to your camera to analyze your face shape.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFFF5F0E8),
+                        fontSize: 16,
+                        color: const Color(0xFF2D2926).withOpacity(0.9),
                         height: 1.5,
                       ),
                     ),
@@ -145,26 +145,68 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 // Bottom Section: Button
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      backgroundColor: const Color(0xFFCBB593), // Tan
-                      foregroundColor: const Color(0xFF2B1D14), // Espresso
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(2), // Sharp corners
+                  child: Column(
+                    children: [
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 60),
+                          backgroundColor: const Color(0xFFCBB593),
+                          foregroundColor: const Color(0xFF2B1D14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _requestPermissions,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Color(0xFF2B1D14))
+                            : const Text(
+                                'CONTINUE',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
                       ),
-                    ),
-                    onPressed: _isLoading ? null : _requestPermissions,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Color(0xFF2B1D14))
-                        : const Text(
-                            'CONTINUE',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 40),
+                          side: BorderSide(color: const Color(0xFF2D2926).withOpacity(0.2)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: _launchShop,
+                        child: Text(
+                          "Let's Just Shop...",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            color: const Color(0xFF2D2926).withOpacity(0.6),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_outline, color: const Color(0xFF2D2926).withOpacity(0.7), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Your photos are processed securely and never stored.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: const Color(0xFF2D2926).withOpacity(0.7),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -203,9 +245,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               const SizedBox(height: 6),
               Text(
                 description,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFFF5F0E8),
+                  color: const Color(0xFF2D2926).withOpacity(0.7),
                   height: 1.4,
                 ),
               ),
