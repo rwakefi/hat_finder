@@ -69,12 +69,23 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          _buildSearchSummary(),
-          const Divider(height: 1, color: Color(0xFFA88467)),
-          Expanded(
-            child: FutureBuilder<List<dynamic>>(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4A3525), // Softer, warmer brown
+              Color(0xFF1E140E), // Deeper brown
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildSearchSummary(),
+            const Divider(height: 1, color: Color(0xFFA88467)),
+            Expanded(
+              child: FutureBuilder<List<dynamic>>(
               future: _hatsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -203,22 +214,33 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             ),
                             // Hero image section
                             Expanded(
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  imageUrl != null
-                                      ? Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(24.0),
-                                            child: Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.contain,
-                                              errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey, size: 48),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Color(0xFFF5F0E8), // Soft Off-White/Cream center
+                                      Color(0xFFCBB593), // Tan edges
+                                    ],
+                                    radius: 0.85,
+                                  ),
+                                ),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    imageUrl != null
+                                        ? Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(32.0),
+                                              child: Image.network(
+                                                imageUrl,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.grey, size: 48),
+                                              ),
                                             ),
-                                          ),
-                                        )
-                                      : const Icon(Icons.image, color: Colors.grey, size: 48),
-                                ],
+                                          )
+                                        : const Icon(Icons.image, color: Colors.grey, size: 48),
+                                  ],
+                                ),
                               ),
                             ),
                             // Attributes Section
@@ -301,7 +323,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildAttribute(String label, String value, IconData icon) {
@@ -339,7 +361,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildSearchSummary() {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+      color: const Color(0xFF2B1D14).withOpacity(0.5),
       padding: const EdgeInsets.all(16.0),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
@@ -359,9 +381,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Widget _buildSummaryChip(String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFFCBB593), fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFFF5F0E8))),
       ],
     );
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +20,18 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   Future<void> _requestPermissions() async {
     setState(() => _isLoading = true);
+
+    // Skip permissions on macOS as they are mobile-specific and can cause crashes if not configured.
+    if (!kIsWeb && Platform.isMacOS) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_permissions', true);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+      return;
+    }
 
     // Request App Tracking Transparency first (important for iOS)
     if (await AppTrackingTransparency.trackingAuthorizationStatus ==

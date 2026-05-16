@@ -81,10 +81,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     FocusScope.of(context).unfocus();
     if (!overrideValidation) {
       if (_currentPageIndex == 0 && selectedHatType == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a Hat Type first.')),
-        );
-        return;
+        setState(() {
+          selectedHatType = hatTypes.first;
+        });
       }
       bool hasWestern = (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw');
       int westernIndex = hasWestern ? 1 : -1;
@@ -92,22 +91,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
       int brimIndex = hasWestern ? 3 : 2;
 
       if (_currentPageIndex == westernIndex && selectedWesternStyle == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a Style first.')),
-        );
-        return;
+        setState(() {
+          selectedWesternStyle = 'Western';
+        });
       }
       if (_currentPageIndex == crownIndex && selectedCrownShape == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a Crown Shape first.')),
-        );
-        return;
+        setState(() {
+          selectedCrownShape = _currentCrownShapes.first;
+        });
       }
       if (_currentPageIndex == brimIndex && selectedBrimShape == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a Brim Shape first.')),
-        );
-        return;
+        setState(() {
+          selectedBrimShape = brimShapes.first;
+        });
       }
     }
     
@@ -143,11 +139,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/logo.png', 
-          height: _currentPageIndex > 0 ? 55.2 : 46.0, // Increased by 15%
-          color: _currentPageIndex > 0 ? const Color(0xFFC7B08B) : null,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 90,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png', 
+              height: 55.0, // Made bigger
+              color: const Color(0xFFCBB593), // Color from the front page (Home Screen)
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'HAT FINDER',
+              style: GoogleFonts.playfairDisplaySc(
+                fontSize: 16, // Made bigger
+                color: const Color(0xFFCBB593),
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         leading: _currentPageIndex > 0
@@ -161,21 +175,33 @@ class _HatInputScreenState extends State<HatInputScreen> {
               )
             : null,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildProgressBar(),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
-                onPageChanged: (index) {
-                  setState(() => _currentPageIndex = index);
-                },
-                children: _pages,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4A3525), // Softer, warmer brown
+              Color(0xFF1E140E), // Deeper brown
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildProgressBar(),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
+                  onPageChanged: (index) {
+                    setState(() => _currentPageIndex = index);
+                  },
+                  children: _pages,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -218,14 +244,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FilledButton(
+            TextButton(
                onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
-               style: FilledButton.styleFrom(
-                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+               style: TextButton.styleFrom(
+                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                 foregroundColor: Colors.white, // White text and icon
               ),
-              child: Text(
-                _navButtonText,
-                style: const TextStyle(fontSize: 18),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _navButtonText.toUpperCase(),
+                    style: GoogleFonts.playfairDisplaySc(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward,
+                    size: 24,
+                  ),
+                ],
               ),
             ),
           ],
@@ -242,149 +283,262 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  'Select Hat Type',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+              Text(
+                'Select a Material:',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.playfairDisplaySc(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFF5F0E8),
+                  letterSpacing: 1.0,
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
+              const SizedBox(height: 8),
+              OutlinedButton(
                 onPressed: () {
                   setState(() => selectedHatType = null);
                   _nextPage(overrideValidation: true);
                 },
-                child: const Text('Any Material Type'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFCBB593),
+                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(2), // Sharp corners
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(
+                  'ANY MATERIAL TYPE',
+                  style: GoogleFonts.playfairDisplaySc(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Choose a material or start a general search.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: aspect,
-            ),
-            itemCount: hatTypes.length,
-            itemBuilder: (context, index) {
-              final typeInfo = hatTypes[index];
-              final isSelected = selectedHatType == typeInfo;
-
-              return Card(
-                elevation: isSelected ? 8 : 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                    width: isSelected ? 3 : 1,
-                  ),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    setState(() {
-                      selectedHatType = typeInfo;
-                      // Reset crown selection so stale shape from a different type is cleared
-                      selectedCrownShape = null;
-                    });
-                    // Ballcap doesn't use crown/brim — go straight to results
-                    if (typeInfo.name == 'Ballcap') {
-                      _submitSearch();
-                    } else {
-                      _nextPage();
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      // Image at the top
                       Expanded(
-                        flex: 8, // Increased from 7
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                          child: Container(
-                            color: Colors.white, // Match hat image background
-                            padding: const EdgeInsets.all(0.0), // Removed padding entirely for max size
-                            child: typeInfo.imagePath != 'assets/images/placeholder.png'
-                              ? Image.asset(
-                                  typeInfo.imagePath,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.category,
-                                    size: 48,
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                                  ),
-                                )
-                              : Icon(
-                                 Icons.search,
-                                 size: 48,
-                                 color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                              ),
-                          ),
+                        child: AspectRatio(
+                          aspectRatio: aspect,
+                          child: _buildHatTypeCard(hatTypes[0]),
                         ),
                       ),
-                      // Text underneath
+                      const SizedBox(width: 16),
                       Expanded(
-                        flex: 2, // Reduced from 3
-                        child: Container(
-                          padding: const EdgeInsets.all(8.0),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  typeInfo.name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                    color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  typeInfo.description,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                    height: 1.1,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
+                        child: AspectRatio(
+                          aspectRatio: aspect,
+                          child: _buildHatTypeCard(hatTypes[1]),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: (screenWidth - 48) / 2,
+                        child: AspectRatio(
+                          aspectRatio: aspect,
+                          child: _buildHatTypeCard(hatTypes[2]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHatTypeCard(HatShapeInfo typeInfo) {
+    final isSelected = selectedHatType == typeInfo;
+    return Card(
+      elevation: isSelected ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(2), // Sharp corners
+        side: BorderSide(
+          color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(2),
+        onTap: () {
+          setState(() {
+            selectedHatType = typeInfo;
+            selectedCrownShape = null;
+          });
+          if (typeInfo.name == 'Ballcap') {
+            _submitSearch();
+          } else {
+            _nextPage();
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Full-bleed Image
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2)),
+                child: typeInfo.imagePath != 'assets/images/placeholder.png'
+                    ? Image.asset(
+                        typeInfo.imagePath,
+                        fit: BoxFit.cover, // Fill the card
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.white,
+                          child: const Icon(Icons.category, size: 48, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.white,
+                        child: const Icon(Icons.search, size: 48, color: Colors.grey),
+                      ),
+              ),
+            ),
+            // Text at the bottom
+            Container(
+              color: const Color(0xFF2B1D14),
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Text(
+                typeInfo.name.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.tenorSans(
+                  fontSize: 16,
+                  color: const Color(0xFFCBB593),
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisualWesternSelection() {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final int columns = screenWidth > 700 ? 4 : (screenWidth < 400 ? 1 : 2);
+    final double aspect = screenWidth > 700 ? 1.1 : (screenWidth < 400 ? 1.4 : 0.75);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Select Style:',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.playfairDisplaySc(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFF5F0E8),
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () {
+                  setState(() => selectedWesternStyle = null);
+                  _nextPage(overrideValidation: true);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFCBB593),
+                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(2), // Sharp corners
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(
+                  'ANY STYLE',
+                  style: GoogleFonts.playfairDisplaySc(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: FutureBuilder<List<dynamic>>(
+            future: _allProductsFuture,
+            builder: (context, snapshot) {
+              String? westernImageUrl;
+              String? cityImageUrl;
+              String? outdoorImageUrl;
+
+              if (snapshot.hasData) {
+                final Set<String> usedUrls = {};
+                final List<String> westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
+                
+                try {
+                  westernImageUrl = snapshot.data!.firstWhere((p) {
+                    final profile = _metaValue(p['stetsonProfile']);
+                    final url = p['featuredImage']?['url'];
+                    final title = (p['title'] ?? '').toString().toLowerCase();
+                    return westernProfiles.contains(profile) && 
+                           url != null && 
+                           !usedUrls.contains(url) &&
+                           !title.contains('open road');
+                  }, orElse: () => null)?['featuredImage']?['url'];
+                  if (westernImageUrl != null) usedUrls.add(westernImageUrl!);
+                } catch (_) {}
+
+                try {
+                  cityImageUrl = snapshot.data!.firstWhere((p) {
+                    final isCity = _metaValue(p['city']).toLowerCase();
+                    final url = p['featuredImage']?['url'];
+                    return isCity == 'true' && url != null && !usedUrls.contains(url);
+                  }, orElse: () => null)?['featuredImage']?['url'];
+                  if (cityImageUrl != null) usedUrls.add(cityImageUrl!);
+                } catch (_) {}
+
+                try {
+                  outdoorImageUrl = snapshot.data!.firstWhere((p) {
+                    final isOutdoor = _metaValue(p['outdoors']).toLowerCase();
+                    final url = p['featuredImage']?['url'];
+                    return isOutdoor == 'true' && url != null && !usedUrls.contains(url);
+                  }, orElse: () => null)?['featuredImage']?['url'];
+                  if (outdoorImageUrl != null) usedUrls.add(outdoorImageUrl!);
+                } catch (_) {}
+              }
+
+              return GridView.count(
+                crossAxisCount: columns,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: [
+                  _buildStyleCard('Western', 'Classic cowboy and western styles.', fallbackImagePath: 'assets/images/western.jpg', imageUrl: westernImageUrl),
+                  _buildStyleCard('City', 'Fedoras, trilbys, and other dress hats.', fallbackImagePath: 'assets/images/city.png', imageUrl: cityImageUrl),
+                  _buildStyleCard('Outdoor', 'Sun hats, safari hats, and adventure gear.', fallbackImagePath: 'assets/images/outdoor.png', imageUrl: outdoorImageUrl),
+                ],
               );
             },
           ),
@@ -393,65 +547,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildVisualWesternSelection() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Select Style',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Choose between a traditional Western look or other styles.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width > 700 ? 4 : (MediaQuery.of(context).size.width < 400 ? 1 : 2),
-            padding: const EdgeInsets.all(16),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: MediaQuery.of(context).size.width > 700 ? 1.1 : (MediaQuery.of(context).size.width < 400 ? 1.4 : 0.75),
-            children: [
-              _buildStyleCard('Western', 'Classic cowboy and western styles.', imagePath: 'assets/images/western.jpg'),
-              _buildStyleCard('Not Western', 'Fedoras, trilbys, and other dress hats.', imagePath: 'assets/images/not_western.jpg'),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStyleCard(String name, String description, {String? imagePath, IconData? icon}) {
+  Widget _buildStyleCard(String name, String description, {String? fallbackImagePath, String? imageUrl, IconData? icon}) {
     final isSelected = selectedWesternStyle == name;
     return Card(
-      elevation: isSelected ? 8 : 2,
+      elevation: isSelected ? 4 : 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2), // Sharp corners
         side: BorderSide(
-          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-          width: isSelected ? 3 : 1,
+          color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
+          width: isSelected ? 2 : 1,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
         onTap: () {
           setState(() {
             selectedWesternStyle = name;
@@ -462,50 +570,32 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Full-bleed Image
             Expanded(
-              flex: 8,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Container(
-                  color: Colors.white,
-                  child: imagePath != null
-                      ? Image.asset(imagePath, fit: BoxFit.contain)
-                      : Icon(
-                          icon ?? Icons.style,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                        ),
-                ),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2)),
+                child: imageUrl != null
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (_, __, ___) => _buildFallbackImage(fallbackImagePath, icon),
+                      )
+                    : _buildFallbackImage(fallbackImagePath, icon),
               ),
             ),
-            Expanded(
-              flex: 4,
-              child: Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
+            // Text at the bottom
+            Container(
+              color: const Color(0xFF2B1D14),
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Text(
+                name.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.tenorSans(
+                  fontSize: 16,
+                  color: const Color(0xFFCBB593),
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -513,6 +603,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildFallbackImage(String? fallbackImagePath, IconData? icon) {
+    return fallbackImagePath != null
+        ? Image.asset(
+            fallbackImagePath,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => Container(
+              color: Colors.white,
+              child: const Icon(Icons.category, size: 48, color: Colors.grey),
+            ),
+          )
+        : Container(
+            color: Colors.white,
+            child: Icon(icon ?? Icons.category, size: 48, color: Colors.grey),
+          );
   }
 
   Widget _buildVisualCrownSelection() {
@@ -524,22 +631,42 @@ class _HatInputScreenState extends State<HatInputScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Expanded(
-                  child: Text(
-                    'Select your desired Crown Shape below to get started.',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                Text(
+                  'Select Crown Shape:',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.playfairDisplaySc(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFF5F0E8),
+                    letterSpacing: 1.0,
                   ),
                 ),
-                const SizedBox(width: 8),
-                FilledButton.tonal(
+                const SizedBox(height: 8),
+                OutlinedButton(
                   onPressed: () {
                     setState(() => selectedCrownShape = null);
                     _nextPage(overrideValidation: true);
                   },
-                  child: const Text('Any Crown'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFCBB593),
+                    side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(2), // Sharp corners
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: Text(
+                    'ANY CROWN SHAPE',
+                    style: GoogleFonts.playfairDisplaySc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -596,39 +723,50 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: imageUrl != null
-                              ? Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover, // Dramatic crop for Free People look
-                                  alignment: Alignment.center,
-                                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                                    shape.imagePath,
-                                    fit: BoxFit.cover,
-                                    alignment: Alignment.center,
-                                  ),
-                                )
-                              : Image.asset(
-                                  shape.imagePath,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.center,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    color: Colors.grey[200],
-                                    child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Full-bleed Image
+                                imageUrl != null
+                                  ? Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover, // Fill the card
+                                      alignment: Alignment.center,
+                                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                                        shape.imagePath,
+                                        fit: BoxFit.cover,
+                                        alignment: Alignment.center,
+                                      ),
+                                    )
+                                  : Image.asset(
+                                      shape.imagePath,
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.center,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                      ),
+                                    ),
+                                // Dark Overlay for readability
+                                Container(
+                                  color: Colors.black.withOpacity(0.3), // Soft dark overlay
+                                ),
+                                // Text on top
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      shape.name.toUpperCase(),
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.tenorSans(
+                                        fontSize: 22,
+                                        color: Colors.white,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                            color: Colors.white,
-                            child: Text(
-                              shape.name.toUpperCase(),
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.playfairDisplaySc(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isSelected ? const Color(0xFFCBB593) : Colors.black87,
-                                letterSpacing: 1.5,
-                              ),
+                              ],
                             ),
                           ),
                           if (shape.galleryImages.isNotEmpty)
@@ -1114,22 +1252,42 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(
-                child: Text(
-                  'Now, select your preferred Brim Shape.',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              Text(
+                'Select Brim Shape:',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.playfairDisplaySc(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFF5F0E8),
+                  letterSpacing: 1.0,
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
+              const SizedBox(height: 8),
+              OutlinedButton(
                 onPressed: () {
                   setState(() => selectedBrimShape = null);
                   _nextPage(overrideValidation: true);
                 },
-                child: const Text('Any Brim'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFCBB593),
+                  side: const BorderSide(color: Color(0xFFCBB593), width: 1.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(2), // Sharp corners
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(
+                  'ANY BRIM SHAPE',
+                  style: GoogleFonts.playfairDisplaySc(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1167,13 +1325,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                   return Card(
                     clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    elevation: isSelected ? 8 : 2,
+                    elevation: isSelected ? 4 : 1,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(2), // Sharp corners
                       side: BorderSide(
-                        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                        width: 3,
+                        color: isSelected ? const Color(0xFFCBB593) : Colors.transparent,
+                        width: 2,
                       ),
                     ),
                     child: InkWell(
@@ -1181,61 +1338,46 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         setState(() => selectedBrimShape = shape);
                         _nextPage();
                       },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                      child: Stack(
+                        fit: StackFit.expand,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                            child: Text(
-                              shape.name,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.cinzel(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
+                          // Full-bleed Image
+                          imageUrl != null
+                            ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover, // Fill the card
+                                alignment: Alignment.center,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  shape.imagePath,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.center,
+                                ),
+                              )
+                            : Image.asset(
+                                shape.imagePath,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0, top: 0.0),
-                              child: imageUrl != null
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.topCenter,
-                                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                                      shape.imagePath,
-                                      fit: BoxFit.contain,
-                                      alignment: Alignment.topCenter,
-                                    ),
-                                  )
-                                : Image.asset(
-                                    shape.imagePath,
-                                    fit: BoxFit.contain,
-                                    alignment: Alignment.topCenter,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          // Dark Overlay for readability
                           Container(
-                            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
-                            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Colors.transparent,
-                            child: Text(
-                              shape.description,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isSelected 
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.8) 
-                                    : Colors.black54,
+                            color: Colors.black.withOpacity(0.3), // Soft dark overlay
+                          ),
+                          // Text on top
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                shape.name.toUpperCase(),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.tenorSans(
+                                  fontSize: 22,
+                                  color: Colors.white,
+                                  letterSpacing: 1.0,
+                                ),
                               ),
                             ),
                           ),

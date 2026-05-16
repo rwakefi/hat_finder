@@ -169,6 +169,8 @@ async def get_shopify_products():
             feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
             backstrap: metafield(namespace: "custom", key: "backstrap") { value }
             stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
+            outdoors: metafield(namespace: "custom", key: "outdoors") { value }
+            city: metafield(namespace: "custom", key: "city") { value }
           }
         }
       }

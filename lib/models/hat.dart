@@ -30,7 +30,6 @@ const List<HatShapeInfo> hatTypes = [
   HatShapeInfo('Felt', 'assets/images/red_rocks.webp', 'Classic fur or wool felt hats.'),
   HatShapeInfo('Straw', 'assets/images/straw_hat.jpg', 'Woven straw hats for warmer weather.'),
   HatShapeInfo('Ballcap', 'assets/images/ballcap.png', 'Casual structured and unstructured caps.'),
-  HatShapeInfo('Any Type', 'assets/images/placeholder.png', 'Search across all hat styles.'),
 ];
 
 const List<HatShapeInfo> feltCrownShapes = [

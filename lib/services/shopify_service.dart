@@ -50,6 +50,8 @@ class ShopifyService {
               feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
               backstrap: metafield(namespace: "custom", key: "backstrap") { value }
               stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
+              outdoors: metafield(namespace: "custom", key: "outdoors") { value }
+              city: metafield(namespace: "custom", key: "city") { value }
             }
           }
         }
@@ -69,7 +71,7 @@ class ShopifyService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['errors'] != null) {
-           throw Exception('GraphQL Error: \${data["errors"]}');
+           throw Exception('GraphQL Error: ${data["errors"]}');
         }
         
         final List<dynamic> allProducts = data['data']['products']['edges'].map((p) => p['node']).toList();
@@ -119,8 +121,16 @@ class ShopifyService {
             bool matchesStyle = false;
             if (westernStyle == 'Western' && westernProfiles.contains(prodStetsonProfile)) {
               matchesStyle = true;
-            } else if (westernStyle == 'Not Western' && notWesternProfiles.contains(prodStetsonProfile)) {
-              matchesStyle = true;
+            } else if (westernStyle == 'City') {
+              final prodCity = getMetafieldValue(product['city']).toLowerCase();
+              if (prodCity == 'true') {
+                matchesStyle = true;
+              }
+            } else if (westernStyle == 'Outdoor') {
+              final prodOutdoors = getMetafieldValue(product['outdoors']).toLowerCase();
+              if (prodOutdoors == 'true') {
+                matchesStyle = true;
+              }
             }
             if (!matchesStyle) return false; // Filter strictly by style if selected
           }
@@ -155,7 +165,7 @@ class ShopifyService {
         return filteredProducts;
 
       } else {
-        throw Exception('Failed to load products: \${response.statusCode}');
+        throw Exception('Failed to load products: ${response.statusCode}');
       }
     } catch (e) {
       print('Error querying Shopify: $e');

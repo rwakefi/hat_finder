@@ -30,23 +30,19 @@ class HomeScreen extends StatelessWidget {
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 50.0),
+                    padding: const EdgeInsets.only(left: 40.0, right: 40.0, top: 10.0, bottom: 40.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Top Section: Logo
-                        Padding(
-                          padding: const EdgeInsets.only(top: 30.0),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            height: logoHeight,
-                            color: const Color(0xFFCBB593), // Tan color for a lighter, golden look
-                          ),
-                        ),
-                        
-                        // Middle Section: Content
+                        // Top Section: Logo & Content grouped
                         Column(
                           children: [
+                            Image.asset(
+                              'assets/images/logo.png',
+                              height: logoHeight,
+                              color: const Color(0xFFCBB593), // Tan color for a lighter, golden look
+                            ),
+                            const SizedBox(height: 10), // Move text closer to logo
                             Text(
                               'FIND YOUR PERFECT HAT',
                               textAlign: TextAlign.center,
@@ -59,12 +55,12 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 32), // Moved down more
                             const Text(
                               'Discover luxury hats tailored to your unique style and shape.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 18, // Increased for all
                                 color: Color(0xFFF5F0E8), // Off-white
                                 height: 1.6,
                                 letterSpacing: 0.5,
@@ -73,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                         
-                        // Bottom Section: Actions
+                        // Button 1 Section
                         Column(
                           children: [
                             SizedBox(
@@ -102,17 +98,22 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Text(
                               'For those who know what style they are looking for',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 18,
                                 color: const Color(0xFFF5F0E8).withOpacity(0.7),
                                 letterSpacing: 0.5,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 32), // More space between sections
+                          ],
+                        ),
+
+                        // Button 2 Section
+                        Column(
+                          children: [
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
@@ -139,17 +140,16 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Text(
                               'For those who have no idea what hat might look good on them',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 18,
                                 color: const Color(0xFFF5F0E8).withOpacity(0.7),
                                 letterSpacing: 0.5,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 20),
                           ],
                         ),
                       ],
