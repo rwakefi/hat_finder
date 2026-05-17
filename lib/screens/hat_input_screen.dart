@@ -671,7 +671,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           );
   }
 
-  void _showCrownDetailSheet(BuildContext context, HatShapeInfo shape, String type) {
+  void _showShapeDetailSheet(BuildContext context, HatShapeInfo shape, String type) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1033,7 +1033,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               children: [
                                                 Expanded(
                                                   child: OutlinedButton.icon(
-                                                    onPressed: () => _showCrownDetailSheet(context, shape, 'wearers'),
+                                                    onPressed: () => _showShapeDetailSheet(context, shape, 'wearers'),
                                                     icon: const Icon(Icons.people_outline, size: 18),
                                                     label: Text(
                                                       'FAMOUS\nWEARERS',
@@ -1056,7 +1056,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: OutlinedButton.icon(
-                                                    onPressed: () => _showCrownDetailSheet(context, shape, 'physical'),
+                                                    onPressed: () => _showShapeDetailSheet(context, shape, 'physical'),
                                                     icon: const Icon(Icons.straighten, size: 18),
                                                     label: Text(
                                                       'THE\nSHAPE',
@@ -1851,150 +1851,145 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               width: isSelected ? 3 : 1,
                                             ),
                                           ),
-                                          child: SingleChildScrollView(
-                                            padding: const EdgeInsets.all(20),
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
                                               children: [
                                                 Text(
                                                   shape.name.toUpperCase(),
+                                                  textAlign: TextAlign.center,
                                                   style: GoogleFonts.montserrat(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
                                                     color: Colors.white,
-                                                    letterSpacing: 2.0,
+                                                    letterSpacing: 3.0,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 16),
-                                                // History section
-                                                if (shape.history != null) ...[
-                                                  Text(
-                                                    'THE HISTORY',
-                                                    style: GoogleFonts.montserrat(
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: const Color(0xFF559C99),
-                                                      letterSpacing: 2.5,
+                                                const SizedBox(height: 6),
+                                                Container(
+                                                  width: 40,
+                                                  height: 2,
+                                                  color: const Color(0xFF559C99),
+                                                ),
+                                                const SizedBox(height: 14),
+                                                Text(
+                                                  'THE HISTORY',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(0xFF559C99),
+                                                    letterSpacing: 3.0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Expanded(
+                                                  child: SingleChildScrollView(
+                                                    child: Text(
+                                                      shape.history.isNotEmpty
+                                                          ? shape.history
+                                                          : shape.description,
+                                                      textAlign: TextAlign.center,
+                                                      style: GoogleFonts.playfairDisplay(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w400,
+                                                        color: Colors.white.withOpacity(0.9),
+                                                        height: 1.6,
+                                                        fontStyle: FontStyle.italic,
+                                                      ),
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 6),
-                                                  Text(
-                                                    shape.history!,
-                                                    style: GoogleFonts.cormorantGaramond(
-                                                      fontSize: 15,
-                                                      color: Colors.white70,
-                                                      height: 1.5,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                ],
-                                                // Famous Wearers
-                                                if (shape.famousWearers != null && shape.famousWearers!.isNotEmpty) ...[
-                                                  Text(
-                                                    'KNOWN FOR',
-                                                    style: GoogleFonts.montserrat(
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: const Color(0xFF559C99),
-                                                      letterSpacing: 2.5,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  ...shape.famousWearers!.map((w) => Padding(
-                                                    padding: const EdgeInsets.only(bottom: 8),
-                                                    child: Row(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        const Text('— ', style: TextStyle(color: Color(0xFF559C99), fontSize: 14)),
-                                                        Expanded(
-                                                          child: RichText(
-                                                            text: TextSpan(
-                                                              children: [
-                                                                TextSpan(
-                                                                  text: '${w['name']}: ',
-                                                                  style: GoogleFonts.montserrat(
-                                                                    fontSize: 11,
-                                                                    fontWeight: FontWeight.w700,
-                                                                    color: Colors.white,
-                                                                  ),
-                                                                ),
-                                                                TextSpan(
-                                                                  text: w['context'],
-                                                                  style: GoogleFonts.cormorantGaramond(
-                                                                    fontSize: 13,
-                                                                    color: Colors.white60,
-                                                                    height: 1.4,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )),
-                                                  const SizedBox(height: 16),
-                                                ],
-                                                // Physical description
-                                                if (shape.physicalDescription != null) ...[
-                                                  Text(
-                                                    'THE SHAPE',
-                                                    style: GoogleFonts.montserrat(
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: const Color(0xFF559C99),
-                                                      letterSpacing: 2.5,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 6),
-                                                  Text(
-                                                    shape.physicalDescription!,
-                                                    style: GoogleFonts.cormorantGaramond(
-                                                      fontSize: 15,
-                                                      color: Colors.white70,
-                                                      height: 1.5,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 20),
-                                                ],
-                                                // Select button
-                                                Center(
-                                                  child: Column(
-                                                    children: [
-                                                      ElevatedButton(
-                                                        onPressed: () {
-                                                          setState(() => selectedBrimShape = shape);
-                                                          _nextPage();
-                                                        },
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor: const Color(0xFF559C99),
-                                                          foregroundColor: Colors.white,
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(30),
-                                                          ),
-                                                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                                                          elevation: 0,
-                                                        ),
-                                                        child: Text(
-                                                          'SELECT THIS SHAPE',
+                                                ),
+                                                const SizedBox(height: 10),
+                                                // ── Two info buttons ──
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: OutlinedButton.icon(
+                                                        onPressed: () => _showShapeDetailSheet(context, shape, 'wearers'),
+                                                        icon: const Icon(Icons.people_outline, size: 18),
+                                                        label: Text(
+                                                          'FAMOUS\nWEARERS',
+                                                          textAlign: TextAlign.center,
                                                           style: GoogleFonts.montserrat(
                                                             fontSize: 10,
                                                             fontWeight: FontWeight.w700,
                                                             letterSpacing: 1.5,
+                                                            height: 1.3,
                                                           ),
                                                         ),
-                                                      ),
-                                                      const SizedBox(height: 4),
-                                                      Text(
-                                                        'TAP TO FLIP BACK',
-                                                        style: GoogleFonts.montserrat(
-                                                          fontSize: 8,
-                                                          color: Colors.white30,
-                                                          letterSpacing: 2.0,
-                                                          fontWeight: FontWeight.w500,
+                                                        style: OutlinedButton.styleFrom(
+                                                          foregroundColor: Colors.white70,
+                                                          side: const BorderSide(color: Colors.white24),
+                                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                                         ),
                                                       ),
-                                                    ],
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: OutlinedButton.icon(
+                                                        onPressed: () => _showShapeDetailSheet(context, shape, 'physical'),
+                                                        icon: const Icon(Icons.straighten, size: 18),
+                                                        label: Text(
+                                                          'THE\nSHAPE',
+                                                          textAlign: TextAlign.center,
+                                                          style: GoogleFonts.montserrat(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                            height: 1.3,
+                                                          ),
+                                                        ),
+                                                        style: OutlinedButton.styleFrom(
+                                                          foregroundColor: Colors.white70,
+                                                          side: const BorderSide(color: Colors.white24),
+                                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 10),
+                                                // ── Select button ──
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  child: ElevatedButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        selectedBrimShape = shape;
+                                                        _flippedBrimCardIndex = null;
+                                                      });
+                                                      _nextPage();
+                                                    },
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFF559C99),
+                                                      foregroundColor: Colors.white,
+                                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(30),
+                                                      ),
+                                                      elevation: 0,
+                                                    ),
+                                                    child: Text(
+                                                      'SELECT THIS SHAPE',
+                                                      style: GoogleFonts.montserrat(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 1.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'TAP TO FLIP BACK',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 8,
+                                                    color: Colors.white30,
+                                                    letterSpacing: 2.0,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
                                               ],
