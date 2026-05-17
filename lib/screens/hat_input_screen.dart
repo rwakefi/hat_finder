@@ -16,9 +16,12 @@ class HatInputScreen extends StatefulWidget {
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
   final PageController _crownCarouselController = PageController(viewportFraction: 0.76);
+  final PageController _brimCarouselController = PageController(viewportFraction: 0.76);
   int _currentPageIndex = 0;
   int _currentCrownCarouselIndex = 0;
+  int _currentBrimCarouselIndex = 0;
   int? _flippedCardIndex; // which crown card is showing history
+  int? _flippedBrimCardIndex; // which brim card is showing history
 
   HatShapeInfo? selectedHatType;
   String? selectedWesternStyle;
@@ -186,6 +189,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     setState(() {
                       _currentPageIndex = index;
                       _flippedCardIndex = null; // Reset flip when moving between main pages
+                      _flippedBrimCardIndex = null;
                     });
                   },
                   children: _pages,
@@ -1728,154 +1732,504 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
   Widget _buildVisualBrimSelection() {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final int columns = screenWidth > 900 ? 4 : (screenWidth > 600 ? 3 : 2);
-    final double aspect = screenWidth > 900 ? 0.8 : (screenWidth > 600 ? 0.75 : 0.65);
+    return FutureBuilder<List<dynamic>>(
+      future: _allProductsFuture,
+      builder: (context, snapshot) {
+        List<HatShapeInfo> sortedShapes = List.from(brimShapes);
+        Map<String, List<Map<String, String>>> shopifyProductsMap = {};
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
+        if (snapshot.hasData) {
+          try {
+            for (var shape in sortedShapes) {
+              final shopifyProducts = snapshot.data!
+                  .where((p) {
+                    final brimRaw = _metaValue(p['brimShape']).toLowerCase().trim();
+                    final shapeName = shape.name.toLowerCase().trim();
+                    if (brimRaw.isEmpty) return false;
+                    // Exact match first
+                    if (brimRaw == shapeName) return true;
+                    // Normalize: strip "curl", "shape", apostrophes for fuzzy matching
+                    final brimNorm = brimRaw.replaceAll(' curl', '').replaceAll("'s", '').replaceAll("'", '').trim();
+                    final nameNorm = shapeName.replaceAll(' curl', '').replaceAll("'s", '').replaceAll("'", '').trim();
+                    return brimNorm == nameNorm ||
+                           brimRaw.contains(nameNorm) ||
+                           nameNorm.contains(brimNorm);
+                  })
+                  .where((p) => p['featuredImage']?['url'] != null)
+                  .map((p) => {
+                    'url': p['featuredImage']['url'] as String,
+                    'title': (p['title'] ?? '') as String,
+                  })
+                  .toList();
+              shopifyProductsMap[shape.name] = shopifyProducts;
+            }
+
+            sortedShapes.sort((a, b) {
+              final aHasShopify = (shopifyProductsMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
+              final bHasShopify = (shopifyProductsMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
+              return bHasShopify.compareTo(aHasShopify);
+            });
+          } catch (e) {}
+        }
+
+        return Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+              child: Text(
                 'Select Brim Shape:',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 26,
-                  color: const Color(0xFF2D2926),
-                  letterSpacing: 0.5,
-                ),
+                style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
               ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () {
-                  setState(() => selectedBrimShape = null);
-                  _nextPage(overrideValidation: true);
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D2926),
-                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30), // Pill
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: Text(
-                  'ANY BRIM SHAPE',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<dynamic>>(
-            future: _allProductsFuture,
-            builder: (context, snapshot) {
-              return GridView.builder(
-                padding: const EdgeInsets.all(16.0),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: aspect,
-                ),
-                itemCount: brimShapes.length,
-                itemBuilder: (context, index) {
-                  final shape = brimShapes[index];
-                  final isSelected = selectedBrimShape?.name == shape.name;
+            ),
+            // Carousel with swipe arrows
+            Expanded(
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    controller: _brimCarouselController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentBrimCarouselIndex = index;
+                        _flippedBrimCardIndex = null;
+                      });
+                    },
+                    itemCount: sortedShapes.length,
+                    itemBuilder: (context, index) {
+                      final shape = sortedShapes[index];
+                      final isSelected = selectedBrimShape?.name == shape.name;
+                      final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
+                      final String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
+                      final String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
+                      final bool isFlipped = _flippedBrimCardIndex == index;
+                      final bool isCentered = index == _currentBrimCarouselIndex;
 
-                  // Find matching product image
-                  String? imageUrl;
-                  if (snapshot.hasData) {
-                    try {
-                      final matchingProduct = snapshot.data!.firstWhere(
-                        (p) => _metaValue(p['brimShape']).toLowerCase().contains(shape.name.toLowerCase()),
-                        orElse: () => null,
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (!isCentered) {
+                              _brimCarouselController.animateToPage(
+                                index,
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeInOut,
+                              );
+                              return;
+                            }
+                            setState(() {
+                              if (isFlipped) {
+                                _flippedBrimCardIndex = null;
+                              } else {
+                                _flippedBrimCardIndex = index;
+                              }
+                            });
+                          },
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOutCubic,
+                            builder: (context, angle, _) {
+                              final showBack = angle > pi / 2;
+                              return Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()
+                                  ..setEntry(3, 2, 0.001)
+                                  ..rotateY(angle),
+                                child: showBack
+                                    // ── BACK FACE (history) ──
+                                    ? Transform(
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()..rotateY(pi),
+                                        child: Card(
+                                          clipBehavior: Clip.antiAlias,
+                                          elevation: 0,
+                                          color: const Color(0xFF2D2926),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                            side: BorderSide(
+                                              color: isSelected ? const Color(0xFF559C99) : const Color(0xFF3D3936),
+                                              width: isSelected ? 3 : 1,
+                                            ),
+                                          ),
+                                          child: SingleChildScrollView(
+                                            padding: const EdgeInsets.all(20),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  shape.name.toUpperCase(),
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Colors.white,
+                                                    letterSpacing: 2.0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 16),
+                                                // History section
+                                                if (shape.history != null) ...[
+                                                  Text(
+                                                    'THE HISTORY',
+                                                    style: GoogleFonts.montserrat(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: const Color(0xFF559C99),
+                                                      letterSpacing: 2.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    shape.history!,
+                                                    style: GoogleFonts.cormorantGaramond(
+                                                      fontSize: 15,
+                                                      color: Colors.white70,
+                                                      height: 1.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                ],
+                                                // Famous Wearers
+                                                if (shape.famousWearers != null && shape.famousWearers!.isNotEmpty) ...[
+                                                  Text(
+                                                    'KNOWN FOR',
+                                                    style: GoogleFonts.montserrat(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: const Color(0xFF559C99),
+                                                      letterSpacing: 2.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  ...shape.famousWearers!.map((w) => Padding(
+                                                    padding: const EdgeInsets.only(bottom: 8),
+                                                    child: Row(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        const Text('— ', style: TextStyle(color: Color(0xFF559C99), fontSize: 14)),
+                                                        Expanded(
+                                                          child: RichText(
+                                                            text: TextSpan(
+                                                              children: [
+                                                                TextSpan(
+                                                                  text: '${w['name']}: ',
+                                                                  style: GoogleFonts.montserrat(
+                                                                    fontSize: 11,
+                                                                    fontWeight: FontWeight.w700,
+                                                                    color: Colors.white,
+                                                                  ),
+                                                                ),
+                                                                TextSpan(
+                                                                  text: w['context'],
+                                                                  style: GoogleFonts.cormorantGaramond(
+                                                                    fontSize: 13,
+                                                                    color: Colors.white60,
+                                                                    height: 1.4,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )),
+                                                  const SizedBox(height: 16),
+                                                ],
+                                                // Physical description
+                                                if (shape.physicalDescription != null) ...[
+                                                  Text(
+                                                    'THE SHAPE',
+                                                    style: GoogleFonts.montserrat(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: const Color(0xFF559C99),
+                                                      letterSpacing: 2.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    shape.physicalDescription!,
+                                                    style: GoogleFonts.cormorantGaramond(
+                                                      fontSize: 15,
+                                                      color: Colors.white70,
+                                                      height: 1.5,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 20),
+                                                ],
+                                                // Select button
+                                                Center(
+                                                  child: Column(
+                                                    children: [
+                                                      ElevatedButton(
+                                                        onPressed: () {
+                                                          setState(() => selectedBrimShape = shape);
+                                                          _nextPage();
+                                                        },
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: const Color(0xFF559C99),
+                                                          foregroundColor: Colors.white,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(30),
+                                                          ),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                                                          elevation: 0,
+                                                        ),
+                                                        child: Text(
+                                                          'SELECT THIS SHAPE',
+                                                          style: GoogleFonts.montserrat(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'TAP TO FLIP BACK',
+                                                        style: GoogleFonts.montserrat(
+                                                          fontSize: 8,
+                                                          color: Colors.white30,
+                                                          letterSpacing: 2.0,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    // ── FRONT FACE (image) ──
+                                    : Card(
+                                        clipBehavior: Clip.antiAlias,
+                                        elevation: 0,
+                                        color: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          side: BorderSide(
+                                            color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                                            width: isSelected ? 3 : 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          children: [
+                                            // Image with product name overlay
+                                            Flexible(
+                                              fit: FlexFit.loose,
+                                              child: Stack(
+                                                children: [
+                                                  Transform.translate(
+                                                    offset: const Offset(0, -15),
+                                                    child: imageUrl != null
+                                                        ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
+                                                        : Container(
+                                                            color: Colors.grey[100],
+                                                            child: const Center(child: Icon(Icons.straighten, size: 60, color: Color(0xFFD0C8C0))),
+                                                          ),
+                                                  ),
+                                                  // Product name overlay
+                                                  if (productTitle != null && productTitle.isNotEmpty)
+                                                    Positioned(
+                                                      bottom: 25,
+                                                      left: 12,
+                                                      right: 12,
+                                                      child: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            'Example:',
+                                                            textAlign: TextAlign.center,
+                                                            style: GoogleFonts.montserrat(
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.grey[600],
+                                                              letterSpacing: 1.5,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 2),
+                                                          Text(
+                                                            productTitle,
+                                                            textAlign: TextAlign.center,
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                            style: GoogleFonts.cormorantGaramond(
+                                                              fontSize: 20,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: const Color(0xFF6B6058),
+                                                              fontStyle: FontStyle.italic,
+                                                              letterSpacing: 0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Label + description
+                                            Transform.translate(
+                                              offset: const Offset(0, -16),
+                                              child: Padding(
+                                                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      shape.name.toUpperCase(),
+                                                      textAlign: TextAlign.center,
+                                                      style: GoogleFonts.montserrat(
+                                                        fontSize: 24,
+                                                        fontWeight: FontWeight.w800,
+                                                        color: const Color(0xFF2D2926),
+                                                        letterSpacing: 1.5,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      shape.description,
+                                                      textAlign: TextAlign.center,
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                              );
+                            },
+                          ),
+                        ),
                       );
-                      imageUrl = matchingProduct?['featuredImage']?['url'];
-                    } catch (e) {
-                      print('Error finding matching image: \$e');
-                    }
-                  }
-
-                  return Card(
-                    clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    elevation: isSelected ? 0 : 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Soft rounded
-                      side: BorderSide(
-                        color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade300,
-                        width: isSelected ? 2 : 1,
+                    },
+                  ),
+                  // Left arrow
+                  if (_currentBrimCarouselIndex > 0)
+                    Positioned(
+                      left: 2, top: 0, bottom: 20,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => _brimCarouselController.previousPage(
+                            duration: const Duration(milliseconds: 350), curve: Curves.easeInOut),
+                          child: Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.7),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 1))],
+                            ),
+                            child: Icon(Icons.chevron_left_rounded, size: 18, color: Colors.grey[600]),
+                          ),
+                        ),
                       ),
                     ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() => selectedBrimShape = shape);
-                        _nextPage();
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-                              child: imageUrl != null
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover, // Fill the card
-                                    alignment: Alignment.center,
-                                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                                      shape.imagePath,
-                                      fit: BoxFit.cover,
-                                      alignment: Alignment.center,
-                                    ),
-                                  )
-                                : Image.asset(
-                                    shape.imagePath,
-                                    fit: BoxFit.cover,
-                                    alignment: Alignment.center,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                    ),
+                  // Right arrow
+                  if (_currentBrimCarouselIndex < sortedShapes.length - 1)
+                    Positioned(
+                      right: 2, top: 0, bottom: 20,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => _brimCarouselController.nextPage(
+                            duration: const Duration(milliseconds: 350), curve: Curves.easeInOut),
+                          child: Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.7),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 1))],
+                            ),
+                            child: Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey[600]),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Dots
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0, bottom: 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  sortedShapes.length.clamp(0, 9),
+                  (i) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == _currentBrimCarouselIndex ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: i == _currentBrimCarouselIndex ? const Color(0xFF2D2926) : Colors.grey.shade300,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Next Up + Skip — centered layout
+            Padding(
+              padding: const EdgeInsets.only(top: 6.0, bottom: 10.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 50),
+                    Expanded(
+                      child: (_currentBrimCarouselIndex + 1 < sortedShapes.length)
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  'NEXT UP: ',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12, fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500], letterSpacing: 1.8,
                                   ),
-                            ),
+                                ),
+                                Text(
+                                  sortedShapes[_currentBrimCarouselIndex + 1].name,
+                                  style: GoogleFonts.cormorantGaramond(
+                                    fontSize: 20, fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2D2926), fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const SizedBox(),
+                    ),
+                    SizedBox(
+                      width: 50,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => selectedBrimShape = null);
+                          _nextPage(overrideValidation: true);
+                        },
+                        child: Text(
+                          'SKIP',
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14, fontWeight: FontWeight.w700,
+                            color: const Color(0xFF559C99), letterSpacing: 1.8,
+                            decoration: TextDecoration.underline,
+                            decorationColor: const Color(0xFF559C99),
                           ),
-                          Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              shape.name.toUpperCase(),
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 14,
-                                color: const Color(0xFF2D2926),
-                                letterSpacing: 1.0,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -152,16 +152,78 @@ const List<HatShapeInfo> strawCrownShapes = [
 ];
 
 const List<HatShapeInfo> brimShapes = [
-  HatShapeInfo('Cool Hand Luke', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('J', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('JB', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('West Texas Punch', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('SC', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('RD', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('U', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('Taco', 'assets/images/placeholder.png', 'A description of this shape.'),
-  HatShapeInfo('Extra Wide', 'assets/images/placeholder.png', 'A description of this shape.'),
+  HatShapeInfo('Cattleman', 'assets/images/placeholder.png', 'Classic medium flat brim, the most popular.',
+    history: 'The Cattleman brim is the workhorse of the western hat world — flat, wide enough to shade the neck, and neutral enough to work on every crown shape. It became the industry standard brim through the ranching era of the late 1800s and has never gone out of style.',
+    famousWearers: [
+      {'name': 'John Wayne', 'context': 'The Duke\'s signature look featured a classic flat Cattleman brim throughout his career.'},
+      {'name': 'Clint Eastwood', 'context': 'His spaghetti western characters wore flat Cattleman brims that became iconic in cinema.'},
+      {'name': 'Kevin Costner', 'context': 'His Yellowstone character John Dutton sports a crisp flat Cattleman brim throughout the series.'},
+    ],
+    physicalDescription: 'A flat, level brim with no upward curl. Width typically 4\" to 4½\". The edges are finished with a simple binding or raw edge. The flatness provides maximum shade and a clean silhouette. Works with every crown shape. The most versatile and timeless brim in western tradition.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('J Curl', 'assets/images/placeholder.png', 'Subtle J-shaped upward curl on the sides.',
+    history: 'The J Curl is a refined twist on the flat brim, with a slight upward sweep at the sides that gives the hat a more finished, dressy appearance. Popular in show circuits and dress western wear since the 1940s.',
+    famousWearers: [
+      {'name': 'Roy Rogers', 'context': 'The singing cowboy favored show-style brims with a subtle J curl for his performances.'},
+      {'name': 'Gene Autry', 'context': 'Hollywood\'s original singing cowboy was known for his neatly curled brim presentation hats.'},
+    ],
+    physicalDescription: 'A brim with a slight J-shaped upward curl on both sides, keeping the front and back relatively flat. Width typically 4\" to 4½\". The curl adds elegance without going full rodeo. Best for dress western wear and special occasions. A subtle nod to showmanship.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('JB Curl', 'assets/images/placeholder.png', 'More pronounced J curl with sharper sweep.',
+    history: 'The JB Curl takes the J Curl concept further with a more dramatic side sweep. Named for the shaping style popular in cutting horse and show competitions where a more pronounced brim curl signals a more formal presentation.',
+    famousWearers: [
+      {'name': 'Cutting horse competitors', 'context': 'Show circuits across Texas and Oklahoma have long favored the JB curl for its clean, formal appearance in the arena.'},
+    ],
+    physicalDescription: 'A more pronounced version of the J Curl with a sharper, higher sweep on both sides. Width typically 4\" to 4½\". The dramatic curl creates a distinctive profile that stands out in a crowd. Best for show, competition, and formal western events.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('West Texas Punch', 'assets/images/placeholder.png', 'Wide flat brim with a punched-down front.',
+    history: 'Born from the hard-working ranches of West Texas where full sun protection was non-negotiable. The punched-down front keeps the brim out of sightlines while working cattle, while the wide flat body maximizes shade coverage.',
+    famousWearers: [
+      {'name': 'West Texas ranchers', 'context': 'The working cowboys of the Trans-Pecos region developed this brim style for maximum function in brutal summer heat.'},
+      {'name': 'Sam Elliott', 'context': 'Has been seen in wide-brimmed, punched-down styles that evoke authentic ranch heritage.'},
+    ],
+    physicalDescription: 'A wide flat brim (typically 4½\" to 5\") with the front edge punched slightly downward for shade without obstructing vision. The sides remain flat. Maximum sun protection with a rugged, working aesthetic. Best for outdoor work and the authentic western rancher look.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('SC Curl', 'assets/images/placeholder.png', 'Full side curl from front to back.',
+    history: 'The SC (Side Curl) traces its roots to rodeo performance culture where a more dramatic brim presentation set competitors apart in the arena. The full side curl from front to back creates an unmistakably "western show" silhouette.',
+    famousWearers: [
+      {'name': 'Professional rodeo competitors', 'context': 'The SC curl is a staple in barrel racing and roping circles where personal style is as important as performance.'},
+    ],
+    physicalDescription: 'A full curl that runs continuously from the front of the brim around both sides to the back. Width typically 4\" to 4½\". Creates a cohesive, elegant curved profile from every angle. One of the dressiest western brim shapes available. Best for rodeo, show, and formal western events.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('RD Curl', 'assets/images/placeholder.png', 'Rolled back front brim with curled sides.',
+    history: 'The RD Curl originated in the Southwest where both practicality and style mattered equally. The rolled-back front keeps the brim elevated for better forward visibility, while the curled sides maintain a finished, presentable look.',
+    famousWearers: [
+      {'name': 'Southwest ranch hands', 'context': 'Cowboys working the brush country of South Texas developed this brim for clear sightlines while still looking put together in town.'},
+    ],
+    physicalDescription: 'Front of the brim rolls upward while both sides curl consistently. Width typically 4\" to 4½\". The upward front roll gives the hat an open, confident look. Highly versatile — works for both work and dress. One of the most personalized and expressive brim options.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('U Curl', 'assets/images/placeholder.png', 'Deep symmetrical U-shaped curl all around.',
+    history: 'The U Curl is the most dramatic of all western brim shapes — both sides curl up uniformly to create a deep U profile from front to back. It became popular in trick riding and theatrical western performance where silhouette impact was everything.',
+    famousWearers: [
+      {'name': 'Trick riders & performers', 'context': 'The theatrical western performance circuit has long favored the dramatic U curl for its unmistakable stage presence.'},
+      {'name': 'Tejano artists', 'context': 'Many Tejano and regional Mexican artists have embraced the deep U curl as part of their signature stage look.'},
+    ],
+    physicalDescription: 'Both sides curl up uniformly into a deep U shape from front to back. Width typically 4\" to 4½\". The dramatic symmetrical curl creates maximum visual impact. The most theatrical of all brim shapes. Best for performers, entertainers, and anyone who wants to make a bold statement.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('Taco', 'assets/images/placeholder.png', 'Both sides folded up tightly, taco-style.',
+    history: 'The Taco brim — where both sides fold up sharply — is one of the oldest brim traditions in vaquero culture. Spanish cowboys of the Southwest developed this style for riding through dense brush where a flat brim would catch on branches.',
+    famousWearers: [
+      {'name': 'Vaqueros', 'context': 'The original Mexican cowboys developed the taco fold for practical brush-country riding centuries ago.'},
+      {'name': 'Freddie Fender', 'context': 'The legendary Tex-Mex artist was often photographed in a classic taco-brimmed hat that became part of his cultural identity.'},
+    ],
+    physicalDescription: 'Both sides of the brim fold sharply upward creating a taco or shell shape. Width typically 4\" to 4½\". The tight fold creates a very narrow visible profile from the front. Highly functional in brush and tight spaces. A deeply traditional vaquero style with centuries of heritage.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('Extra Wide', 'assets/images/placeholder.png', 'Oversized brim for maximum shade and impact.',
+    history: 'The extra wide brim (5\" and above) is the ultimate sun hat — developed by cowboys who worked in relentless heat and needed every inch of shade they could get. Today it also makes one of the most dramatic style statements in western fashion.',
+    famousWearers: [
+      {'name': 'Stevie Ray Vaughan', 'context': 'The blues legend was rarely seen without his oversized wide-brimmed hat, making it one of the most iconic looks in music history.'},
+      {'name': 'Hat Trick cowboys', 'context': 'Competitors at major western shows often choose extra wide brims to maximize their visual presence in the arena.'},
+    ],
+    physicalDescription: 'A brim of 5\" or wider that extends significantly beyond the standard range. Can be flat or styled with any curl. Maximum shade coverage and maximum visual impact. Makes a strong, confident statement. Best for hot climates, large face shapes, and anyone who wants an unforgettable silhouette.',
+    galleryImages: ['assets/images/placeholder.png']),
 ];
+
 
 const List<String> brimWidths = [
   '4 Inches',
