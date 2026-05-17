@@ -63,6 +63,80 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     }
   }
 
+  bool _isFeltHat(dynamic hat) {
+    final material = _metaValue(hat['feltStrawOrBallcap']).toLowerCase();
+    return material.contains('felt');
+  }
+
+  bool _isStrawHat(dynamic hat) {
+    final material = _metaValue(hat['feltStrawOrBallcap']).toLowerCase();
+    return material.contains('straw');
+  }
+
+  /// Felt hats only; straw and ballcaps never show color swatches.
+  bool _shouldShowColorSwatches(dynamic hat) => _isFeltHat(hat) && !_isStrawHat(hat);
+
+  bool _variantIsAvailable(dynamic node) {
+    if (node['availableForSale'] == true) return true;
+    final qty = (node['inventoryQuantity'] as num?)?.toInt();
+    if (qty == null) return false;
+    return qty > 0 || qty == -1;
+  }
+
+  /// In-stock felt colors with a variant id for deep-linking (includes single-color felt).
+  List<({String color, String variantGid})> _swatchColors(dynamic hat) {
+    if (!_shouldShowColorSwatches(hat)) return [];
+
+    final variants = hat['variants']?['edges'] as List<dynamic>? ?? [];
+    final availableByColor = <String, bool>{};
+    final variantByColor = <String, String>{};
+
+    for (final edge in variants) {
+      final node = edge['node'];
+      if (node == null) continue;
+      String? colorName;
+      for (final opt in (node['selectedOptions'] as List<dynamic>? ?? [])) {
+        if (opt['name'].toString().toLowerCase() == 'color') {
+          colorName = opt['value'].toString();
+          break;
+        }
+      }
+      if (colorName == null || colorName.isEmpty) continue;
+      if (_variantIsAvailable(node)) {
+        availableByColor[colorName] = true;
+        variantByColor.putIfAbsent(colorName, () => node['id'] as String);
+      }
+    }
+
+    var colors = availableByColor.keys
+        .map((c) => (color: c, variantGid: variantByColor[c]!))
+        .toList()
+      ..sort((a, b) => a.color.compareTo(b.color));
+
+    if (colors.isNotEmpty) return colors;
+
+    // Metafield color when there is no Color option (uncommon on felt).
+    final colorMeta = _metaValue(hat['color']);
+    if (colorMeta != '—' && colorMeta.isNotEmpty) {
+      for (final edge in variants) {
+        final node = edge['node'];
+        if (node != null && _variantIsAvailable(node) && node['id'] != null) {
+          return [(color: colorMeta, variantGid: node['id'] as String)];
+        }
+      }
+    }
+
+    return [];
+  }
+
+  String _productUrlForVariant(String baseUrl, String variantGid) {
+    final variantId = variantGid.split('/').last;
+    final uri = Uri.parse(baseUrl);
+    return uri.replace(
+      queryParameters: {...uri.queryParameters, 'variant': variantId},
+    ).toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,23 +241,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
                 final hats = snapshot.data!;
 
-                // Extract unique colors from returned products
+                // Extract unique in-stock colors from returned products
                 final Set<String> availableColors = {};
                 for (final hat in hats) {
-                  final color = _metaValue(hat['color']);
-                  if (color != '—' && color.isNotEmpty) {
-                    availableColors.add(color);
-                  } else if (hat['options'] != null) {
-                    final options = hat['options'] as List<dynamic>;
-                    for (final opt in options) {
-                      if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
-                        for (final val in opt['values']) {
-                          if (val.toString().isNotEmpty) {
-                            availableColors.add(val.toString());
-                          }
-                        }
-                      }
-                    }
+                  for (final entry in _swatchColors(hat)) {
+                    availableColors.add(entry.color);
                   }
                 }
                 final sortedColors = availableColors.toList()..sort();
@@ -192,19 +254,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 final filteredHats = _selectedColor == null
                     ? hats
                     : hats.where((hat) {
-                        final color = _metaValue(hat['color']);
-                        if (color != '—' && color.isNotEmpty) {
-                          return color.toLowerCase() == _selectedColor!.toLowerCase();
-                        }
-                        if (hat['options'] != null) {
-                          final options = hat['options'] as List<dynamic>;
-                          for (final opt in options) {
-                            if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
-                              return opt['values'].any((val) => val.toString().toLowerCase() == _selectedColor!.toLowerCase());
-                            }
-                          }
-                        }
-                        return false;
+                        return _swatchColors(hat).any(
+                          (entry) =>
+                              entry.color.toLowerCase() == _selectedColor!.toLowerCase(),
+                        );
                       }).toList();
 
                 return Column(
@@ -345,23 +398,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final backstrap = _metaValue(hat['backstrap']);
     final isBallcap = widget.hatType == 'Ballcap';
 
-    // Extract available colors for this specific hat
-    final Set<String> hatColors = {};
-    final colorMeta = _metaValue(hat['color']);
-    if (colorMeta != '—' && colorMeta.isNotEmpty) {
-      hatColors.add(colorMeta);
-    } else if (hat['options'] != null) {
-      final options = hat['options'] as List<dynamic>;
-      for (final opt in options) {
-        if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
-          for (final val in opt['values']) {
-            if (val.toString().isNotEmpty) {
-              hatColors.add(val.toString());
-            }
-          }
-        }
-      }
-    }
+    final swatchColors = _swatchColors(hat);
 
     String priceStr = '';
     try {
@@ -381,22 +418,25 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     final String? productUrl = hat['onlineStoreUrl'];
 
-    void openProduct() {
-      if (productUrl != null && productUrl.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ShopWebViewScreen(
-              url: productUrl,
-              title: title,
-            ),
-          ),
-        );
-      } else {
+    void openProduct({String? variantGid}) {
+      if (productUrl == null || productUrl.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product link is unavailable.')),
         );
+        return;
       }
+      final url = variantGid != null
+          ? _productUrlForVariant(productUrl, variantGid)
+          : productUrl;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShopWebViewScreen(
+            url: url,
+            title: title,
+          ),
+        ),
+      );
     }
 
     return Container(
@@ -441,34 +481,63 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                   color: _espresso.withOpacity(0.15), size: 36),
                             ),
                     ),
-                    if (hatColors.isNotEmpty)
+                    if (swatchColors.isNotEmpty)
                       Positioned(
                         top: 10,
                         right: 10,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: hatColors.map((colorName) {
-                            final swatchColor = _mapColorNameToColor(colorName);
-                            return Container(
-                              margin: const EdgeInsets.only(left: 5),
-                              width: 18,
-                              height: 18,
+                          children: swatchColors.map((entry) {
+                            final swatchColor = _mapColorNameToColor(entry.color);
+                            return Tooltip(
+                              message: entry.color,
+                              preferBelow: false,
+                              verticalOffset: 12,
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              textStyle: GoogleFonts.montserrat(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _white,
+                              ),
                               decoration: BoxDecoration(
-                                color: swatchColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: swatchColor.computeLuminance() > 0.8
-                                      ? _espresso.withOpacity(0.2)
-                                      : Colors.white30,
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.12),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
+                                color: _espresso.withOpacity(0.92),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Semantics(
+                                label: '${entry.color} color',
+                                button: true,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      openProduct(variantGid: entry.variantGid),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(left: 5),
+                                    width: 28,
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: swatchColor,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: swatchColor.computeLuminance() > 0.8
+                                              ? _espresso.withOpacity(0.2)
+                                              : Colors.white30,
+                                          width: 1.0,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.12),
+                                            blurRadius: 2,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ],
+                                ),
                               ),
                             );
                           }).toList(),

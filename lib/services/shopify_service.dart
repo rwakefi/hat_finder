@@ -32,9 +32,16 @@ class ShopifyService {
               featuredImage {
                 url
               }
-              variants(first: 1) {
+              variants(first: 250) {
                 edges {
                   node {
+                    id
+                    inventoryQuantity
+                    availableForSale
+                    selectedOptions {
+                      name
+                      value
+                    }
                     price {
                       amount
                       currencyCode

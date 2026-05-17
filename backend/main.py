@@ -153,10 +153,17 @@ async def get_shopify_products():
             featuredImage {
               url
             }
-            variants(first: 1) {
+            variants(first: 250) {
               edges {
                 node {
+                  id
                   price
+                  inventoryQuantity
+                  availableForSale
+                  selectedOptions {
+                    name
+                    value
+                  }
                 }
               }
             }
