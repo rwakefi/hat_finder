@@ -204,6 +204,79 @@ async def chat_with_agent(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/validation_choices")
+async def get_validation_choices():
+    if not SHOPIFY_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="SHOPIFY_ACCESS_TOKEN not set in backend")
+    
+    url = f"{SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json"
+    
+    query = """
+    query {
+      metafieldDefinitions(first: 100, ownerType: PRODUCT) {
+        edges {
+          node {
+            key
+            namespace
+            validations {
+              name
+              value
+            }
+          }
+        }
+      }
+    }
+    """
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json={"query": query}, headers=headers)
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
+            
+            res_json = response.json()
+            if "errors" in res_json:
+                raise HTTPException(status_code=500, detail=f"GraphQL errors: {res_json['errors']}")
+            
+            definitions = res_json.get("data", {}).get("metafieldDefinitions", {}).get("edges", [])
+            
+            crown_choices = []
+            brim_choices = []
+            
+            for edge in definitions:
+                node = edge["node"]
+                namespace = node.get("namespace")
+                key = node.get("key")
+                validations = node.get("validations", [])
+                
+                if namespace == "custom":
+                    choices = []
+                    for val in validations:
+                        if val.get("name") == "choices":
+                            import json
+                            try:
+                                choices = json.loads(val.get("value", "[]"))
+                            except Exception:
+                                choices = []
+                    
+                    if key == "crown_shape":
+                        crown_choices = choices
+                    elif key == "brim_shape":
+                        brim_choices = choices
+            
+            return {
+                "crown_shapes": crown_choices,
+                "brim_shapes": brim_choices
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
+

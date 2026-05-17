@@ -172,4 +172,30 @@ class ShopifyService {
       return [];
     }
   }
+  static Future<Map<String, List<String>>> fetchValidationChoices() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${DatabaseService.baseUrl}/api/validation_choices'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final crownShapes = List<String>.from(data['crown_shapes'] ?? []);
+        final brimShapes = List<String>.from(data['brim_shapes'] ?? []);
+        return {
+          'crown_shapes': crownShapes,
+          'brim_shapes': brimShapes,
+        };
+      } else {
+        throw Exception('Failed to load choices: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching validation choices: $e');
+      return {
+        'crown_shapes': [],
+        'brim_shapes': [],
+      };
+    }
+  }
 }
