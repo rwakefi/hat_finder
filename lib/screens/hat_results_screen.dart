@@ -173,6 +173,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   final color = _metaValue(hat['color']);
                   if (color != '—' && color.isNotEmpty) {
                     availableColors.add(color);
+                  } else if (hat['options'] != null) {
+                    final options = hat['options'] as List<dynamic>;
+                    for (final opt in options) {
+                      if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
+                        for (final val in opt['values']) {
+                          if (val.toString().isNotEmpty) {
+                            availableColors.add(val.toString());
+                          }
+                        }
+                      }
+                    }
                   }
                 }
                 final sortedColors = availableColors.toList()..sort();
@@ -182,7 +193,18 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ? hats
                     : hats.where((hat) {
                         final color = _metaValue(hat['color']);
-                        return color.toLowerCase() == _selectedColor!.toLowerCase();
+                        if (color != '—' && color.isNotEmpty) {
+                          return color.toLowerCase() == _selectedColor!.toLowerCase();
+                        }
+                        if (hat['options'] != null) {
+                          final options = hat['options'] as List<dynamic>;
+                          for (final opt in options) {
+                            if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
+                              return opt['values'].any((val) => val.toString().toLowerCase() == _selectedColor!.toLowerCase());
+                            }
+                          }
+                        }
+                        return false;
                       }).toList();
 
                 return Column(
@@ -292,7 +314,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.48,
+                                childAspectRatio: 0.45,
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
@@ -322,6 +344,24 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final brimWidth = _metaValue(hat['brimWidth']);
     final backstrap = _metaValue(hat['backstrap']);
     final isBallcap = widget.hatType == 'Ballcap';
+
+    // Extract available colors for this specific hat
+    final Set<String> hatColors = {};
+    final colorMeta = _metaValue(hat['color']);
+    if (colorMeta != '—' && colorMeta.isNotEmpty) {
+      hatColors.add(colorMeta);
+    } else if (hat['options'] != null) {
+      final options = hat['options'] as List<dynamic>;
+      for (final opt in options) {
+        if (opt['name'].toString().toLowerCase() == 'color' && opt['values'] != null) {
+          for (final val in opt['values']) {
+            if (val.toString().isNotEmpty) {
+              hatColors.add(val.toString());
+            }
+          }
+        }
+      }
+    }
 
     String priceStr = '';
     try {
@@ -379,24 +419,63 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Hero image
-            Expanded(
+             Expanded(
               flex: 5,
               child: Container(
                 color: _offWhite,
-                child: imageUrl != null
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.contain,
-                        alignment: const Alignment(0.0, -0.1),
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Icon(Icons.image_outlined,
-                              color: _espresso.withOpacity(0.15), size: 36),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: imageUrl != null
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.contain,
+                              alignment: const Alignment(0.0, -0.1),
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Icon(Icons.image_outlined,
+                                    color: _espresso.withOpacity(0.15), size: 36),
+                              ),
+                            )
+                          : Center(
+                              child: Icon(Icons.image_outlined,
+                                  color: _espresso.withOpacity(0.15), size: 36),
+                            ),
+                    ),
+                    if (hatColors.isNotEmpty)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: hatColors.map((colorName) {
+                            final swatchColor = _mapColorNameToColor(colorName);
+                            return Container(
+                              margin: const EdgeInsets.only(left: 5),
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: swatchColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: swatchColor.computeLuminance() > 0.8
+                                      ? _espresso.withOpacity(0.2)
+                                      : Colors.white30,
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.12),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      )
-                    : Center(
-                        child: Icon(Icons.image_outlined,
-                            color: _espresso.withOpacity(0.15), size: 36),
                       ),
+                  ],
+                ),
               ),
             ),
             // Title + Price + CTA
@@ -431,7 +510,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           color: _turquoise,
                         ),
                       ),
-                    const Spacer(),
+                    const SizedBox(height: 6),
                     // Compact attributes
                     if (!isBallcap) ...[
                       _buildAttribute('Crown', crownShape),
@@ -499,15 +578,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _espresso,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _espresso,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -535,6 +618,26 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         ],
       ),
     );
+  }
+
+  Color _mapColorNameToColor(String colorName) {
+    final name = colorName.toLowerCase().trim();
+    if (name.contains('black')) return const Color(0xFF1A1A1A);
+    if (name.contains('chocolate') || name.contains('brown') || name.contains('dark brown')) return const Color(0xFF4E3629);
+    if (name.contains('silver grey') || name.contains('silver gray') || name.contains('granite') || name.contains('silver-grey') || name.contains('silver-gray')) return const Color(0xFFB0B3B5);
+    if (name.contains('grey') || name.contains('gray') || name.contains('sliver grey')) return const Color(0xFF8E8E93);
+    if (name.contains('bone') || name.contains('cream') || name.contains('ivory') || name.contains('white')) return const Color(0xFFE5DDCB);
+    if (name.contains('stonewash') || name.contains('stone')) return const Color(0xFF8FA1A6);
+    if (name.contains('burgundy') || name.contains('wine')) return const Color(0xFF6B1D2F);
+    if (name.contains('cognac') || name.contains('chestnut')) return const Color(0xFF8F4A24);
+    if (name.contains('sand') || name.contains('natural') || name.contains('tan') || name.contains('fawn') || name.contains('beige')) return const Color(0xFFDFD5C6);
+    if (name.contains('pecan')) return const Color(0xFF8B5A2B);
+    if (name.contains('caramel') || name.contains('gold') || name.contains('yellow')) return const Color(0xFFC68E17);
+    if (name.contains('mist')) return const Color(0xFFE5E7E9);
+    if (name.contains('sage') || name.contains('olive') || name.contains('green')) return const Color(0xFF9CAF88);
+    if (name.contains('red')) return const Color(0xFFC0392B);
+    if (name.contains('blue') || name.contains('navy')) return const Color(0xFF1B4F72);
+    return Colors.grey.shade400;
   }
 
   Widget _buildSummaryChip(String label, String value) {

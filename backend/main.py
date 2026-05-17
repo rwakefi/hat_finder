@@ -172,6 +172,10 @@ async def get_shopify_products():
             outdoors: metafield(namespace: "custom", key: "outdoors") { value }
             city: metafield(namespace: "custom", key: "city") { value }
             color: metafield(namespace: "custom", key: "color") { value }
+            options {
+              name
+              values
+            }
           }
         }
       }

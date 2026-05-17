@@ -187,6 +187,67 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
   }
 
+  Map<String, String>? _getFallbackProduct(List<dynamic> products, HatShapeInfo shape, {required bool isCrown}) {
+    if (products.isEmpty) return null;
+    
+    // 1. Try keyword matching
+    try {
+      final chosenName = shape.name.toLowerCase();
+      String? keyword;
+      if (isCrown) {
+        if (chosenName.contains('cattleman')) keyword = 'cattleman';
+        else if (chosenName.contains('gus')) keyword = 'gus';
+        else if (chosenName.contains('teardrop')) keyword = 'teardrop';
+        else if (chosenName.contains('brick')) keyword = 'brick';
+        else if (chosenName.contains('gambler')) keyword = 'gambler';
+        else if (chosenName.contains('punch')) keyword = 'punch';
+      } else {
+        if (chosenName.contains('curved') || chosenName.contains('curve')) keyword = 'curved';
+        else if (chosenName.contains('flat')) keyword = 'flat';
+        else if (chosenName.contains('curl')) keyword = 'curl';
+        else if (chosenName.contains('downturned') || chosenName.contains('pulled')) keyword = 'downturned';
+      }
+
+      if (keyword != null) {
+        final matched = products.firstWhere(
+          (p) {
+            final val = _metaValue(isCrown ? p['crownShape'] : p['brimShape']).toLowerCase();
+            return val.contains(keyword!) && p['featuredImage']?['url'] != null;
+          }
+        );
+        return {
+          'url': matched['featuredImage']['url'] as String,
+          'title': matched['title'] as String,
+        };
+      }
+    } catch (_) {}
+
+    // 2. Try material-matched fallback
+    try {
+      if (selectedHatType != null) {
+        final target = selectedHatType!.name.toLowerCase();
+        final matched = products.firstWhere(
+          (p) => _metaValue(p['feltStrawOrBallcap']).toLowerCase().contains(target) && p['featuredImage']?['url'] != null,
+        );
+        return {
+          'url': matched['featuredImage']['url'] as String,
+          'title': matched['title'] as String,
+        };
+      }
+    } catch (_) {}
+
+    // 3. Absolute generic fallback (first product with image)
+    try {
+      final matched = products.firstWhere((p) => p['featuredImage']?['url'] != null);
+      return {
+        'url': matched['featuredImage']['url'] as String,
+        'title': matched['title'] as String,
+      };
+    } catch (_) {}
+
+    return null;
+  }
+
   Future<void> _loadDynamicChoices() async {
     try {
       final choices = await ShopifyService.fetchValidationChoices();
@@ -527,7 +588,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.72, // Tall and elegant
+            childAspectRatio: 0.85, // Adjusted to fit all 3 options better on smaller screens
             children: hatTypes.map((typeInfo) {
               final isSelected = selectedHatType == typeInfo;
               return Card(
@@ -545,6 +606,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   onTap: () {
                     setState(() {
                       selectedHatType = typeInfo;
+                      selectedWesternStyle = null;
                       selectedCrownShape = null;
                       selectedBrimShape = null;
                     });
@@ -660,7 +722,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   String? imageUrl;
                   if (snapshot.hasData) {
                     try {
-                      final List<dynamic> products = snapshot.data!;
+                      final List<dynamic> products = List.from(snapshot.data!);
+                      if (selectedHatType != null) {
+                        final target = selectedHatType!.name.toLowerCase();
+                        products.sort((a, b) {
+                          final aType = _metaValue(a['feltStrawOrBallcap']).toLowerCase();
+                          final bType = _metaValue(b['feltStrawOrBallcap']).toLowerCase();
+                          final aMatches = aType.contains(target) ? 1 : 0;
+                          final bMatches = bType.contains(target) ? 1 : 0;
+                          return bMatches.compareTo(aMatches);
+                        });
+                      }
                       final Set<String> usedUrls = {};
                       
                       // Pre-process to find unique images for each style in the list
@@ -1057,24 +1129,48 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (snapshot.hasData) {
           try {
             for (var shape in sortedShapes) {
-              final shopifyProducts = snapshot.data!
+              var matchedProducts = snapshot.data!
                   .where((p) {
                     final crown = _metaValue(p['crownShape']);
                     return _matchShape(crown, shape.name);
                   })
                   .where((p) => p['featuredImage']?['url'] != null)
+                  .toList();
+                  
+              matchedProducts.sort((a, b) {
+                if (selectedHatType == null) return 0;
+                final target = selectedHatType!.name.toLowerCase();
+                final aType = _metaValue(a['feltStrawOrBallcap']).toLowerCase();
+                final bType = _metaValue(b['feltStrawOrBallcap']).toLowerCase();
+                final aMatches = aType.contains(target) ? 1 : 0;
+                final bMatches = bType.contains(target) ? 1 : 0;
+                return bMatches.compareTo(aMatches);
+              });
+              
+              final shopifyProducts = matchedProducts
                   .map((p) => {
                     'url': p['featuredImage']['url'] as String,
                     'title': (p['title'] ?? '') as String,
+                    'matchesMaterial': (selectedHatType != null && _metaValue(p['feltStrawOrBallcap']).toLowerCase().contains(selectedHatType!.name.toLowerCase())) ? 'true' : 'false',
                   })
                   .toList();
               shopifyProductsMap[shape.name] = shopifyProducts;
             }
             
             sortedShapes.sort((a, b) {
-              final aHasShopify = (shopifyProductsMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
-              final bHasShopify = (shopifyProductsMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
-              return bHasShopify.compareTo(aHasShopify);
+              final aProds = shopifyProductsMap[a.name] ?? [];
+              final bProds = shopifyProductsMap[b.name] ?? [];
+              
+              final aHasTypeMatch = aProds.any((p) => p['matchesMaterial'] == 'true') ? 1 : 0;
+              final bHasTypeMatch = bProds.any((p) => p['matchesMaterial'] == 'true') ? 1 : 0;
+              
+              if (aHasTypeMatch != bHasTypeMatch) {
+                return bHasTypeMatch.compareTo(aHasTypeMatch);
+              }
+              
+              final aHasAny = aProds.isNotEmpty ? 1 : 0;
+              final bHasAny = bProds.isNotEmpty ? 1 : 0;
+              return bHasAny.compareTo(aHasAny);
             });
             
             _sortedCrownShapes = sortedShapes;
@@ -1119,8 +1215,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   final shape = sortedShapes[index];
                   final isSelected = selectedCrownShape?.name == shape.name;
                   final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
-                  final String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
-                  final String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
+                  String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
+                  String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
+                  
+                  if (imageUrl == null && snapshot.hasData) {
+                    final fallback = _getFallbackProduct(snapshot.data!, shape, isCrown: true);
+                    if (fallback != null) {
+                      imageUrl = fallback['url'];
+                      productTitle = '${fallback['title']} (Representative)';
+                    }
+                  }
                   final bool isFlipped = _flippedCardIndex == index;
                   final bool isCentered = index == _currentCrownCarouselIndex;
 
@@ -1137,13 +1241,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           );
                           return;
                         }
-                        setState(() {
-                          if (isFlipped) {
+                        if (isFlipped) {
+                          setState(() {
                             _flippedCardIndex = null; // flip back
-                          } else {
-                            _flippedCardIndex = index; // flip to history
-                          }
-                        });
+                          });
+                        } else {
+                          // Front face tapped -> select and move next
+                          setState(() {
+                            selectedCrownShape = shape;
+                          });
+                          _nextPage();
+                        }
                       },
                       child: TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
@@ -1305,13 +1413,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               ),
                                             ),
                                             const SizedBox(height: 4),
-                                            Text(
-                                              'TAP TO FLIP BACK',
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 8,
-                                                color: Colors.white30,
-                                                letterSpacing: 2.0,
-                                                fontWeight: FontWeight.w500,
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _flippedCardIndex = null;
+                                                });
+                                              },
+                                              child: Text(
+                                                'TAP TO FLIP BACK',
+                                                style: GoogleFonts.montserrat(
+                                                  fontSize: 8,
+                                                  color: Colors.white30,
+                                                  letterSpacing: 2.0,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -1334,23 +1449,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.start,
                                       children: [
-                                        // Image — naturally sized to fit width, sits at top
+                                        // Image — naturally sized to sit at the top
                                         Flexible(
                                           fit: FlexFit.loose,
                                           child: Stack(
                                             children: [
                                               Transform.translate(
-                                                offset: const Offset(0, -15), // Shifting hat up to reduce top dead space
+                                                offset: const Offset(0, 0),
                                                 child: imageUrl != null
                                                     ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
                                                     : Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
                                               ),
-                                              // Product name overlay — subtle, below the hat
                                               if (productTitle != null && productTitle.isNotEmpty)
                                                 Positioned(
-                                                  bottom: 25,
-                                                  left: 12,
-                                                  right: 12,
+                                                  top: 10, left: 12, right: 12,
                                                   child: Column(
                                                     mainAxisSize: MainAxisSize.min,
                                                     children: [
@@ -1384,13 +1496,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                             ],
                                           ),
                                         ),
-                                        // Label + description — pulled up tight under the hat
+                                        // Text section pulled up tight
                                         Transform.translate(
-                                          offset: const Offset(0, -16),
+                                          offset: const Offset(0, -60),
                                           child: Padding(
-                                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
                                             child: Column(
                                               children: [
+                                                
                                                 Text(
                                                   shape.name.toUpperCase(),
                                                   textAlign: TextAlign.center,
@@ -1408,6 +1521,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
                                                   style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                OutlinedButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _flippedCardIndex = index;
+                                                    });
+                                                  },
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: const Color(0xFF559C99),
+                                                    side: const BorderSide(color: Color(0xFF559C99), width: 1),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                  ),
+                                                  child: Text(
+                                                    'FLIP FOR MORE INFO',
+                                                    style: GoogleFonts.montserrat(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w700,
+                                                      letterSpacing: 1.0,
+                                                    ),
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -1604,7 +1739,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
               (p) => _matchShape(_metaValue(p['crownShape']), selectedCrownShape!.name) && p['featuredImage']?['url'] != null,
             );
             crownImageUrl = product['featuredImage']['url'];
-          } catch (_) {}
+          } catch (_) {
+            final fallback = _getFallbackProduct(snapshot.data!, selectedCrownShape!, isCrown: true);
+            if (fallback != null) {
+              crownImageUrl = fallback['url'];
+            }
+          }
         }
 
         String? brimImageUrl;
@@ -1614,7 +1754,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
               (p) => _matchShape(_metaValue(p['brimShape']), selectedBrimShape!.name) && p['featuredImage']?['url'] != null,
             );
             brimImageUrl = product['featuredImage']['url'];
-          } catch (_) {}
+          } catch (_) {
+            final fallback = _getFallbackProduct(snapshot.data!, selectedBrimShape!, isCrown: false);
+            if (fallback != null) {
+              brimImageUrl = fallback['url'];
+            }
+          }
         }
 
         return SingleChildScrollView(
@@ -1966,24 +2111,48 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (snapshot.hasData) {
           try {
             for (var shape in sortedShapes) {
-              final shopifyProducts = snapshot.data!
+              var matchedProducts = snapshot.data!
                   .where((p) {
                     final brimRaw = _metaValue(p['brimShape']);
                     return _matchShape(brimRaw, shape.name);
                   })
                   .where((p) => p['featuredImage']?['url'] != null)
+                  .toList();
+                  
+              matchedProducts.sort((a, b) {
+                if (selectedHatType == null) return 0;
+                final target = selectedHatType!.name.toLowerCase();
+                final aType = _metaValue(a['feltStrawOrBallcap']).toLowerCase();
+                final bType = _metaValue(b['feltStrawOrBallcap']).toLowerCase();
+                final aMatches = aType.contains(target) ? 1 : 0;
+                final bMatches = bType.contains(target) ? 1 : 0;
+                return bMatches.compareTo(aMatches);
+              });
+
+              final shopifyProducts = matchedProducts
                   .map((p) => {
                     'url': p['featuredImage']['url'] as String,
                     'title': (p['title'] ?? '') as String,
+                    'matchesMaterial': (selectedHatType != null && _metaValue(p['feltStrawOrBallcap']).toLowerCase().contains(selectedHatType!.name.toLowerCase())) ? 'true' : 'false',
                   })
                   .toList();
               shopifyProductsMap[shape.name] = shopifyProducts;
             }
 
             sortedShapes.sort((a, b) {
-              final aHasShopify = (shopifyProductsMap[a.name]?.isNotEmpty ?? false) ? 1 : 0;
-              final bHasShopify = (shopifyProductsMap[b.name]?.isNotEmpty ?? false) ? 1 : 0;
-              return bHasShopify.compareTo(aHasShopify);
+              final aProds = shopifyProductsMap[a.name] ?? [];
+              final bProds = shopifyProductsMap[b.name] ?? [];
+              
+              final aHasTypeMatch = aProds.any((p) => p['matchesMaterial'] == 'true') ? 1 : 0;
+              final bHasTypeMatch = bProds.any((p) => p['matchesMaterial'] == 'true') ? 1 : 0;
+              
+              if (aHasTypeMatch != bHasTypeMatch) {
+                return bHasTypeMatch.compareTo(aHasTypeMatch);
+              }
+              
+              final aHasAny = aProds.isNotEmpty ? 1 : 0;
+              final bHasAny = bProds.isNotEmpty ? 1 : 0;
+              return bHasAny.compareTo(aHasAny);
             });
             
             _sortedBrimShapes = sortedShapes;
@@ -2028,8 +2197,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       final shape = sortedShapes[index];
                       final isSelected = selectedBrimShape?.name == shape.name;
                       final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
-                      final String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
-                      final String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
+                      String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
+                      String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
+                      
+                      if (imageUrl == null && snapshot.hasData) {
+                        final fallback = _getFallbackProduct(snapshot.data!, shape, isCrown: false);
+                        if (fallback != null) {
+                          imageUrl = fallback['url'];
+                          productTitle = '${fallback['title']} (Representative)';
+                        }
+                      }
                       final bool isFlipped = _flippedBrimCardIndex == index;
                       final bool isCentered = index == _currentBrimCarouselIndex;
 
@@ -2045,13 +2222,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
                               );
                               return;
                             }
-                            setState(() {
-                              if (isFlipped) {
+                            if (isFlipped) {
+                              setState(() {
                                 _flippedBrimCardIndex = null;
-                              } else {
-                                _flippedBrimCardIndex = index;
-                              }
-                            });
+                              });
+                            } else {
+                              setState(() {
+                                selectedBrimShape = shape;
+                              });
+                              _nextPage();
+                            }
                           },
                           child: TweenAnimationBuilder<double>(
                             tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
@@ -2241,26 +2421,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         child: Column(
                                           mainAxisAlignment: MainAxisAlignment.start,
                                           children: [
-                                            // Image with product name overlay
+                                            // Image — naturally sized to sit at the top
                                             Flexible(
                                               fit: FlexFit.loose,
                                               child: Stack(
                                                 children: [
                                                   Transform.translate(
-                                                    offset: const Offset(0, -15),
+                                                    offset: const Offset(0, 0),
                                                     child: imageUrl != null
                                                         ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
                                                         : Container(
-                                                            color: Colors.grey[100],
-                                                            child: const Center(child: Icon(Icons.straighten, size: 60, color: Color(0xFFD0C8C0))),
+                                                            color: Colors.white,
+                                                            child: Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
                                                           ),
                                                   ),
-                                                  // Product name overlay
                                                   if (productTitle != null && productTitle.isNotEmpty)
                                                     Positioned(
-                                                      bottom: 25,
-                                                      left: 12,
-                                                      right: 12,
+                                                      top: 10, left: 12, right: 12,
                                                       child: Column(
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
@@ -2294,13 +2471,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 ],
                                               ),
                                             ),
-                                            // Label + description
+                                            // Text section pulled up tight
                                             Transform.translate(
-                                              offset: const Offset(0, -16),
+                                              offset: const Offset(0, -60),
                                               child: Padding(
-                                                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                                                padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
                                                 child: Column(
                                                   children: [
+                                                    
                                                     Text(
                                                       shape.name.toUpperCase(),
                                                       textAlign: TextAlign.center,
@@ -2318,6 +2496,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                       maxLines: 2,
                                                       overflow: TextOverflow.ellipsis,
                                                       style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    OutlinedButton(
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _flippedBrimCardIndex = index;
+                                                        });
+                                                      },
+                                                      style: OutlinedButton.styleFrom(
+                                                        foregroundColor: const Color(0xFF559C99),
+                                                        side: const BorderSide(color: Color(0xFF559C99), width: 1),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                      ),
+                                                      child: Text(
+                                                        'FLIP FOR MORE INFO',
+                                                        style: GoogleFonts.montserrat(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w700,
+                                                          letterSpacing: 1.0,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
