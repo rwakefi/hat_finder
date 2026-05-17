@@ -153,6 +153,37 @@ const List<HatShapeInfo> feltCrownShapes = [
     ],
     physicalDescription: 'Features a flat, circular indent on top of the crown, creating a telescope or cylinder shape. Height is typically 3¾" to 4½". The flat circular top with pinched sides creates a distinctive, compact profile unlike any other western shape. Best for oval and longer face shapes — the lower, flatter profile avoids adding too much height. A bold, artistic choice that stands out from traditional western shapes.',
     galleryImages: ['assets/images/crowns/telescope.png']),
+  HatShapeInfo('Pinch Front', 'assets/images/crowns/pinch_front.png', 'Modern sharp crease with distinct front pinches.',
+    history: 'The Pinch Front crown has long been a staple of both western wear and traditional dress hats. Its clean, sharp look became immensely popular as it creates a narrow, aerodynamic visual profile and provides excellent hand grip when donning or removing the hat.',
+    famousWearers: [
+      {'name': 'Vintage Fashion Icons', 'context': 'The pinch front was the signature crease of mid-century high-society travel hats.'},
+      {'name': 'Modern Western Trailblazers', 'context': 'Professional style leaders frequently adopt the pinch front for its clean, photogenic profile.'},
+    ],
+    physicalDescription: 'Features a sharp crease down the center of the crown combined with two distinct, deep pinches at the front. Crown height is typically 4" to 4½". The front pinches draw the fabric or fur inward, creating a refined, tapering point. Fits heart-shaped and round faces beautifully, adding a sharp, angular focal point to soft facial structures.',
+    galleryImages: ['assets/images/crowns/pinch_front.png']),
+  HatShapeInfo('Gambler', 'assets/images/crowns/gambler.png', 'Classic flat-topped crown with circular indent.',
+    history: 'The Gambler crown—historically associated with high-stakes players of the riverboat era and later popularized in classic films—originated from utility. Its low, flat circular top was designed to sit securely on the head during high winds on the open plains or on the decks of river steamers.',
+    famousWearers: [
+      {'name': 'Riverboat Players', 'context': 'The low circular top was highly practical and stayed securely placed during windy river crossings.'},
+      {'name': 'Classic Western Actors', 'context': 'Spaghetti western movies popularized the gambler crease as a signature of cool, focused characters.'},
+    ],
+    physicalDescription: 'A low-profile crown (typically 3¾" to 4") characterized by a perfectly flat top with a subtle circular crease/indentation around the edge. The flat top keeps the center of gravity low and the overall look highly structured. Best suited for round and oval faces who want an elegant, distinctive silhouette that is less aggressive than a traditional Cattleman crease.',
+    galleryImages: ['assets/images/crowns/gambler.png']),
+  HatShapeInfo('Rounded Brick', 'assets/images/crowns/rounded_brick.png', 'Clean rectangular crease with soft rounded edges.',
+    history: 'The Rounded Brick is a modern styling innovation that merges the commanding volume of a traditional Northern Plains brick crease with a softer, more approachable edge. It offers a contemporary, clean look for the modern rancher.',
+    famousWearers: [
+      {'name': 'Contemporary Ranchers', 'context': 'Introduced a softer edge to traditional northern plains brick shape for a premium everyday look.'},
+    ],
+    physicalDescription: 'A rectangular, squared-off box crease similar to the standard Brick, but with the top edge lines gently rounded rather than sharply creased. Crown height sits around 4" to 4¼". The softer corners provide a premium, smooth look while retaining the strong rectangular shape. Perfect for round and diamond face shapes by adding clean vertical lines without overly sharp angles.',
+    galleryImages: ['assets/images/crowns/rounded_brick.png']),
+  HatShapeInfo('Flat Cap', 'assets/images/crowns/flat_cap.png', 'Traditional rounded cap shape with small stiff brim.',
+    history: 'Dating back to the 14th century in the British Isles, the Flat Cap represents the working class heritage of utility and durability. Originally made of wool, it became a standard of casual style worldwide, bridging traditional heritage with everyday outdoor life.',
+    famousWearers: [
+      {'name': 'British & Irish Artisans', 'context': 'The practical flat wool cap protected workers from weather for centuries.'},
+      {'name': 'Peaky Blinders Cast', 'context': 'Popularized the vintage flat cap aesthetic for a new generation of style enthusiasts.'},
+    ],
+    physicalDescription: 'A rounded, low-profile cap crown with a small, stiff front brim. Fits snugly against the head. The top fabric or felt is pulled forward and sewn or snapped directly to the brim. A classic, timeless choice for casual styling and excellent protection in crisp weather. Highly versatile and works on every face shape.',
+    galleryImages: ['assets/images/crowns/flat_cap.png']),
 ];
 
 const List<HatShapeInfo> strawCrownShapes = [

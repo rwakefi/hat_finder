@@ -171,6 +171,7 @@ async def get_shopify_products():
             stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
             outdoors: metafield(namespace: "custom", key: "outdoors") { value }
             city: metafield(namespace: "custom", key: "city") { value }
+            color: metafield(namespace: "custom", key: "color") { value }
           }
         }
       }

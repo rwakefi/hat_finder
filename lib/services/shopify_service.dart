@@ -52,6 +52,7 @@ class ShopifyService {
               stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
               outdoors: metafield(namespace: "custom", key: "outdoors") { value }
               city: metafield(namespace: "custom", key: "city") { value }
+              color: metafield(namespace: "custom", key: "color") { value }
             }
           }
         }
@@ -145,11 +146,22 @@ class ShopifyService {
           // (Within a multi-select list like crownHeights, matching ANY chosen height is sufficient).
           bool matches = true;
 
+          bool matchShape(String prod, String ui) {
+            final pNorm = prod.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
+            final uNorm = ui.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
+            if (pNorm.isEmpty || uNorm.isEmpty) return false;
+            
+            final pClean = pNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
+            final uClean = uNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
+            
+            return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
+          }
+
           if (crownShape != null && crownShape.isNotEmpty) {
-            if (!prodCrownShape.contains(crownShape)) matches = false;
+            if (!matchShape(prodCrownShape, crownShape)) matches = false;
           }
           if (brimShape != null && brimShape.isNotEmpty) {
-            if (!prodBrimShape.contains(brimShape)) matches = false;
+            if (!matchShape(prodBrimShape, brimShape)) matches = false;
           }
           if (crownHeights != null && crownHeights.isNotEmpty) {
             if (!crownHeights.any((ch) => ch > 0 && prodCrownHeight.contains(ch.toString()))) matches = false;

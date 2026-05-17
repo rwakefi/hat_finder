@@ -50,6 +50,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
   }
 
+  bool _matchShape(String prod, String ui) {
+    final pNorm = prod.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
+    final uNorm = ui.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
+    if (pNorm.isEmpty || uNorm.isEmpty) return false;
+    
+    final pClean = pNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
+    final uClean = uNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
+    
+    return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
+  }
+
   /// Returns the correct crown shape list based on the selected hat type.
   List<HatShapeInfo> get _currentCrownShapes {
     if (_isLoadingChoices || _rawCrownShapes.isEmpty) {
@@ -322,7 +333,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'HAT FINDER',
+                'FINE TUNING',
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   color: const Color(0xFF2D2926),
@@ -628,8 +639,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             builder: (context, snapshot) {
               final styles = [
                 {'name': 'Western', 'desc': 'Classic cowboy styles.', 'fallback': 'assets/images/western.jpg'},
-                {'name': 'City', 'desc': 'Fedoras and dress hats.', 'fallback': null},
-                {'name': 'Outdoor', 'desc': 'Sun and adventure hats.', 'fallback': null},
+                {'name': 'City', 'desc': 'Fedoras and dress hats.', 'fallback': 'assets/images/city.png'},
+                {'name': 'Outdoor', 'desc': 'Sun and adventure hats.', 'fallback': 'assets/images/outdoor.png'},
               ];
 
               return GridView.builder(
@@ -722,9 +733,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         children: [
                           Expanded(
                             child: imageUrl != null
-                                ? Image.network(imageUrl, fit: BoxFit.cover)
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0.0, -0.35), // Keep hat crown beautifully in center allocation
+                                  )
                                 : (style['fallback'] != null
-                                    ? Image.asset(style['fallback'] as String, fit: BoxFit.cover)
+                                    ? Image.asset(
+                                        style['fallback'] as String,
+                                        fit: BoxFit.cover,
+                                        alignment: const Alignment(0.0, -0.35), // Keep hat crown beautifully in center allocation
+                                      )
                                     : Container(
                                         color: Colors.grey[50],
                                         child: const Icon(Icons.style, size: 48, color: Colors.grey),
@@ -1040,10 +1059,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             for (var shape in sortedShapes) {
               final shopifyProducts = snapshot.data!
                   .where((p) {
-                    final crown = _metaValue(p['crownShape']).toLowerCase();
-                    final name = shape.name.toLowerCase();
-                    return crown.contains(name.replaceAll("'s", "").trim()) || 
-                           name.contains(crown.trim());
+                    final crown = _metaValue(p['crownShape']);
+                    return _matchShape(crown, shape.name);
                   })
                   .where((p) => p['featuredImage']?['url'] != null)
                   .map((p) => {
@@ -1921,17 +1938,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             for (var shape in sortedShapes) {
               final shopifyProducts = snapshot.data!
                   .where((p) {
-                    final brimRaw = _metaValue(p['brimShape']).toLowerCase().trim();
-                    final shapeName = shape.name.toLowerCase().trim();
-                    if (brimRaw.isEmpty) return false;
-                    // Exact match first
-                    if (brimRaw == shapeName) return true;
-                    // Normalize: strip "curl", "shape", apostrophes for fuzzy matching
-                    final brimNorm = brimRaw.replaceAll(' curl', '').replaceAll("'s", '').replaceAll("'", '').trim();
-                    final nameNorm = shapeName.replaceAll(' curl', '').replaceAll("'s", '').replaceAll("'", '').trim();
-                    return brimNorm == nameNorm ||
-                           brimRaw.contains(nameNorm) ||
-                           nameNorm.contains(brimNorm);
+                    final brimRaw = _metaValue(p['brimShape']);
+                    return _matchShape(brimRaw, shape.name);
                   })
                   .where((p) => p['featuredImage']?['url'] != null)
                   .map((p) => {
