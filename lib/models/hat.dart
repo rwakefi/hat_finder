@@ -30,6 +30,16 @@ class HatShapeInfo {
     this.physicalDescription = '',
     this.galleryImages = const [],
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HatShapeInfo &&
+          runtimeType == other.runtimeType &&
+          name == other.name;
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
 const List<HatShapeInfo> hatTypes = [
@@ -152,12 +162,12 @@ const List<HatShapeInfo> strawCrownShapes = [
 ];
 
 const List<HatShapeInfo> brimShapes = [
-  HatShapeInfo('Cattleman', 'assets/images/placeholder.png', 'Classic medium flat brim, the most popular.',
-    history: 'The Cattleman brim is the workhorse of the western hat world — flat, wide enough to shade the neck, and neutral enough to work on every crown shape. It became the industry standard brim through the ranching era of the late 1800s and has never gone out of style.',
+  HatShapeInfo('Flat Brim', 'assets/images/placeholder.png', 'Classic medium flat brim, the most popular.',
+    history: 'The Flat Brim is the workhorse of the western hat world — flat, wide enough to shade the neck, and neutral enough to work on every crown shape. It became the industry standard brim through the ranching era of the late 1800s and has never gone out of style.',
     famousWearers: [
-      {'name': 'John Wayne', 'context': 'The Duke\'s signature look featured a classic flat Cattleman brim throughout his career.'},
-      {'name': 'Clint Eastwood', 'context': 'His spaghetti western characters wore flat Cattleman brims that became iconic in cinema.'},
-      {'name': 'Kevin Costner', 'context': 'His Yellowstone character John Dutton sports a crisp flat Cattleman brim throughout the series.'},
+      {'name': 'John Wayne', 'context': 'The Duke\'s signature look featured a classic flat brim throughout his career.'},
+      {'name': 'Clint Eastwood', 'context': 'His spaghetti western characters wore flat brims that became iconic in cinema.'},
+      {'name': 'Kevin Costner', 'context': 'His Yellowstone character John Dutton sports a crisp flat brim throughout the series.'},
     ],
     physicalDescription: 'A flat, level brim with no upward curl. Width typically 4\" to 4½\". The edges are finished with a simple binding or raw edge. The flatness provides maximum shade and a clean silhouette. Works with every crown shape. The most versatile and timeless brim in western tradition.',
     galleryImages: ['assets/images/placeholder.png']),

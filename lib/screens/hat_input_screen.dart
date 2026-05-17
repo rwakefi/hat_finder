@@ -1431,7 +1431,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     children: [
                       const Text('Crown Shape:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                       DropdownButton<HatShapeInfo?>(
-                        value: selectedCrownShape,
+                        value: _currentCrownShapes.contains(selectedCrownShape) ? selectedCrownShape : null,
                         isExpanded: false,
                         isDense: true,
                         underline: const SizedBox(),
@@ -1507,7 +1507,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     children: [
                       const Text('Brim Shape:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                       DropdownButton<HatShapeInfo?>(
-                        value: selectedBrimShape,
+                        value: brimShapes.contains(selectedBrimShape) ? selectedBrimShape : null,
                         isExpanded: false,
                         isDense: true,
                         underline: const SizedBox(),
