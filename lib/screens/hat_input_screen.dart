@@ -1593,12 +1593,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildDetailsSelection() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('Crown', Icons.architecture),
+    return FutureBuilder<List<dynamic>>(
+      future: _allProductsFuture,
+      builder: (context, snapshot) {
+        // Dynamically find matching image from Shopify products
+        String? crownImageUrl;
+        if (snapshot.hasData && selectedCrownShape != null) {
+          try {
+            final product = snapshot.data!.firstWhere(
+              (p) => _matchShape(_metaValue(p['crownShape']), selectedCrownShape!.name) && p['featuredImage']?['url'] != null,
+            );
+            crownImageUrl = product['featuredImage']['url'];
+          } catch (_) {}
+        }
+
+        String? brimImageUrl;
+        if (snapshot.hasData && selectedBrimShape != null) {
+          try {
+            final product = snapshot.data!.firstWhere(
+              (p) => _matchShape(_metaValue(p['brimShape']), selectedBrimShape!.name) && p['featuredImage']?['url'] != null,
+            );
+            brimImageUrl = product['featuredImage']['url'];
+          } catch (_) {}
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('Crown', Icons.architecture),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1616,7 +1640,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: selectedCrownShape != null 
-                      ? Image.asset(selectedCrownShape!.imagePath, fit: BoxFit.cover)
+                      ? (crownImageUrl != null 
+                          ? Image.network(crownImageUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)))
+                          : Image.asset(selectedCrownShape!.imagePath, fit: BoxFit.cover))
                       : null,
                 ),
                 const SizedBox(width: 16),
@@ -1692,7 +1718,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: selectedBrimShape != null 
-                      ? Image.asset(selectedBrimShape!.imagePath, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)))
+                      ? (brimImageUrl != null 
+                          ? Image.network(brimImageUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)))
+                          : Image.asset(selectedBrimShape!.imagePath, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey))))
                       : null,
                 ),
                 const SizedBox(width: 16),
@@ -1747,8 +1775,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
             onChanged: (val) => setState(() => targetBrimWidths = val),
           ),
           const SizedBox(height: 50), // Padding to prevent the button from covering the last item
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
