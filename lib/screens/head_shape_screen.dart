@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/head_shape_profile.dart';
+import 'hat_input_screen.dart';
 
 class HeadShapeScreen extends StatefulWidget {
   const HeadShapeScreen({super.key});
@@ -15,6 +17,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   bool? _rocks;
   bool? _sizesUp;
   String? _result;
+  HeadShapeProfile? _profile;
 
   final List<Map<String, dynamic>> _questions = [
     {
@@ -58,12 +61,17 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
 
   void _calculateResult() {
     // Simple logic based on KB
-    if (_pressureLocation == 'long_oval' || _rocks == true || _sizesUp == true) {
+    if (_pressureLocation == 'long_oval' ||
+        _rocks == true ||
+        _sizesUp == true) {
       _result = 'LONG OVAL';
+      _profile = HeadShapeProfile.longOval;
     } else if (_pressureLocation == 'round_oval') {
       _result = 'ROUND OVAL';
+      _profile = HeadShapeProfile.roundOval;
     } else {
       _result = 'REGULAR OVAL';
+      _profile = HeadShapeProfile.regularOval;
     }
   }
 
@@ -74,6 +82,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
       _rocks = null;
       _sizesUp = null;
       _result = null;
+      _profile = null;
     });
   }
 
@@ -81,7 +90,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('HEAD SHAPE DIAGNOSTIC', style: GoogleFonts.playfairDisplaySc()),
+        title: Text('HEAD SHAPE DIAGNOSTIC',
+            style: GoogleFonts.playfairDisplaySc()),
         centerTitle: true,
         backgroundColor: const Color(0xFF2B1D14),
         foregroundColor: const Color(0xFFCBB593),
@@ -100,7 +110,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
             child: _result == null ? _buildQuestionnaire() : _buildResult(),
           ),
         ),
@@ -124,7 +135,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             ),
           ),
         ),
-        
+
         // Question
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -141,7 +152,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             ),
           ),
         ),
-        
+
         // Options
         Expanded(
           child: Column(
@@ -155,7 +166,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
                     onPressed: () => _answerQuestion(option['value']),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFCBB593),
-                      side: const BorderSide(color: Color(0xFFCBB593), width: 1),
+                      side:
+                          const BorderSide(color: Color(0xFFCBB593), width: 1),
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(2),
@@ -196,7 +208,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             ),
           ),
         ),
-        
+
         // Result
         Text(
           _result!,
@@ -209,7 +221,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             ),
           ),
         ),
-        
+
         // Description based on result
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -225,9 +237,9 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 40),
-        
+
         // Action Buttons
         Column(
           children: [
@@ -235,8 +247,15 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () {
-                  // Navigate to results or shop (placeholder)
-                  Navigator.of(context).pop();
+                  final profile = _profile;
+                  if (profile == null) return;
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => HatInputScreen(
+                        headShapeProfile: profile,
+                      ),
+                    ),
+                  );
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFCBB593),
@@ -286,12 +305,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   }
 
   String _getRecommendation() {
-    if (_result == 'LONG OVAL') {
-      return 'You likely have a long oval head shape. This means hats might feel tight on your forehead and back, but loose on the sides. Brands like American Hat Company are often associated with this fit.';
-    } else if (_result == 'ROUND OVAL') {
-      return 'You likely have a round oval head shape. This means hats might feel tight on the sides. You may need custom shaping or specific brands that offer rounder profiles.';
-    } else {
-      return 'You likely have a regular oval head shape. Most factory hats are produced in this shape and should fit you reasonably well without major modifications.';
-    }
+    final profile = _profile;
+    if (profile == null) return '';
+    return '${profile.summary}\n\n${profile.fitGuidance}';
   }
 }

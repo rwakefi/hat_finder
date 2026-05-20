@@ -15,7 +15,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() async {
     if (_controller.text.trim().isEmpty) return;
-    
+
     final query = _controller.text.trim();
     setState(() {
       _messages.add({'role': 'user', 'content': query});
@@ -58,19 +58,28 @@ class _ChatScreenState extends State<ChatScreen> {
                   final msg = _messages[index];
                   final isUser = msg['role'] == 'user';
                   return Align(
-                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment:
+                        isUser ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isUser ? const Color(0xFFCBB593) : const Color(0xFF2B1D14),
+                        color: isUser
+                            ? const Color(0xFFCBB593)
+                            : const Color(0xFF2B1D14),
                         borderRadius: BorderRadius.circular(2), // Sharp corners
-                        border: isUser ? null : Border.all(color: const Color(0xFFCBB593).withOpacity(0.3)),
+                        border: isUser
+                            ? null
+                            : Border.all(
+                                color:
+                                    const Color(0xFFCBB593).withOpacity(0.3)),
                       ),
                       child: Text(
                         msg['content'] ?? '',
                         style: TextStyle(
-                          color: isUser ? const Color(0xFF2B1D14) : const Color(0xFFF5F0E8),
+                          color: isUser
+                              ? const Color(0xFF2B1D14)
+                              : const Color(0xFFF5F0E8),
                           fontSize: 14,
                         ),
                       ),
@@ -96,13 +105,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: const TextStyle(color: Color(0xFFF5F0E8)),
                       decoration: InputDecoration(
                         hintText: 'e.g. I have a round face, what hat is best?',
-                        hintStyle: TextStyle(color: const Color(0xFFF5F0E8).withOpacity(0.5)),
+                        hintStyle: TextStyle(
+                            color: const Color(0xFFF5F0E8).withOpacity(0.5)),
                         enabledBorder: const OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFCBB593)),
                           borderRadius: BorderRadius.zero,
                         ),
                         focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFCBB593), width: 2),
+                          borderSide:
+                              BorderSide(color: Color(0xFFCBB593), width: 2),
                           borderRadius: BorderRadius.zero,
                         ),
                       ),

@@ -1,18 +1,40 @@
-# hat_finder
+# Moon Ridge Hat Finder
 
-A new Flutter project.
+Flutter app for guided Moon Ridge hat recommendations backed by Shopify catalog
+metadata. The current v1 direction is a fit quiz plus guided material, style,
+crown, and brim selection. Camera/image analysis is intentionally deferred.
 
-## Getting Started
+## Backend Configuration
 
-This project is a starting point for a Flutter application.
+The app defaults to the production Railway backend:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+https://hatfinder-production.up.railway.app
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+For local or private review backends, pass an override at build/run time:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# hat_finder
+```bash
+flutter run \
+  --dart-define=HAT_FINDER_API_BASE_URL=https://your-review-backend.example.com
+```
+
+iOS TestFlight builds should use an HTTPS backend. Avoid shipping hardcoded
+private IPs, localhost URLs, or broad App Transport Security exceptions.
+
+## iOS Simulator
+
+```bash
+flutter pub get
+flutter run -d ios
+```
+
+## Tests
+
+```bash
+flutter test
+flutter analyze
+```
+
+Analyzer warnings are still being reduced, but tests should pass before handing
+the branch to external testers.

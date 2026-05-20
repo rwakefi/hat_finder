@@ -165,9 +165,8 @@ class ShopifyService {
     List<String>? brimWidths,
     bool useLiteCatalog = false,
   }) async {
-    final allProducts = useLiteCatalog
-        ? await fetchLiteProducts()
-        : await fetchFullProducts();
+    final allProducts =
+        useLiteCatalog ? await fetchLiteProducts() : await fetchFullProducts();
     return filterProducts(
       allProducts,
       hatType: hatType,
@@ -189,7 +188,21 @@ class ShopifyService {
     List<String>? brimWidths,
   }) {
     const westernProfiles = [
-      '01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G',
+      '01',
+      '1',
+      '2',
+      '11',
+      '18',
+      '33',
+      '45',
+      '48',
+      '50',
+      '72',
+      '75',
+      '77',
+      '91',
+      '94',
+      '9G',
     ];
 
     if (hatType == null &&
@@ -300,7 +313,9 @@ class ShopifyService {
         .replaceAll(' curl', '')
         .trim();
 
-    return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
+    return pClean == uClean ||
+        pClean.contains(uClean) ||
+        uClean.contains(pClean);
   }
 
   static Future<Map<String, List<String>>> fetchValidationChoices({
@@ -318,8 +333,8 @@ class ShopifyService {
 
     if (_inflightValidation != null) return _inflightValidation!;
 
-    _inflightValidation = _downloadValidationChoices(forceRefresh: forceRefresh)
-        .then((choices) {
+    _inflightValidation =
+        _downloadValidationChoices(forceRefresh: forceRefresh).then((choices) {
       _cachedValidationChoices = choices;
       _validationCacheTime = DateTime.now();
       _inflightValidation = null;
@@ -335,8 +350,8 @@ class ShopifyService {
   static Future<Map<String, List<String>>> _downloadValidationChoices({
     bool forceRefresh = false,
   }) async {
-    final uri = Uri.parse('${DatabaseService.baseUrl}/api/validation_choices')
-        .replace(
+    final uri =
+        Uri.parse('${DatabaseService.baseUrl}/api/validation_choices').replace(
       queryParameters:
           forceRefresh ? const {'refresh': 'true'} : const <String, String>{},
     );

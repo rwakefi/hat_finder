@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'hat_input_screen.dart';
-import 'chat_screen.dart';
 import 'head_shape_screen.dart';
 import 'shop_webview_screen.dart';
 
@@ -65,7 +64,8 @@ class HomeScreen extends StatelessWidget {
                       label: 'SEARCH BY HAT SHAPE',
                       caption: 'For those who know what style they want',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const HatInputScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const HatInputScreen()),
                       ),
                     ),
                     const Spacer(flex: 2),
@@ -75,7 +75,8 @@ class HomeScreen extends StatelessWidget {
                       label: 'SEARCH BY HEAD SHAPE',
                       caption: 'For those who want a personalized fit',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const HeadShapeScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const HeadShapeScreen()),
                       ),
                     ),
                     const Spacer(flex: 2),
@@ -85,7 +86,8 @@ class HomeScreen extends StatelessWidget {
                       label: 'BALLCAPS! Or Just Go Shopping',
                       caption: 'Browse the full Moon Ridge collection',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ShopWebViewScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const ShopWebViewScreen()),
                       ),
                     ),
                     const Spacer(flex: 2),
@@ -121,13 +123,15 @@ class HomeScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFE8E4DA), // Richer warm beige
                 border: Border.all(
-                  color: const Color(0xFF2D2926).withOpacity(0.48), // Even more defined border
+                  color: const Color(0xFF2D2926)
+                      .withOpacity(0.48), // Even more defined border
                   width: 1.2,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2D2926).withOpacity(0.06), // Slightly deeper shadow
+                    color: const Color(0xFF2D2926)
+                        .withOpacity(0.06), // Slightly deeper shadow
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
