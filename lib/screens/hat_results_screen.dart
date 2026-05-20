@@ -13,6 +13,8 @@ class HatResultsScreen extends StatefulWidget {
   final List<double>? crownHeights;
   final String? brimShape;
   final List<String>? brimWidths;
+  /// Instant results from the wizard cache (full catalog loaded in background).
+  final List<dynamic>? preloadedHats;
 
   const HatResultsScreen({
     super.key,
@@ -22,6 +24,7 @@ class HatResultsScreen extends StatefulWidget {
     this.crownHeights,
     this.brimShape,
     this.brimWidths,
+    this.preloadedHats,
   });
 
   @override
@@ -31,6 +34,7 @@ class HatResultsScreen extends StatefulWidget {
 class _HatResultsScreenState extends State<HatResultsScreen> {
   late Future<List<dynamic>> _hatsFuture;
   String? _selectedColor;
+  Map<String, List<({String color, String variantGid})>> _swatchCache = {};
 
   // Brand colors — consistent with the rest of the app & moonridgecompany.com
   static const Color _espresso = Color(0xFF2D2926);
@@ -42,25 +46,60 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   @override
   void initState() {
     super.initState();
-    _hatsFuture = ShopifyService.searchHats(
-      hatType: widget.hatType,
-      westernStyle: widget.westernStyle,
-      crownShape: widget.crownShape,
-      crownHeights: widget.crownHeights,
-      brimShape: widget.brimShape,
-      brimWidths: widget.brimWidths,
-    );
+    if (widget.preloadedHats != null) {
+      _rebuildSwatchCache(widget.preloadedHats!);
+      _hatsFuture = Future.value(widget.preloadedHats);
+      _refreshWithFullCatalog();
+    } else {
+      _hatsFuture = ShopifyService.searchHats(
+        hatType: widget.hatType,
+        westernStyle: widget.westernStyle,
+        crownShape: widget.crownShape,
+        crownHeights: widget.crownHeights,
+        brimShape: widget.brimShape,
+        brimWidths: widget.brimWidths,
+      );
+    }
+  }
+
+  Future<void> _refreshWithFullCatalog() async {
+    try {
+      final hats = await ShopifyService.searchHats(
+        hatType: widget.hatType,
+        westernStyle: widget.westernStyle,
+        crownShape: widget.crownShape,
+        crownHeights: widget.crownHeights,
+        brimShape: widget.brimShape,
+        brimWidths: widget.brimWidths,
+      );
+      if (!mounted) return;
+      setState(() {
+        _rebuildSwatchCache(hats);
+        _hatsFuture = Future.value(hats);
+      });
+    } catch (_) {
+      // Keep showing preloaded results if enrichment fails.
+    }
   }
 
   String _metaValue(dynamic entry) {
-    if (entry == null || entry['value'] == null) return '—';
-    try {
-      final parsed = jsonDecode(entry['value'] as String);
-      if (parsed is List && parsed.isNotEmpty) return parsed.first.toString();
-      return parsed.toString();
-    } catch (_) {
-      return entry['value'].toString();
+    final value = ShopifyService.parseMetafieldValue(entry);
+    return value.isEmpty ? '—' : value;
+  }
+
+  void _rebuildSwatchCache(List<dynamic> hats) {
+    _swatchCache = {
+      for (final hat in hats)
+        (hat['id'] as String): _computeSwatchColors(hat),
+    };
+  }
+
+  List<({String color, String variantGid})> _swatchColorsFor(dynamic hat) {
+    final id = hat['id'] as String?;
+    if (id != null && _swatchCache.containsKey(id)) {
+      return _swatchCache[id]!;
     }
+    return _computeSwatchColors(hat);
   }
 
   bool _isFeltHat(dynamic hat) {
@@ -84,7 +123,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   /// In-stock felt colors with a variant id for deep-linking (includes single-color felt).
-  List<({String color, String variantGid})> _swatchColors(dynamic hat) {
+  List<({String color, String variantGid})> _computeSwatchColors(dynamic hat) {
     if (!_shouldShowColorSwatches(hat)) return [];
 
     final variants = hat['variants']?['edges'] as List<dynamic>? ?? [];
@@ -240,11 +279,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 }
 
                 final hats = snapshot.data!;
+                if (_swatchCache.isEmpty || _swatchCache.length != hats.length) {
+                  _rebuildSwatchCache(hats);
+                }
 
                 // Extract unique in-stock colors from returned products
                 final Set<String> availableColors = {};
                 for (final hat in hats) {
-                  for (final entry in _swatchColors(hat)) {
+                  for (final entry in _swatchColorsFor(hat)) {
                     availableColors.add(entry.color);
                   }
                 }
@@ -254,7 +296,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 final filteredHats = _selectedColor == null
                     ? hats
                     : hats.where((hat) {
-                        return _swatchColors(hat).any(
+                        return _swatchColorsFor(hat).any(
                           (entry) =>
                               entry.color.toLowerCase() == _selectedColor!.toLowerCase(),
                         );
@@ -363,6 +405,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             )
                           : GridView.builder(
                               padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                              addAutomaticKeepAlives: false,
+                              addRepaintBoundaries: true,
+                              cacheExtent: 400,
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
@@ -371,7 +416,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
-                                return _buildHatCard(filteredHats[index]);
+                                return RepaintBoundary(
+                                  child: _buildHatCard(filteredHats[index]),
+                                );
                               },
                             ),
                     ),
@@ -398,7 +445,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final backstrap = _metaValue(hat['backstrap']);
     final isBallcap = widget.hatType == 'Ballcap';
 
-    final swatchColors = _swatchColors(hat);
+    final swatchColors = _swatchColorsFor(hat);
+    final imageCacheWidth = (MediaQuery.sizeOf(context).width * 0.5 *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
 
     String priceStr = '';
     try {
@@ -471,6 +521,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               imageUrl,
                               fit: BoxFit.contain,
                               alignment: const Alignment(0.0, -0.1),
+                              cacheWidth: imageCacheWidth,
+                              filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => Center(
                                 child: Icon(Icons.image_outlined,
                                     color: _espresso.withOpacity(0.15), size: 36),

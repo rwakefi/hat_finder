@@ -1,12 +1,120 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/hat.dart';
 import 'database_service.dart';
 
-
 class ShopifyService {
-  static const String storeUrl = 'https://moonridgecompany.com/api/2024-01/graphql.json';
-  static const String storefrontToken = '3f15b1c10825b9bf7ed36d09141b7534';
+  static const Duration _cacheTtl = Duration(minutes: 5);
+
+  static List<dynamic>? _cachedLiteProducts;
+  static List<dynamic>? _cachedFullProducts;
+  static DateTime? _liteCacheTime;
+  static DateTime? _cachedFullTime;
+  static Future<List<dynamic>>? _inflightLite;
+  static Future<List<dynamic>>? _inflightFull;
+
+  static Map<String, List<String>>? _cachedValidationChoices;
+  static DateTime? _validationCacheTime;
+  static Future<Map<String, List<String>>>? _inflightValidation;
+
+  /// Parse metafield JSON once (shared by filter + UI).
+  static String parseMetafieldValue(dynamic entry) {
+    if (entry == null || entry['value'] == null) return '';
+    try {
+      final parsed = jsonDecode(entry['value'] as String);
+      if (parsed is List && parsed.isNotEmpty) {
+        return parsed.first.toString();
+      }
+      return parsed.toString();
+    } catch (_) {
+      return entry['value'].toString();
+    }
+  }
+
+  static bool _isCacheValid(DateTime? cachedAt) {
+    if (cachedAt == null) return false;
+    return DateTime.now().difference(cachedAt) < _cacheTtl;
+  }
+
+  /// Lightweight catalog for the input wizard (no per-variant inventory).
+  static Future<List<dynamic>> fetchLiteProducts({bool forceRefresh = false}) {
+    return _fetchProducts(
+      lite: true,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  /// Full catalog for results (variants + inventory for swatches).
+  static Future<List<dynamic>> fetchFullProducts({bool forceRefresh = false}) {
+    return _fetchProducts(
+      lite: false,
+      forceRefresh: forceRefresh,
+    );
+  }
+
+  static Future<List<dynamic>> _fetchProducts({
+    required bool lite,
+    bool forceRefresh = false,
+  }) async {
+    final cached = lite ? _cachedLiteProducts : _cachedFullProducts;
+    final cachedAt = lite ? _liteCacheTime : _cachedFullTime;
+
+    if (!forceRefresh && cached != null && _isCacheValid(cachedAt)) {
+      return cached;
+    }
+
+    final inflight = lite ? _inflightLite : _inflightFull;
+    if (inflight != null) return inflight;
+
+    final future = _downloadProducts(lite: lite).then((products) {
+      if (lite) {
+        _cachedLiteProducts = products;
+        _liteCacheTime = DateTime.now();
+        _inflightLite = null;
+      } else {
+        _cachedFullProducts = products;
+        _cachedFullTime = DateTime.now();
+        _inflightFull = null;
+      }
+      return products;
+    }).catchError((Object e) {
+      if (lite) {
+        _inflightLite = null;
+      } else {
+        _inflightFull = null;
+      }
+      throw e;
+    });
+
+    if (lite) {
+      _inflightLite = future;
+    } else {
+      _inflightFull = future;
+    }
+    return future;
+  }
+
+  static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
+    final uri = Uri.parse(
+      '${DatabaseService.baseUrl}/api/shopify_products?lite=${lite ? 'true' : 'false'}',
+    );
+    final response = await http.get(
+      uri,
+      headers: const {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load products: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body);
+    if (data['errors'] != null) {
+      throw Exception('GraphQL Error: ${data['errors']}');
+    }
+
+    return (data['data']['products']['edges'] as List<dynamic>)
+        .map((p) => p['node'])
+        .toList();
+  }
 
   static Future<List<dynamic>> searchHats({
     String? hatType,
@@ -15,210 +123,184 @@ class ShopifyService {
     List<double>? crownHeights,
     String? brimShape,
     List<String>? brimWidths,
+    bool useLiteCatalog = false,
   }) async {
-    // Shopify's Storefront Search API does not allow querying custom metafields 
-    // directly unless they are specifically whitelisted in the admin settings.
-    // Instead, we will fetch the first 100 active products and filter them locally.
-
-    final String query = '''
-      query {
-        products(first: 250, query: "status:active") {
-          edges {
-            node {
-              id
-              title
-              description
-              onlineStoreUrl
-              featuredImage {
-                url
-              }
-              variants(first: 250) {
-                edges {
-                  node {
-                    id
-                    inventoryQuantity
-                    availableForSale
-                    selectedOptions {
-                      name
-                      value
-                    }
-                    price {
-                      amount
-                      currencyCode
-                    }
-                  }
-                }
-              }
-              crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
-              brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
-              crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
-              brimWidth: metafield(namespace: "custom", key: "brim_width") { value }
-              material: metafield(namespace: "custom", key: "material") { value }
-              feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
-              backstrap: metafield(namespace: "custom", key: "backstrap") { value }
-              stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
-              outdoors: metafield(namespace: "custom", key: "outdoors") { value }
-              city: metafield(namespace: "custom", key: "city") { value }
-              color: metafield(namespace: "custom", key: "color") { value }
-              options {
-                name
-                values
-              }
-            }
-          }
-        }
-      }
-    ''';
-
-    try {
-      // Call our Railway backend instead of Shopify directly
-      final response = await http.get(
-        Uri.parse('${DatabaseService.baseUrl}/api/shopify_products'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['errors'] != null) {
-           throw Exception('GraphQL Error: ${data["errors"]}');
-        }
-        
-        final List<dynamic> allProducts = data['data']['products']['edges'].map((p) => p['node']).toList();
-        
-        final List<String> westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
-        final List<String> notWesternProfiles = ['0', '0170', '8132', '1040', '2', '16', '18', '40', '41', '50', '9G'];
-
-        // --- Client Side Filtering ---
-        final filteredProducts = allProducts.where((product) {
-          
-          // If the user selected "Any" for everything (or first load), return all
-          if (hatType == null && westernStyle == null && crownShape == null && brimShape == null && crownHeights == null && brimWidths == null) {
-            return true;
-          }
-
-          // Helper to safely extract metafield string value from JSON array
-          String getMetafieldValue(dynamic metafieldEntry) {
-            if (metafieldEntry == null || metafieldEntry['value'] == null) return "";
-            try {
-              // Values are often stored as '["Cattlemen"]'
-              var parsed = jsonDecode(metafieldEntry['value']);
-              if (parsed is List && parsed.isNotEmpty) {
-                 return parsed.first.toString();
-              }
-              return parsed.toString();
-            } catch (e) {
-               return metafieldEntry['value'].toString();
-            }
-          }
-
-          final prodCrownShape = getMetafieldValue(product['crownShape']);
-          final prodBrimShape = getMetafieldValue(product['brimShape']);
-          final prodCrownHeight = getMetafieldValue(product['crownHeight']);
-          final prodBrimWidth = getMetafieldValue(product['brimWidth']);
-          final prodHatType = getMetafieldValue(product['feltStrawOrBallcap']);
-          final prodStetsonProfile = getMetafieldValue(product['stetsonProfile']);
-
-          // If a hat type is selected (and it's not "Any Type"), filter strictly by type first
-          if (hatType != null && hatType != 'Any Type') {
-             // We do a strict contain because it is a primary categorization
-             if (!prodHatType.toLowerCase().contains(hatType.toLowerCase())) {
-                 return false; // Skip this product immediately if it's the wrong type
-             }
-          }
-
-          if (westernStyle != null && westernStyle.isNotEmpty) {
-            bool matchesStyle = false;
-            if (westernStyle == 'Western' && westernProfiles.contains(prodStetsonProfile)) {
-              matchesStyle = true;
-            } else if (westernStyle == 'City') {
-              final prodCity = getMetafieldValue(product['city']).toLowerCase();
-              if (prodCity == 'true') {
-                matchesStyle = true;
-              }
-            } else if (westernStyle == 'Outdoor') {
-              final prodOutdoors = getMetafieldValue(product['outdoors']).toLowerCase();
-              if (prodOutdoors == 'true') {
-                matchesStyle = true;
-              }
-            }
-            if (!matchesStyle) return false; // Filter strictly by style if selected
-          }
-
-          // If ONLY the primary categories were selected (no shapes/heights), include it now that type/style match
-          if (crownShape == null && brimShape == null && crownHeights == null && brimWidths == null) {
-              return true;
-          }
-
-          // --- Categorical AND logic ---
-          // A product must match ALL selected filters. 
-          // (Within a multi-select list like crownHeights, matching ANY chosen height is sufficient).
-          bool matches = true;
-
-          bool matchShape(String prod, String ui) {
-            final pNorm = prod.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
-            final uNorm = ui.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
-            if (pNorm.isEmpty || uNorm.isEmpty) return false;
-            
-            final pClean = pNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
-            final uClean = uNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
-            
-            return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
-          }
-
-          if (crownShape != null && crownShape.isNotEmpty) {
-            if (!matchShape(prodCrownShape, crownShape)) matches = false;
-          }
-          if (brimShape != null && brimShape.isNotEmpty) {
-            if (!matchShape(prodBrimShape, brimShape)) matches = false;
-          }
-          if (crownHeights != null && crownHeights.isNotEmpty) {
-            if (!crownHeights.any((ch) => ch > 0 && prodCrownHeight.contains(ch.toString()))) matches = false;
-          }
-          if (brimWidths != null && brimWidths.isNotEmpty) {
-            if (!brimWidths.any((bw) => prodBrimWidth.contains(bw))) matches = false;
-          }
-
-          return matches;
-
-        }).toList();
-
-        return filteredProducts;
-
-      } else {
-        throw Exception('Failed to load products: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error querying Shopify: $e');
-      return [];
-    }
+    final allProducts = useLiteCatalog
+        ? await fetchLiteProducts()
+        : await fetchFullProducts();
+    return filterProducts(
+      allProducts,
+      hatType: hatType,
+      westernStyle: westernStyle,
+      crownShape: crownShape,
+      crownHeights: crownHeights,
+      brimShape: brimShape,
+      brimWidths: brimWidths,
+    );
   }
-  static Future<Map<String, List<String>>> fetchValidationChoices() async {
-    try {
-      final response = await http.get(
-        Uri.parse('${DatabaseService.baseUrl}/api/validation_choices'),
-        headers: {'Content-Type': 'application/json'},
-      );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final crownShapes = List<String>.from(data['crown_shapes'] ?? []);
-        final brimShapes = List<String>.from(data['brim_shapes'] ?? []);
-        return {
-          'crown_shapes': crownShapes,
-          'brim_shapes': brimShapes,
-        };
-      } else {
-        throw Exception('Failed to load choices: ${response.statusCode}');
+  static List<dynamic> filterProducts(
+    List<dynamic> allProducts, {
+    String? hatType,
+    String? westernStyle,
+    String? crownShape,
+    List<double>? crownHeights,
+    String? brimShape,
+    List<String>? brimWidths,
+  }) {
+    const westernProfiles = [
+      '01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G',
+    ];
+
+    if (hatType == null &&
+        westernStyle == null &&
+        crownShape == null &&
+        brimShape == null &&
+        crownHeights == null &&
+        brimWidths == null) {
+      return List<dynamic>.from(allProducts);
+    }
+
+    return allProducts.where((product) {
+      final prodCrownShape = parseMetafieldValue(product['crownShape']);
+      final prodBrimShape = parseMetafieldValue(product['brimShape']);
+      final prodCrownHeight = parseMetafieldValue(product['crownHeight']);
+      final prodBrimWidth = parseMetafieldValue(product['brimWidth']);
+      final prodHatType = parseMetafieldValue(product['feltStrawOrBallcap']);
+      final prodStetsonProfile = parseMetafieldValue(product['stetsonProfile']);
+
+      if (hatType != null && hatType != 'Any Type') {
+        if (!prodHatType.toLowerCase().contains(hatType.toLowerCase())) {
+          return false;
+        }
       }
-    } catch (e) {
-      print('Error fetching validation choices: $e');
+
+      if (westernStyle != null && westernStyle.isNotEmpty) {
+        var matchesStyle = false;
+        if (westernStyle == 'Western' &&
+            westernProfiles.contains(prodStetsonProfile)) {
+          matchesStyle = true;
+        } else if (westernStyle == 'City') {
+          if (parseMetafieldValue(product['city']).toLowerCase() == 'true') {
+            matchesStyle = true;
+          }
+        } else if (westernStyle == 'Outdoor') {
+          if (parseMetafieldValue(product['outdoors']).toLowerCase() == 'true') {
+            matchesStyle = true;
+          }
+        }
+        if (!matchesStyle) return false;
+      }
+
+      if (crownShape == null &&
+          brimShape == null &&
+          crownHeights == null &&
+          brimWidths == null) {
+        return true;
+      }
+
+      var matches = true;
+
+      if (crownShape != null && crownShape.isNotEmpty) {
+        if (!_matchShape(prodCrownShape, crownShape)) matches = false;
+      }
+      if (brimShape != null && brimShape.isNotEmpty) {
+        if (!_matchShape(prodBrimShape, brimShape)) matches = false;
+      }
+      if (crownHeights != null && crownHeights.isNotEmpty) {
+        if (!crownHeights.any(
+          (ch) => ch > 0 && prodCrownHeight.contains(ch.toString()),
+        )) {
+          matches = false;
+        }
+      }
+      if (brimWidths != null && brimWidths.isNotEmpty) {
+        if (!brimWidths.any((bw) => prodBrimWidth.contains(bw))) {
+          matches = false;
+        }
+      }
+
+      return matches;
+    }).toList();
+  }
+
+  static bool _matchShape(String prod, String ui) {
+    final pNorm = prod
+        .toLowerCase()
+        .replaceAll('-', ' ')
+        .replaceAll("'s", '')
+        .replaceAll("'", '')
+        .trim();
+    final uNorm = ui
+        .toLowerCase()
+        .replaceAll('-', ' ')
+        .replaceAll("'s", '')
+        .replaceAll("'", '')
+        .trim();
+    if (pNorm.isEmpty || uNorm.isEmpty) return false;
+
+    final pClean = pNorm
+        .replaceAll(' shape', '')
+        .replaceAll(' crease', '')
+        .replaceAll(' crown', '')
+        .replaceAll(' brim', '')
+        .replaceAll(' curl', '')
+        .trim();
+    final uClean = uNorm
+        .replaceAll(' shape', '')
+        .replaceAll(' crease', '')
+        .replaceAll(' crown', '')
+        .replaceAll(' brim', '')
+        .replaceAll(' curl', '')
+        .trim();
+
+    return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
+  }
+
+  static Future<Map<String, List<String>>> fetchValidationChoices() async {
+    if (_cachedValidationChoices != null &&
+        _isCacheValid(_validationCacheTime)) {
+      return _cachedValidationChoices!;
+    }
+
+    if (_inflightValidation != null) return _inflightValidation!;
+
+    _inflightValidation = _downloadValidationChoices().then((choices) {
+      _cachedValidationChoices = choices;
+      _validationCacheTime = DateTime.now();
+      _inflightValidation = null;
+      return choices;
+    }).catchError((Object e) {
+      _inflightValidation = null;
+      throw e;
+    });
+
+    return _inflightValidation!;
+  }
+
+  static Future<Map<String, List<String>>> _downloadValidationChoices() async {
+    final response = await http.get(
+      Uri.parse('${DatabaseService.baseUrl}/api/validation_choices'),
+      headers: const {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
       return {
-        'crown_shapes': [],
-        'brim_shapes': [],
+        'crown_shapes': List<String>.from(data['crown_shapes'] ?? []),
+        'brim_shapes': List<String>.from(data['brim_shapes'] ?? []),
       };
     }
+    throw Exception('Failed to load choices: ${response.statusCode}');
+  }
+
+  /// Clears caches (useful for tests or pull-to-refresh later).
+  static void clearCache() {
+    _cachedLiteProducts = null;
+    _cachedFullProducts = null;
+    _liteCacheTime = null;
+    _cachedFullTime = null;
+    _cachedValidationChoices = null;
+    _validationCacheTime = null;
   }
 }

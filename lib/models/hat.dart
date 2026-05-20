@@ -263,6 +263,34 @@ const List<HatShapeInfo> brimShapes = [
     ],
     physicalDescription: 'A brim of 5\" or wider that extends significantly beyond the standard range. Can be flat or styled with any curl. Maximum shade coverage and maximum visual impact. Makes a strong, confident statement. Best for hot climates, large face shapes, and anyone who wants an unforgettable silhouette.',
     galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('Medium Curved', 'assets/images/placeholder.png', 'Classic moderately curved western brim.',
+    history: 'The Medium Curved brim is a highly popular option among everyday ranchers and cowboys, offering a perfect balance between standard flat brims and extreme rodeo curves.',
+    famousWearers: [
+      {'name': 'George Strait', 'context': 'Often prefers a clean, medium-curved brim setup for his signature western look.'},
+    ],
+    physicalDescription: 'Featuring a gentle, symmetrical upward curve on the sides, the front and back of the brim slope elegantly downward. Highly versatile and fits almost all face shapes.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('Gus', 'assets/images/placeholder.png', 'Sloped old-west style brim.',
+    history: 'Inspired by traditional old-west trail drivers, the Gus brim crease has a strong forward-dipping slope that keeps sun and weather out of the eyes while riding.',
+    famousWearers: [
+      {'name': 'Augustus McCrae', 'context': 'The legendary Lonesome Dove character\'s iconic signature look.'},
+    ],
+    physicalDescription: 'A distinct front dip combined with flat or slightly upturned sides. Pairs beautifully with a Gus crown for an authentic frontier profile.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('Shovel Front', 'assets/images/placeholder.png', 'Distinct flat front edge with curled sides.',
+    history: 'The Shovel Front is a specialized performance crease designed to maximize forward sightlines and face shading while rodeo roping or working cattle.',
+    famousWearers: [
+      {'name': 'Professional Ropers', 'context': 'Highly favored by arena competitors for clean sightlines and unique appearance.'},
+    ],
+    physicalDescription: 'The front edge of the brim is flattened out straight like a shovel, while the sides are neatly curled up. Extremely functional and bold.',
+    galleryImages: ['assets/images/placeholder.png']),
+  HatShapeInfo('CHL', 'assets/images/placeholder.png', 'Rebellious, low-profile roll brim.',
+    history: 'A vintage and counter-culture favorite, the Cool Hand Luke (CHL) style brim features a relaxed, rebellious curl with a classic old-school swagger.',
+    famousWearers: [
+      {'name': 'Paul Newman', 'context': 'Defined the effortlessly cool, non-conformist aesthetic.'},
+    ],
+    physicalDescription: 'A tight but low-profile side roll combined with a flat, direct front. Minimalist yet filled with vintage character.',
+    galleryImages: ['assets/images/placeholder.png']),
 ];
 
 

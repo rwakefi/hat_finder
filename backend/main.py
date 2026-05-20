@@ -1,11 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
+import time
+import json
 import pg8000
 import urllib.parse
 import httpx
-from typing import List, Optional
+from typing import List, Optional, Any
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -16,6 +18,64 @@ PORT = int(os.environ.get("PORT", 8081))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
 SHOPIFY_STORE_URL = os.environ.get("SHOPIFY_STORE_URL", "https://raftermhatco.myshopify.com")
+SHOPIFY_CACHE_TTL_SECONDS = int(os.environ.get("SHOPIFY_CACHE_TTL_SECONDS", "300"))
+
+_http_client: httpx.AsyncClient | None = None
+_shopify_cache: dict[str, tuple[float, Any]] = {}
+_validation_cache: tuple[float, Any] | None = None
+
+_PRODUCT_FIELDS = """
+            id
+            title
+            onlineStoreUrl
+            featuredImage {
+              url
+            }
+            crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
+            brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
+            crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
+            brimWidth: metafield(namespace: "custom", key: "brim_width") { value }
+            material: metafield(namespace: "custom", key: "material") { value }
+            feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
+            backstrap: metafield(namespace: "custom", key: "backstrap") { value }
+            stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
+            outdoors: metafield(namespace: "custom", key: "outdoors") { value }
+            city: metafield(namespace: "custom", key: "city") { value }
+            color: metafield(namespace: "custom", key: "color") { value }
+            options {
+              name
+              values
+            }
+"""
+
+def _cache_get(cache: dict[str, tuple[float, Any]], key: str) -> Any | None:
+    entry = cache.get(key)
+    if not entry:
+        return None
+    expires_at, payload = entry
+    if time.time() >= expires_at:
+        cache.pop(key, None)
+        return None
+    return payload
+
+def _cache_set(cache: dict[str, tuple[float, Any]], key: str, payload: Any) -> None:
+    cache[key] = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
+
+async def _shopify_graphql(query: str) -> dict:
+    if not SHOPIFY_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="SHOPIFY_ACCESS_TOKEN not set in backend")
+    if _http_client is None:
+        raise HTTPException(status_code=500, detail="HTTP client not initialized")
+
+    url = f"{SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+    }
+    response = await _http_client.post(url, json={"query": query}, headers=headers)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
+    return response.json()
 
 def get_db_connection():
     if not DATABASE_URL:
@@ -68,9 +128,12 @@ def init_db():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Run database initialization on startup
+    global _http_client
     init_db()
+    _http_client = httpx.AsyncClient(timeout=30.0)
     yield
+    await _http_client.aclose()
+    _http_client = None
 
 app = FastAPI(lifespan=lifespan)
 
@@ -135,24 +198,25 @@ def get_hats():
         conn.close()
 
 @app.get("/api/shopify_products")
-async def get_shopify_products():
-    if not SHOPIFY_ACCESS_TOKEN:
-        raise HTTPException(status_code=500, detail="SHOPIFY_ACCESS_TOKEN not set in backend")
-    
-    url = f"{SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json"
-    
-    query = """
-    query {
-      products(first: 250) {
-        edges {
-          node {
-            id
-            title
-            description
-            onlineStoreUrl
-            featuredImage {
-              url
-            }
+async def get_shopify_products(lite: bool = Query(False)):
+    """lite=true returns a smaller payload for the input wizard; full includes variant inventory."""
+    cache_key = "lite" if lite else "full"
+    cached = _cache_get(_shopify_cache, cache_key)
+    if cached is not None:
+        return cached
+
+    if lite:
+        variants_block = """
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  price
+                }
+              }
+            }"""
+    else:
+        variants_block = """
             variants(first: 250) {
               edges {
                 node {
@@ -166,43 +230,29 @@ async def get_shopify_products():
                   }
                 }
               }
-            }
+            }"""
 
-            crownShape: metafield(namespace: "custom", key: "crown_shape") { value }
-            brimShape: metafield(namespace: "custom", key: "brim_shape") { value }
-            crownHeight: metafield(namespace: "custom", key: "crown_height") { value }
-            brimWidth: metafield(namespace: "custom", key: "brim_width") { value }
-            material: metafield(namespace: "custom", key: "material") { value }
-            feltStrawOrBallcap: metafield(namespace: "custom", key: "felt_straw_or_ballcap") { value }
-            backstrap: metafield(namespace: "custom", key: "backstrap") { value }
-            stetsonProfile: metafield(namespace: "custom", key: "stetson_profile") { value }
-            outdoors: metafield(namespace: "custom", key: "outdoors") { value }
-            city: metafield(namespace: "custom", key: "city") { value }
-            color: metafield(namespace: "custom", key: "color") { value }
-            options {
-              name
-              values
-            }
-          }
-        }
-      }
-    }
+    query = f"""
+    query {{
+      products(first: 250) {{
+        edges {{
+          node {{
+            {_PRODUCT_FIELDS}
+            {variants_block}
+          }}
+        }}
+      }}
+    }}
     """
-    
-    headers = {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
-    }
-    
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(url, json={"query": query}, headers=headers)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+
+    try:
+        payload = await _shopify_graphql(query)
+        _cache_set(_shopify_cache, cache_key, payload)
+        return payload
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 class ChatRequest(BaseModel):
     query: str
@@ -218,11 +268,12 @@ async def chat_with_agent(request: ChatRequest):
 
 @app.get("/api/validation_choices")
 async def get_validation_choices():
-    if not SHOPIFY_ACCESS_TOKEN:
-        raise HTTPException(status_code=500, detail="SHOPIFY_ACCESS_TOKEN not set in backend")
-    
-    url = f"{SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json"
-    
+    global _validation_cache
+    if _validation_cache is not None:
+        expires_at, payload = _validation_cache
+        if time.time() < expires_at:
+            return payload
+
     query = """
     query {
       metafieldDefinitions(first: 100, ownerType: PRODUCT) {
@@ -239,54 +290,47 @@ async def get_validation_choices():
       }
     }
     """
-    
-    headers = {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
-    }
-    
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(url, json={"query": query}, headers=headers)
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
-            
-            res_json = response.json()
-            if "errors" in res_json:
-                raise HTTPException(status_code=500, detail=f"GraphQL errors: {res_json['errors']}")
-            
-            definitions = res_json.get("data", {}).get("metafieldDefinitions", {}).get("edges", [])
-            
-            crown_choices = []
-            brim_choices = []
-            
-            for edge in definitions:
-                node = edge["node"]
-                namespace = node.get("namespace")
-                key = node.get("key")
-                validations = node.get("validations", [])
-                
-                if namespace == "custom":
-                    choices = []
-                    for val in validations:
-                        if val.get("name") == "choices":
-                            import json
-                            try:
-                                choices = json.loads(val.get("value", "[]"))
-                            except Exception:
-                                choices = []
-                    
-                    if key == "crown_shape":
-                        crown_choices = choices
-                    elif key == "brim_shape":
-                        brim_choices = choices
-            
-            return {
-                "crown_shapes": crown_choices,
-                "brim_shapes": brim_choices
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+
+    try:
+        res_json = await _shopify_graphql(query)
+        if "errors" in res_json:
+            raise HTTPException(status_code=500, detail=f"GraphQL errors: {res_json['errors']}")
+
+        definitions = res_json.get("data", {}).get("metafieldDefinitions", {}).get("edges", [])
+
+        crown_choices = []
+        brim_choices = []
+
+        for edge in definitions:
+            node = edge["node"]
+            namespace = node.get("namespace")
+            key = node.get("key")
+            validations = node.get("validations", [])
+
+            if namespace == "custom":
+                choices = []
+                for val in validations:
+                    if val.get("name") == "choices":
+                        try:
+                            choices = json.loads(val.get("value", "[]"))
+                        except Exception:
+                            choices = []
+
+                if key == "crown_shape":
+                    crown_choices = choices
+                elif key == "brim_shape":
+                    brim_choices = choices
+
+        payload = {
+            "crown_shapes": crown_choices,
+            "brim_shapes": brim_choices,
+        }
+        _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
+        return payload
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
