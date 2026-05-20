@@ -2,8 +2,33 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
 
+/// Parsed Shopify metafields for one product (computed once per catalog load).
+class _ProductMeta {
+  _ProductMeta(this.product);
+
+  final dynamic product;
+
+  late final String crownShape =
+      ShopifyService.parseMetafieldValue(product['crownShape']);
+  late final String brimShape =
+      ShopifyService.parseMetafieldValue(product['brimShape']);
+  late final String crownHeight =
+      ShopifyService.parseMetafieldValue(product['crownHeight']);
+  late final String brimWidth =
+      ShopifyService.parseMetafieldValue(product['brimWidth']);
+  late final String hatType =
+      ShopifyService.parseMetafieldValue(product['feltStrawOrBallcap']);
+  late final String stetsonProfile =
+      ShopifyService.parseMetafieldValue(product['stetsonProfile']);
+  late final String city = ShopifyService.parseMetafieldValue(product['city']);
+  late final String outdoors =
+      ShopifyService.parseMetafieldValue(product['outdoors']);
+}
+
 class ShopifyService {
   static const Duration _cacheTtl = Duration(minutes: 5);
+
+  static final Map<String, _ProductMeta> _parsedMetaById = {};
 
   static List<dynamic>? _cachedLiteProducts;
   static List<dynamic>? _cachedFullProducts;
@@ -34,6 +59,20 @@ class ShopifyService {
     if (cachedAt == null) return false;
     return DateTime.now().difference(cachedAt) < _cacheTtl;
   }
+
+  static String _productCacheKey(dynamic product) =>
+      product['id']?.toString() ?? product.hashCode.toString();
+
+  static _ProductMeta _productMeta(dynamic product) =>
+      _parsedMetaById.putIfAbsent(
+        _productCacheKey(product),
+        () => _ProductMeta(product),
+      );
+
+  static void _clearParsedMeta() => _parsedMetaById.clear();
+
+  /// Shared shape matching for wizard UI and filtering.
+  static bool matchShape(String prod, String ui) => _matchShape(prod, ui);
 
   /// Lightweight catalog for the input wizard (no per-variant inventory).
   static Future<List<dynamic>> fetchLiteProducts({bool forceRefresh = false}) {
@@ -66,6 +105,7 @@ class ShopifyService {
     if (inflight != null) return inflight;
 
     final future = _downloadProducts(lite: lite).then((products) {
+      _clearParsedMeta();
       if (lite) {
         _cachedLiteProducts = products;
         _liteCacheTime = DateTime.now();
@@ -162,15 +202,10 @@ class ShopifyService {
     }
 
     return allProducts.where((product) {
-      final prodCrownShape = parseMetafieldValue(product['crownShape']);
-      final prodBrimShape = parseMetafieldValue(product['brimShape']);
-      final prodCrownHeight = parseMetafieldValue(product['crownHeight']);
-      final prodBrimWidth = parseMetafieldValue(product['brimWidth']);
-      final prodHatType = parseMetafieldValue(product['feltStrawOrBallcap']);
-      final prodStetsonProfile = parseMetafieldValue(product['stetsonProfile']);
+      final meta = _productMeta(product);
 
       if (hatType != null && hatType != 'Any Type') {
-        if (!_matchesHatType(prodHatType, hatType)) {
+        if (!_matchesHatType(meta.hatType, hatType)) {
           return false;
         }
       }
@@ -178,14 +213,14 @@ class ShopifyService {
       if (westernStyle != null && westernStyle.isNotEmpty) {
         var matchesStyle = false;
         if (westernStyle == 'Western' &&
-            westernProfiles.contains(prodStetsonProfile)) {
+            westernProfiles.contains(meta.stetsonProfile)) {
           matchesStyle = true;
         } else if (westernStyle == 'City') {
-          if (parseMetafieldValue(product['city']).toLowerCase() == 'true') {
+          if (meta.city.toLowerCase() == 'true') {
             matchesStyle = true;
           }
         } else if (westernStyle == 'Outdoor') {
-          if (parseMetafieldValue(product['outdoors']).toLowerCase() == 'true') {
+          if (meta.outdoors.toLowerCase() == 'true') {
             matchesStyle = true;
           }
         }
@@ -202,20 +237,20 @@ class ShopifyService {
       var matches = true;
 
       if (crownShape != null && crownShape.isNotEmpty) {
-        if (!_matchShape(prodCrownShape, crownShape)) matches = false;
+        if (!_matchShape(meta.crownShape, crownShape)) matches = false;
       }
       if (brimShape != null && brimShape.isNotEmpty) {
-        if (!_matchShape(prodBrimShape, brimShape)) matches = false;
+        if (!_matchShape(meta.brimShape, brimShape)) matches = false;
       }
       if (crownHeights != null && crownHeights.isNotEmpty) {
         if (!crownHeights.any(
-          (ch) => ch > 0 && prodCrownHeight.contains(ch.toString()),
+          (ch) => ch > 0 && meta.crownHeight.contains(ch.toString()),
         )) {
           matches = false;
         }
       }
       if (brimWidths != null && brimWidths.isNotEmpty) {
-        if (!brimWidths.any((bw) => prodBrimWidth.contains(bw))) {
+        if (!brimWidths.any((bw) => meta.brimWidth.contains(bw))) {
           matches = false;
         }
       }
@@ -329,5 +364,6 @@ class ShopifyService {
     _cachedFullTime = null;
     _cachedValidationChoices = null;
     _validationCacheTime = null;
+    _clearParsedMeta();
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
 import 'hat_results_screen.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' show pi, Random;
 import '../services/shopify_service.dart';
@@ -44,6 +45,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<dynamic>? _allProducts;
   Map<String, List<Map<String, String>>> _crownProductsMap = {};
   Map<String, List<Map<String, String>>> _brimProductsMap = {};
+  List<HatShapeInfo>? _cachedAvailableBrimShapes;
+  List<dynamic>? _crownFilteredProducts;
 
   String _metaValue(dynamic entry) {
     final value = ShopifyService.parseMetafieldValue(entry);
@@ -67,15 +70,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
         n.contains('flat cap');
   }
 
-  bool _matchShape(String prod, String ui) {
-    final pNorm = prod.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
-    final uNorm = ui.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
-    if (pNorm.isEmpty || uNorm.isEmpty) return false;
-    
-    final pClean = pNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
-    final uClean = uNorm.replaceAll(' shape', '').replaceAll(' crease', '').replaceAll(' crown', '').replaceAll(' brim', '').replaceAll(' curl', '').trim();
-    
-    return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
+  bool _matchShape(String prod, String ui) => ShopifyService.matchShape(prod, ui);
+
+  bool _isOpenRoadProduct(dynamic product) {
+    final title = (product['title'] ?? '').toString().toLowerCase();
+    final handle = (product['handle'] ?? '').toString().toLowerCase();
+    return title.contains('open road') || handle.contains('open-road');
   }
 
   /// Returns the correct crown shape list based on the selected hat type.
@@ -285,22 +285,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     final usedUrls = <String>{};
     final urls = <String, String>{};
+    final pendingTypes = {
+      for (final type in _availableHatTypes) type.name: type.name.toLowerCase(),
+    };
 
-    for (final type in _availableHatTypes) {
-      final matching = ShopifyService.filterProducts(
-        _allProducts!,
-        hatType: type.name,
-      ).where((p) {
-        final url = p['featuredImage']?['url'];
-        return url != null && url.toString().isNotEmpty;
-      }).toList();
+    final candidates = List<dynamic>.from(_allProducts!)..shuffle(_random);
+    for (final product in candidates) {
+      if (pendingTypes.isEmpty) break;
+      final imageUrl = product['featuredImage']?['url'];
+      if (imageUrl == null || imageUrl.toString().isEmpty) continue;
+      final url = imageUrl as String;
+      if (usedUrls.contains(url)) continue;
 
-      matching.shuffle(_random);
-      for (final product in matching) {
-        final url = product['featuredImage']['url'] as String;
-        if (!usedUrls.contains(url)) {
-          urls[type.name] = url;
+      final hatType = _metaValue(product['feltStrawOrBallcap']).toLowerCase();
+      for (final entry in pendingTypes.entries.toList()) {
+        if (hatType.contains(entry.value)) {
+          urls[entry.key] = url;
           usedUrls.add(url);
+          pendingTypes.remove(entry.key);
           break;
         }
       }
@@ -375,7 +377,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
       );
     });
     _sortedBrimShapes = sortedBrim;
+    _updateCrownFilteredProducts();
+    _rebuildAvailableBrimShapes();
     _syncBrimSelectionToAvailable();
+  }
+
+  void _updateCrownFilteredProducts() {
+    if (_allProducts == null || selectedCrownShape == null) {
+      _crownFilteredProducts = null;
+      return;
+    }
+    var products = ShopifyService.filterProducts(
+      _allProducts!,
+      hatType: selectedHatType?.name,
+      westernStyle: selectedWesternStyle,
+      crownShape: selectedCrownShape!.name,
+    );
+    if (selectedCrownShape!.name.toLowerCase().contains('cattleman')) {
+      products =
+          products.where((p) => !_isOpenRoadProduct(p)).toList(growable: false);
+    }
+    _crownFilteredProducts = products;
+  }
+
+  void _rebuildAvailableBrimShapes() {
+    final all = _allBrimShapeOptions;
+    final crownProducts = _crownFilteredProducts;
+    if (crownProducts == null) {
+      _cachedAvailableBrimShapes = all;
+      return;
+    }
+    _cachedAvailableBrimShapes = all.where((brim) {
+      for (final product in crownProducts) {
+        if (_matchShape(_metaValue(product['brimShape']), brim.name)) {
+          return true;
+        }
+      }
+      return false;
+    }).toList(growable: false);
   }
 
   int _compareByStylePriority(
@@ -422,31 +461,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
       (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
 
   /// Brim shapes that have at least one catalog product for the selected crown.
-  List<HatShapeInfo> get _availableBrimShapes {
-    final all = _allBrimShapeOptions;
-    if (selectedCrownShape == null || _allProducts == null) return all;
-    return all
-        .where((brim) => _productCountForCrownAndBrim(brim) > 0)
-        .toList();
-  }
+  List<HatShapeInfo> get _availableBrimShapes =>
+      _cachedAvailableBrimShapes ?? _allBrimShapeOptions;
 
-  int _productCountForCrownAndBrim(HatShapeInfo brim) {
-    if (_allProducts == null || selectedCrownShape == null) return 0;
-    var products = ShopifyService.filterProducts(
-      _allProducts!,
-      hatType: selectedHatType?.name,
-      westernStyle: selectedWesternStyle,
-      crownShape: selectedCrownShape!.name,
-      brimShape: brim.name,
-    );
-    if (selectedCrownShape!.name.toLowerCase().contains('cattleman')) {
-      products = products.where((p) {
-        final title = (p['title'] ?? '').toString().toLowerCase();
-        final handle = (p['handle'] ?? '').toString().toLowerCase();
-        return !(title.contains('open road') || handle.contains('open-road'));
-      }).toList();
-    }
-    return products.length;
+  void _onCrownSelectionChanged() {
+    _updateCrownFilteredProducts();
+    _rebuildAvailableBrimShapes();
+    _syncBrimSelectionToAvailable();
   }
 
   void _syncBrimSelectionToAvailable() {
@@ -502,7 +523,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       selectedCrownShape = shape;
       _currentCrownCarouselIndex = index;
       _flippedCardIndex = null;
-      _syncBrimSelectionToAvailable();
+      _onCrownSelectionChanged();
     });
     _nextPage();
   }
@@ -520,47 +541,43 @@ class _HatInputScreenState extends State<HatInputScreen> {
     List<HatShapeInfo> shapes, {
     required bool isCrown,
   }) {
-    final map = <String, List<Map<String, String>>>{};
-    for (final shape in shapes) {
-      var matchedProducts = _allProducts!
-          .where((p) {
-            final meta = _metaValue(isCrown ? p['crownShape'] : p['brimShape']);
-            final isMatch = _matchShape(meta, shape.name);
-            if (isMatch && isCrown && shape.name.toLowerCase().contains('cattleman')) {
-              final title = (p['title'] ?? '').toString().toLowerCase();
-              final handle = (p['handle'] ?? '').toString().toLowerCase();
-              final isOpenRoad =
-                  title.contains('open road') || handle.contains('open-road');
-              return !isOpenRoad;
-            }
-            return isMatch;
-          })
-          .where((p) => p['featuredImage']?['url'] != null)
-          .toList();
+    final map = <String, List<Map<String, String>>>{
+      for (final shape in shapes) shape.name: <Map<String, String>>[],
+    };
+    final materialTarget = selectedHatType?.name.toLowerCase();
 
-      if (selectedHatType != null) {
-        final target = selectedHatType!.name.toLowerCase();
-        matchedProducts.sort((a, b) {
-          final aType = _metaValue(a['feltStrawOrBallcap']).toLowerCase();
-          final bType = _metaValue(b['feltStrawOrBallcap']).toLowerCase();
-          final aMatches = aType.contains(target) ? 1 : 0;
-          final bMatches = bType.contains(target) ? 1 : 0;
+    for (final product in _allProducts!) {
+      if (product['featuredImage']?['url'] == null) continue;
+      final meta = _metaValue(isCrown ? product['crownShape'] : product['brimShape']);
+
+      for (final shape in shapes) {
+        if (!_matchShape(meta, shape.name)) continue;
+        if (isCrown &&
+            shape.name.toLowerCase().contains('cattleman') &&
+            _isOpenRoadProduct(product)) {
+          continue;
+        }
+        map[shape.name]!.add({
+          'url': product['featuredImage']['url'] as String,
+          'title': (product['title'] ?? '') as String,
+          'matchesMaterial': (materialTarget != null &&
+                  _metaValue(product['feltStrawOrBallcap'])
+                      .toLowerCase()
+                      .contains(materialTarget))
+              ? 'true'
+              : 'false',
+        });
+      }
+    }
+
+    if (materialTarget != null) {
+      for (final entries in map.values) {
+        entries.sort((a, b) {
+          final aMatches = a['matchesMaterial'] == 'true' ? 1 : 0;
+          final bMatches = b['matchesMaterial'] == 'true' ? 1 : 0;
           return bMatches.compareTo(aMatches);
         });
       }
-
-      map[shape.name] = matchedProducts
-          .map((p) => {
-                'url': p['featuredImage']['url'] as String,
-                'title': (p['title'] ?? '') as String,
-                'matchesMaterial': (selectedHatType != null &&
-                        _metaValue(p['feltStrawOrBallcap'])
-                            .toLowerCase()
-                            .contains(selectedHatType!.name.toLowerCase()))
-                    ? 'true'
-                    : 'false',
-              })
-          .toList();
     }
     return map;
   }
@@ -592,10 +609,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             final val = _metaValue(isCrown ? p['crownShape'] : p['brimShape']).toLowerCase();
             final isMatch = val.contains(keyword!) && p['featuredImage']?['url'] != null;
             if (isMatch && isCrown && keyword == 'cattleman') {
-              final title = (p['title'] ?? '').toString().toLowerCase();
-              final handle = (p['handle'] ?? '').toString().toLowerCase();
-              final isOpenRoad = title.contains('open road') || handle.contains('open-road');
-              return !isOpenRoad;
+              return !_isOpenRoadProduct(p);
             }
             return isMatch;
           }
@@ -614,7 +628,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Future<void> _loadDynamicChoices() async {
     try {
       final choices =
-          await ShopifyService.fetchValidationChoices(forceRefresh: true);
+          await ShopifyService.fetchValidationChoices();
       final List<String> crownStrings = choices['crown_shapes'] ?? [];
       final List<String> brimStrings = choices['brim_shapes'] ?? [];
       final List<String> materialStrings = choices['material_types'] ?? [];
@@ -654,6 +668,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
       return products;
     });
     _loadDynamicChoices();
+    // Warm full catalog in background so results screen can show swatches faster.
+    unawaited(ShopifyService.fetchFullProducts());
   }
 
   @override
@@ -704,7 +720,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             } else {
               selectedCrownShape = sorted.first;
             }
-            _syncBrimSelectionToAvailable();
+            _onCrownSelectionChanged();
           }
         });
       }
@@ -1574,7 +1590,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     final sorted = _sortedCrownShapes ?? _currentCrownShapes;
                     if (index < sorted.length) {
                       selectedCrownShape = sorted[index];
-                      _syncBrimSelectionToAvailable();
+                      _onCrownSelectionChanged();
                     }
                   });
                 },
@@ -2203,7 +2219,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         onChanged: (val) {
                           setState(() {
                             selectedCrownShape = val;
-                            _syncBrimSelectionToAvailable();
+                            _onCrownSelectionChanged();
                           });
                         },
                       ),
