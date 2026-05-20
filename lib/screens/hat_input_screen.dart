@@ -659,26 +659,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
       final chosenName = shape.name.toLowerCase();
       String? keyword;
       if (isCrown) {
-        if (chosenName.contains('cattleman'))
+        if (chosenName.contains('cattleman')) {
           keyword = 'cattleman';
-        else if (chosenName.contains('gus'))
+        } else if (chosenName.contains('gus')) {
           keyword = 'gus';
-        else if (chosenName.contains('teardrop'))
+        } else if (chosenName.contains('teardrop')) {
           keyword = 'teardrop';
-        else if (chosenName.contains('brick'))
+        } else if (chosenName.contains('brick')) {
           keyword = 'brick';
-        else if (chosenName.contains('gambler'))
+        } else if (chosenName.contains('gambler')) {
           keyword = 'gambler';
-        else if (chosenName.contains('punch')) keyword = 'punch';
+        } else if (chosenName.contains('punch')) {
+          keyword = 'punch';
+        }
       } else {
-        if (chosenName.contains('curved') || chosenName.contains('curve'))
+        if (chosenName.contains('curved') || chosenName.contains('curve')) {
           keyword = 'curved';
-        else if (chosenName.contains('flat'))
+        } else if (chosenName.contains('flat')) {
           keyword = 'flat';
-        else if (chosenName.contains('curl'))
+        } else if (chosenName.contains('curl')) {
           keyword = 'curl';
-        else if (chosenName.contains('downturned') ||
-            chosenName.contains('pulled')) keyword = 'downturned';
+        } else if (chosenName.contains('downturned') ||
+            chosenName.contains('pulled')) {
+          keyword = 'downturned';
+        }
       }
 
       if (keyword != null) {
@@ -726,7 +730,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         _materialExampleUrls = _computeMaterialExampleImages();
       });
     } catch (e) {
-      print('Error loading dynamic validation choices: $e');
+      debugPrint('Error loading dynamic validation choices: $e');
       setState(() {
         _materialTypes = [];
         _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
@@ -968,7 +972,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: const Color(0xFF2D2926).withOpacity(0.72),
+                    color: const Color(0xFF2D2926).withValues(alpha: 0.72),
                     height: 1.35,
                   ),
                 ),
@@ -992,8 +996,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
     bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
-    if (_currentPageIndex == 0)
+    if (_currentPageIndex == 0) {
       return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
+    }
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
     if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
@@ -1008,7 +1013,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1480,87 +1485,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildStyleCard(String name, String description,
-      {String? fallbackImagePath, String? imageUrl, IconData? icon}) {
-    final isSelected = selectedWesternStyle == name;
-    return Card(
-      elevation: isSelected ? 0 : 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8), // Soft rounded
-        side: BorderSide(
-          color: isSelected
-              ? const Color(0xFF559C99)
-              : Colors.grey.shade300, // Turquoise selection
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(2),
-        onTap: () {
-          _onWesternStyleSelected(name);
-          _nextPage();
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Full-bleed Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(2), topRight: Radius.circular(2)),
-                child: imageUrl != null
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        errorBuilder: (_, __, ___) =>
-                            _buildFallbackImage(fallbackImagePath, icon),
-                      )
-                    : _buildFallbackImage(fallbackImagePath, icon),
-              ),
-            ),
-            // Text at the bottom
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Text(
-                name.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  color: const Color(0xFF2D2926),
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackImage(String? fallbackImagePath, IconData? icon) {
-    return fallbackImagePath != null
-        ? Image.asset(
-            fallbackImagePath,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            errorBuilder: (_, __, ___) => Container(
-              color: Colors.white,
-              child: const Icon(Icons.category, size: 48, color: Colors.grey),
-            ),
-          )
-        : Container(
-            color: Colors.white,
-            child: Icon(icon ?? Icons.category, size: 48, color: Colors.grey),
-          );
-  }
-
   void _showShapeDetailSheet(
       BuildContext context, HatShapeInfo shape, String type) {
     showModalBottomSheet(
@@ -1663,8 +1587,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       itemCount: shape.famousWearers.length,
-      separatorBuilder: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+      separatorBuilder: (_, __) => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
         child: Divider(color: Colors.white12, height: 1),
       ),
       itemBuilder: (context, index) {
@@ -1678,7 +1602,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF559C99).withOpacity(0.15),
+                    color: const Color(0xFF559C99).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Center(
@@ -1738,7 +1662,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF559C99).withOpacity(0.15),
+              color: const Color(0xFF559C99).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Icon(Icons.straighten,
@@ -1752,7 +1676,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             style: GoogleFonts.playfairDisplay(
               fontSize: 17,
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               height: 1.7,
               fontStyle: FontStyle.italic,
             ),
@@ -1829,8 +1753,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         }
                       }
                       final bool isFlipped = _flippedCardIndex == index;
-                      final bool isCentered =
-                          index == _currentCrownCarouselIndex;
 
                       return Padding(
                         padding: const EdgeInsets.only(
@@ -1929,7 +1851,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                         fontWeight:
                                                             FontWeight.w400,
                                                         color: Colors.white
-                                                            .withOpacity(0.9),
+                                                            .withValues(
+                                                                alpha: 0.9),
                                                         height: 1.6,
                                                         fontStyle:
                                                             FontStyle.italic,
@@ -2339,10 +2262,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2376,10 +2299,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2547,8 +2470,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context)
                       .colorScheme
-                      .surfaceVariant
-                      .withOpacity(0.5),
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -2656,8 +2579,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context)
                       .colorScheme
-                      .surfaceVariant
-                      .withOpacity(0.5),
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -3050,8 +2973,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         }
                       }
                       final bool isFlipped = _flippedBrimCardIndex == index;
-                      final bool isCentered =
-                          index == _currentBrimCarouselIndex;
 
                       return Padding(
                         padding: const EdgeInsets.only(
@@ -3149,7 +3070,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                         fontWeight:
                                                             FontWeight.w400,
                                                         color: Colors.white
-                                                            .withOpacity(0.9),
+                                                            .withValues(
+                                                                alpha: 0.9),
                                                         height: 1.6,
                                                         fontStyle:
                                                             FontStyle.italic,
@@ -3551,10 +3473,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
+                                    color: Colors.black.withValues(alpha: 0.08),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1))
                               ],
@@ -3581,10 +3503,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
+                                    color: Colors.black.withValues(alpha: 0.08),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1))
                               ],

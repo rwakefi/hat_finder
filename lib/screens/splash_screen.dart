@@ -49,6 +49,8 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+
     final hasSeenPermissions = prefs.getBool('has_seen_permissions') ?? false;
 
     Navigator.of(context).pushReplacement(
@@ -87,11 +89,11 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 180,
                 ),
                 const SizedBox(height: 32),
-                Text(
+                const Text(
                   'MOON RIDGE',
                   style: TextStyle(
                     fontSize: 16,
-                    color: const Color(0xFF2D2926),
+                    color: Color(0xFF2D2926),
                     letterSpacing: 8.0,
                     fontWeight: FontWeight.w400,
                   ),

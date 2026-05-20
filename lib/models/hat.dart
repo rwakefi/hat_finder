@@ -356,7 +356,7 @@ const List<HatShapeInfo> brimShapes = [
         },
       ],
       physicalDescription:
-          'A slight J-shaped upward curl on both sides, keeping the front and back relatively flat. Width typically 4\" to 4½\".',
+          'A slight J-shaped upward curl on both sides, keeping the front and back relatively flat. Width typically 4" to 4½".',
       galleryImages: ['assets/images/placeholder.png']),
   HatShapeInfo('WTP (West Texas Punch)', 'assets/images/placeholder.png',
       'Wide flat brim with a punched-down front.',
@@ -378,7 +378,7 @@ const List<HatShapeInfo> brimShapes = [
           'The JB curl takes the J curl further with a more dramatic side sweep, popular in show and cutting circuits.',
       famousWearers: [],
       physicalDescription:
-          'A sharper, higher J-shaped sweep on both sides. Width typically 4\" to 4½\".',
+          'A sharper, higher J-shaped sweep on both sides. Width typically 4" to 4½".',
       galleryImages: ['assets/images/placeholder.png']),
   HatShapeInfo('Shovel Width', 'assets/images/placeholder.png',
       'Distinct flat front edge with curled sides.',

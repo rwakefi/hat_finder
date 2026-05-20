@@ -219,7 +219,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           // Turquoise progress accent line
           Container(height: 3, color: _turquoise),
           _buildSearchSummary(),
-          Divider(height: 1, color: _borderGrey),
+          const Divider(height: 1, color: _borderGrey),
           Expanded(
             child: FutureBuilder<List<dynamic>>(
               future: _hatsFuture,
@@ -235,7 +235,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           'Finding Your Perfect Hat...',
                           style: GoogleFonts.montserrat(
                             fontSize: 14,
-                            color: _espresso.withOpacity(0.5),
+                            color: _espresso.withValues(alpha: 0.5),
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.w500,
                           ),
@@ -256,7 +256,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.search_off_rounded,
-                              size: 56, color: _espresso.withOpacity(0.2)),
+                              size: 56,
+                              color: _espresso.withValues(alpha: 0.2)),
                           const SizedBox(height: 16),
                           Text(
                             'No Matches Found',
@@ -273,7 +274,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
                               fontSize: 15,
-                              color: _espresso.withOpacity(0.5),
+                              color: _espresso.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -318,7 +319,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         child: Row(
                           children: [
                             Icon(Icons.palette_outlined,
-                                size: 16, color: _espresso.withOpacity(0.4)),
+                                size: 16,
+                                color: _espresso.withValues(alpha: 0.4)),
                             const SizedBox(width: 8),
                             Text(
                               'COLOR',
@@ -417,7 +419,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         ),
                       ),
                     if (sortedColors.isNotEmpty)
-                      Divider(height: 1, color: _borderGrey),
+                      const Divider(height: 1, color: _borderGrey),
                     // Grid
                     Expanded(
                       child: filteredHats.isEmpty
@@ -426,7 +428,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 'No hats in this color.',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
-                                  color: _espresso.withOpacity(0.4),
+                                  color: _espresso.withValues(alpha: 0.4),
                                 ),
                               ),
                             )
@@ -435,7 +437,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                   const EdgeInsets.fromLTRB(12, 12, 12, 32),
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
-                              cacheExtent: 400,
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
@@ -526,7 +527,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         border: Border.all(color: _borderGrey, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -555,13 +556,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => Center(
                                 child: Icon(Icons.image_outlined,
-                                    color: _espresso.withOpacity(0.15),
+                                    color: _espresso.withValues(alpha: 0.15),
                                     size: 36),
                               ),
                             )
                           : Center(
                               child: Icon(Icons.image_outlined,
-                                  color: _espresso.withOpacity(0.15), size: 36),
+                                  color: _espresso.withValues(alpha: 0.15),
+                                  size: 36),
                             ),
                     ),
                     if (swatchColors.isNotEmpty)
@@ -584,7 +586,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 color: _white,
                               ),
                               decoration: BoxDecoration(
-                                color: _espresso.withOpacity(0.92),
+                                color: _espresso.withValues(alpha: 0.92),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Semantics(
@@ -606,17 +608,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                         color: swatchColor,
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color:
-                                              swatchColor.computeLuminance() >
-                                                      0.8
-                                                  ? _espresso.withOpacity(0.2)
-                                                  : Colors.white30,
+                                          color: swatchColor
+                                                      .computeLuminance() >
+                                                  0.8
+                                              ? _espresso.withValues(alpha: 0.2)
+                                              : Colors.white30,
                                           width: 1.0,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.12),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.12),
                                             blurRadius: 2,
                                             offset: const Offset(0, 1),
                                           ),
@@ -700,7 +702,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             );
                           },
                           child: Icon(Icons.bookmark_border_rounded,
-                              color: _espresso.withOpacity(0.4), size: 20),
+                              color: _espresso.withValues(alpha: 0.4),
+                              size: 20),
                         ),
                         const Spacer(),
                         Text(
@@ -733,7 +736,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             label,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: _espresso.withOpacity(0.5),
+              color: _espresso.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -803,7 +806,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             style: GoogleFonts.inter(
               fontSize: 12,
               height: 1.35,
-              color: _espresso.withOpacity(0.72),
+              color: _espresso.withValues(alpha: 0.72),
             ),
           ),
         ),
@@ -816,41 +819,59 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     if (name.contains('black')) return const Color(0xFF1A1A1A);
     if (name.contains('chocolate') ||
         name.contains('brown') ||
-        name.contains('dark brown')) return const Color(0xFF4E3629);
+        name.contains('dark brown')) {
+      return const Color(0xFF4E3629);
+    }
     if (name.contains('silver grey') ||
         name.contains('silver gray') ||
         name.contains('granite') ||
         name.contains('silver-grey') ||
-        name.contains('silver-gray')) return const Color(0xFFB0B3B5);
+        name.contains('silver-gray')) {
+      return const Color(0xFFB0B3B5);
+    }
     if (name.contains('grey') ||
         name.contains('gray') ||
-        name.contains('sliver grey')) return const Color(0xFF8E8E93);
+        name.contains('sliver grey')) {
+      return const Color(0xFF8E8E93);
+    }
     if (name.contains('bone') ||
         name.contains('cream') ||
         name.contains('ivory') ||
-        name.contains('white')) return const Color(0xFFE5DDCB);
-    if (name.contains('stonewash') || name.contains('stone'))
+        name.contains('white')) {
+      return const Color(0xFFE5DDCB);
+    }
+    if (name.contains('stonewash') || name.contains('stone')) {
       return const Color(0xFF8FA1A6);
-    if (name.contains('burgundy') || name.contains('wine'))
+    }
+    if (name.contains('burgundy') || name.contains('wine')) {
       return const Color(0xFF6B1D2F);
-    if (name.contains('cognac') || name.contains('chestnut'))
+    }
+    if (name.contains('cognac') || name.contains('chestnut')) {
       return const Color(0xFF8F4A24);
+    }
     if (name.contains('sand') ||
         name.contains('natural') ||
         name.contains('tan') ||
         name.contains('fawn') ||
-        name.contains('beige')) return const Color(0xFFDFD5C6);
+        name.contains('beige')) {
+      return const Color(0xFFDFD5C6);
+    }
     if (name.contains('pecan')) return const Color(0xFF8B5A2B);
     if (name.contains('caramel') ||
         name.contains('gold') ||
-        name.contains('yellow')) return const Color(0xFFC68E17);
+        name.contains('yellow')) {
+      return const Color(0xFFC68E17);
+    }
     if (name.contains('mist')) return const Color(0xFFE5E7E9);
     if (name.contains('sage') ||
         name.contains('olive') ||
-        name.contains('green')) return const Color(0xFF9CAF88);
+        name.contains('green')) {
+      return const Color(0xFF9CAF88);
+    }
     if (name.contains('red')) return const Color(0xFFC0392B);
-    if (name.contains('blue') || name.contains('navy'))
+    if (name.contains('blue') || name.contains('navy')) {
       return const Color(0xFF1B4F72);
+    }
     return Colors.grey.shade400;
   }
 

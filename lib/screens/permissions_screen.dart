@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -32,12 +31,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         );
       }
       return;
-    }
-
-    // Request App Tracking Transparency first (important for iOS)
-    if (await AppTrackingTransparency.trackingAuthorizationStatus ==
-        TrackingStatus.notDetermined) {
-      await AppTrackingTransparency.requestTrackingAuthorization();
     }
 
     // Request Location Permission
@@ -135,8 +128,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color:
-                                      const Color(0xFF2D2926).withOpacity(0.9),
+                                  color: const Color(0xFF2D2926)
+                                      .withValues(alpha: 0.9),
                                   height: 1.45,
                                 ),
                               ),
@@ -149,10 +142,10 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               ),
                               const SizedBox(height: 20),
                               _buildPermissionItem(
-                                icon: Icons.track_changes_outlined,
-                                title: 'APP TRACKING',
+                                icon: Icons.fact_check_outlined,
+                                title: 'PRIVATE FIT QUIZ',
                                 description:
-                                    'iOS may ask about tracking for personalized ads. Hat Finder still works if you decline.',
+                                    'Your head-shape answers guide recommendations without camera or ad-tracking prompts.',
                               ),
                             ],
                           ),
@@ -197,7 +190,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                   ),
                                   side: BorderSide(
                                     color: const Color(0xFF2D2926)
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
@@ -209,7 +202,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                   style: GoogleFonts.montserrat(
                                     fontSize: 14,
                                     color: const Color(0xFF2D2926)
-                                        .withOpacity(0.6),
+                                        .withValues(alpha: 0.6),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -221,7 +214,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                   Icon(
                                     Icons.lock_outline,
                                     color: const Color(0xFF2D2926)
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
@@ -231,7 +224,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: const Color(0xFF2D2926)
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                         fontStyle: FontStyle.italic,
                                       ),
                                       textAlign: TextAlign.center,
@@ -284,7 +277,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: const Color(0xFF2D2926).withOpacity(0.7),
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.7),
                   height: 1.4,
                 ),
               ),

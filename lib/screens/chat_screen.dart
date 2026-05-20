@@ -71,8 +71,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         border: isUser
                             ? null
                             : Border.all(
-                                color:
-                                    const Color(0xFFCBB593).withOpacity(0.3)),
+                                color: const Color(0xFFCBB593)
+                                    .withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         msg['content'] ?? '',
@@ -106,7 +106,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       decoration: InputDecoration(
                         hintText: 'e.g. I have a round face, what hat is best?',
                         hintStyle: TextStyle(
-                            color: const Color(0xFFF5F0E8).withOpacity(0.5)),
+                            color:
+                                const Color(0xFFF5F0E8).withValues(alpha: 0.5)),
                         enabledBorder: const OutlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFFCBB593)),
                           borderRadius: BorderRadius.zero,

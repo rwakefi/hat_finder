@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
-                        color: const Color(0xFF2D2926).withOpacity(0.65),
+                        color: const Color(0xFF2D2926).withValues(alpha: 0.65),
                         height: 1.6,
                         letterSpacing: 0.3,
                       ),
@@ -115,8 +115,8 @@ class HomeScreen extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(16),
-            splashColor: const Color(0xFF2D2926).withOpacity(0.06),
-            highlightColor: const Color(0xFF2D2926).withOpacity(0.03),
+            splashColor: const Color(0xFF2D2926).withValues(alpha: 0.06),
+            highlightColor: const Color(0xFF2D2926).withValues(alpha: 0.03),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -124,14 +124,14 @@ class HomeScreen extends StatelessWidget {
                 color: const Color(0xFFE8E4DA), // Richer warm beige
                 border: Border.all(
                   color: const Color(0xFF2D2926)
-                      .withOpacity(0.48), // Even more defined border
+                      .withValues(alpha: 0.48), // Even more defined border
                   width: 1.2,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF2D2926)
-                        .withOpacity(0.06), // Slightly deeper shadow
+                        .withValues(alpha: 0.06), // Slightly deeper shadow
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -142,7 +142,7 @@ class HomeScreen extends StatelessWidget {
                   Icon(
                     icon,
                     size: 29, // Increased from 25
-                    color: const Color(0xFF2D2926).withOpacity(0.65),
+                    color: const Color(0xFF2D2926).withValues(alpha: 0.65),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -159,7 +159,7 @@ class HomeScreen extends StatelessWidget {
                   Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 16, // Slightly bumped
-                    color: const Color(0xFF2D2926).withOpacity(0.35),
+                    color: const Color(0xFF2D2926).withValues(alpha: 0.35),
                   ),
                 ],
               ),
@@ -172,7 +172,7 @@ class HomeScreen extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16.5, // Increased from 14.5 (~15%)
-            color: const Color(0xFF2D2926).withOpacity(0.48),
+            color: const Color(0xFF2D2926).withValues(alpha: 0.48),
             letterSpacing: 0.2,
             height: 1.4,
           ),
