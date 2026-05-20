@@ -334,6 +334,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
           'pinch front',
         ]);
         if (priority != 0) return priority;
+      } else if (selectedWesternStyle == 'Outdoor') {
+        final priority = _compareByStylePriority(a.name, b.name, const [
+          'pinch front',
+          'cattleman',
+          'telescope',
+        ]);
+        if (priority != 0) return priority;
       }
       return _compareShapeProductPriority(
         _crownProductsMap[a.name] ?? [],
@@ -454,8 +461,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
   }
 
-  void _applyCityCrownCarouselDefaults() {
-    if (selectedWesternStyle != 'City') return;
+  void _applyCrownCarouselDefaults() {
     _currentCrownCarouselIndex = 0;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -482,8 +488,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
       selectedCrownShape = null;
       selectedBrimShape = null;
       _refreshShapeProductMaps();
+      if (name == 'City' || name == 'Outdoor') {
+        _applyCrownCarouselDefaults();
+      }
       if (name == 'City') {
-        _applyCityCrownCarouselDefaults();
         _applyCityBrimCarouselDefaults();
       }
     });
