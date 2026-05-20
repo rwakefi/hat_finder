@@ -267,8 +267,10 @@ async def chat_with_agent(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/validation_choices")
-async def get_validation_choices():
+async def get_validation_choices(refresh: bool = False):
     global _validation_cache
+    if refresh:
+        _validation_cache = None
     if _validation_cache is not None:
         expires_at, payload = _validation_cache
         if time.time() < expires_at:
@@ -300,6 +302,7 @@ async def get_validation_choices():
 
         crown_choices = []
         brim_choices = []
+        material_choices = []
 
         for edge in definitions:
             node = edge["node"]
@@ -320,10 +323,13 @@ async def get_validation_choices():
                     crown_choices = choices
                 elif key == "brim_shape":
                     brim_choices = choices
+                elif key == "felt_straw_or_ballcap":
+                    material_choices = choices
 
         payload = {
             "crown_shapes": crown_choices,
             "brim_shapes": brim_choices,
+            "material_types": material_choices,
         }
         _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
         return payload

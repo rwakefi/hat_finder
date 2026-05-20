@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
 import 'hat_results_screen.dart';
 import 'dart:convert';
-import 'dart:math' show pi;
+import 'dart:math' show pi, Random;
 import '../services/shopify_service.dart';
 
 class HatInputScreen extends StatefulWidget {
@@ -27,6 +27,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   bool _isLoadingChoices = true;
   List<HatShapeInfo> _rawCrownShapes = [];
   List<HatShapeInfo> _rawBrimShapes = [];
+  List<HatShapeInfo> _materialTypes = [];
+  Map<String, String> _materialExampleUrls = {};
+  final Random _random = Random();
 
   HatShapeInfo? selectedHatType;
   String? selectedWesternStyle;
@@ -47,6 +50,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return value.isEmpty ? '—' : value;
   }
 
+  List<HatShapeInfo> get _availableHatTypes =>
+      _materialTypes.isNotEmpty ? _materialTypes : hatTypes;
+
+  bool _needsWesternStyleStep(String? typeName) {
+    if (typeName == null) return false;
+    final n = typeName.toLowerCase();
+    return n == 'felt' || n == 'straw';
+  }
+
+  bool _skipsShapeWizard(String? typeName) {
+    if (typeName == null) return false;
+    final n = typeName.toLowerCase();
+    return n.contains('ballcap') ||
+        n.contains('beanie') ||
+        n.contains('flat cap');
+  }
+
   bool _matchShape(String prod, String ui) {
     final pNorm = prod.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
     final uNorm = ui.toLowerCase().replaceAll('-', ' ').replaceAll("'s", '').replaceAll("'", '').trim();
@@ -62,10 +82,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<HatShapeInfo> get _currentCrownShapes {
     if (_isLoadingChoices || _rawCrownShapes.isEmpty) {
       final typeName = selectedHatType?.name;
-      if (typeName == 'Felt') return feltCrownShapes;
-      if (typeName == 'Straw') return strawCrownShapes;
+      if (typeName == 'Felt' || typeName == 'Straw') return crownShapes;
       final seen = <String>{};
-      return [...feltCrownShapes, ...strawCrownShapes]
+      return [...crownShapes]
           .where((s) => seen.add(s.name))
           .toList();
     }
@@ -101,20 +120,76 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return _rawCrownShapes;
   }
 
+  HatShapeInfo _mapStringToHatType(String name) {
+    final normalized = name.toLowerCase().trim();
+    final matched = hatTypes.firstWhere(
+      (t) {
+        final tName = t.name.toLowerCase();
+        return tName == normalized ||
+            tName.contains(normalized) ||
+            normalized.contains(tName);
+      },
+      orElse: () {
+        if (normalized.contains('beanie') ||
+            (normalized.contains('flat') && normalized.contains('cap'))) {
+          return hatTypes.firstWhere(
+            (t) => t.name.toLowerCase().contains('beanie'),
+            orElse: () => hatTypes.last,
+          );
+        }
+        if (normalized.contains('ballcap') || normalized == 'ball cap') {
+          return hatTypes.firstWhere(
+            (t) => t.name.toLowerCase().contains('ballcap'),
+          );
+        }
+        if (normalized.contains('felt')) {
+          return hatTypes.firstWhere((t) => t.name == 'Felt');
+        }
+        if (normalized.contains('straw')) {
+          return hatTypes.firstWhere((t) => t.name == 'Straw');
+        }
+        return HatShapeInfo(
+          name,
+          'assets/images/placeholder.png',
+          'Hats in this material category.',
+        );
+      },
+    );
+    return HatShapeInfo(name, matched.imagePath, matched.description);
+  }
+
   HatShapeInfo _mapStringToShapeInfo(String name, {required bool isCrown}) {
     final normalized = name.toLowerCase().trim();
 
     if (isCrown) {
-      final source = [...feltCrownShapes, ...strawCrownShapes];
-      final matched = source.firstWhere(
+      final matched = crownShapes.firstWhere(
         (s) {
           final sName = s.name.toLowerCase();
           return sName == normalized || sName.contains(normalized) || normalized.contains(sName);
         },
         orElse: () {
-          final cleanNormalized = normalized.replaceAll("'s", "").trim();
-          return source.firstWhere(
-            (s) => s.name.toLowerCase().contains(cleanNormalized) || cleanNormalized.contains(s.name.toLowerCase()),
+          var lookup = normalized.replaceAll("'s", '').trim();
+          if (lookup.contains('cattleman')) {
+            lookup = 'cattleman';
+          } else if (lookup.contains('texas punch') ||
+              lookup.contains('west texas')) {
+            lookup = 'texas punch';
+          } else if (lookup.contains('cool hand') || lookup == 'chl') {
+            lookup = 'cool hand luke';
+          } else if (lookup.contains('pinch')) {
+            lookup = 'pinch front';
+          } else if (lookup.contains('rounded brick')) {
+            lookup = 'rounded brick';
+          } else if (lookup.contains('open crown')) {
+            lookup = 'open crown';
+          } else if (lookup.contains('flat cap')) {
+            lookup = 'flat cap';
+          }
+          return crownShapes.firstWhere(
+            (s) {
+              final sName = s.name.toLowerCase();
+              return sName.contains(lookup) || lookup.contains(sName);
+            },
             orElse: () => HatShapeInfo(
               name,
               'assets/images/placeholder.png',
@@ -144,23 +219,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
         orElse: () {
           String lookup = normalized;
           if (normalized == 'wtp' || normalized.contains('west texas')) {
-            lookup = 'west texas punch';
+            lookup = 'wtp';
           } else if (normalized == 'chl' || normalized.contains('cool hand')) {
-            lookup = 'cool hand luke';
-          } else if (normalized == 'j' || normalized.contains('strait')) {
-            lookup = 'j curl';
+            lookup = 'chl';
+          } else if (normalized.contains('george strait') ||
+              normalized == 'j' ||
+              normalized.startsWith('j ')) {
+            lookup = 'j (george strait)';
           } else if (normalized == 'jb') {
-            lookup = 'jb curl';
-          } else if (normalized == 'rd' || normalized.contains('round')) {
-            lookup = 'rd curl';
-          } else if (normalized.contains('upturn') || normalized == 'upturned') {
-            lookup = 'u curl';
-          } else if (normalized.contains('flat')) {
-            lookup = 'flat brim';
+            lookup = 'jb';
+          } else if (normalized.contains('shovel')) {
+            lookup = 'shovel width';
+          } else if (normalized.contains('half taco') ||
+              normalized.contains('minnick')) {
+            lookup = 'half taco';
+          } else if (normalized.contains('pencil')) {
+            lookup = 'pencil curl';
+          } else if (normalized.contains('flanged')) {
+            lookup = 'flanged brim';
+          } else if (normalized.contains('flip')) {
+            lookup = 'flip up';
+          } else if (normalized.contains('pulled down') ||
+              normalized.contains('downturn')) {
+            lookup = 'pulled down';
+          } else if (normalized.contains('flat') && normalized.contains('rd')) {
+            lookup = 'flat/rd';
+          } else if (normalized.contains('slightly curved')) {
+            lookup = 'slightly curved';
+          } else if (normalized.contains('medium curved')) {
+            lookup = 'medium curved';
+          } else if (normalized == 'taco') {
+            lookup = 'taco';
           }
 
           return brimShapes.firstWhere(
-            (s) => s.name.toLowerCase().contains(lookup) || lookup.contains(s.name.toLowerCase()),
+            (s) {
+              final sName = s.name.toLowerCase();
+              return sName.contains(lookup) || lookup.contains(sName);
+            },
             orElse: () => HatShapeInfo(
               name,
               'assets/images/placeholder.png',
@@ -184,11 +280,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
   }
 
+  Map<String, String> _computeMaterialExampleImages() {
+    if (_allProducts == null) return {};
+
+    final usedUrls = <String>{};
+    final urls = <String, String>{};
+
+    for (final type in _availableHatTypes) {
+      final matching = ShopifyService.filterProducts(
+        _allProducts!,
+        hatType: type.name,
+      ).where((p) {
+        final url = p['featuredImage']?['url'];
+        return url != null && url.toString().isNotEmpty;
+      }).toList();
+
+      matching.shuffle(_random);
+      for (final product in matching) {
+        final url = product['featuredImage']['url'] as String;
+        if (!usedUrls.contains(url)) {
+          urls[type.name] = url;
+          usedUrls.add(url);
+          break;
+        }
+      }
+    }
+    return urls;
+  }
+
   void _onProductsLoaded(List<dynamic> products) {
     if (!mounted) return;
     setState(() {
       _allProducts = products;
       _refreshShapeProductMaps();
+      _materialExampleUrls = _computeMaterialExampleImages();
     });
   }
 
@@ -203,29 +328,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _brimProductsMap = _buildShapeProductMap(brimShapeList, isCrown: false);
 
     final sortedCrown = List<HatShapeInfo>.from(crownShapes);
-    sortedCrown.sort((a, b) => _compareShapeProductPriority(
-          _crownProductsMap[a.name] ?? [],
-          _crownProductsMap[b.name] ?? [],
-        ));
+    sortedCrown.sort((a, b) {
+      if (selectedWesternStyle == 'City') {
+        final priority = _compareByStylePriority(a.name, b.name, const [
+          'pinch front',
+        ]);
+        if (priority != 0) return priority;
+      }
+      return _compareShapeProductPriority(
+        _crownProductsMap[a.name] ?? [],
+        _crownProductsMap[b.name] ?? [],
+      );
+    });
     _sortedCrownShapes = sortedCrown;
 
     final sortedBrim = List<HatShapeInfo>.from(brimShapeList);
     sortedBrim.sort((a, b) {
       if (selectedWesternStyle == 'Western') {
-        const priorityBrims = ['medium curved', 'gus', 'shovel front', 'chl'];
-        final aName = a.name.toLowerCase();
-        final bName = b.name.toLowerCase();
-        final aPriorityIndex = priorityBrims
-            .indexWhere((p) => aName.contains(p) || p.contains(aName));
-        final bPriorityIndex = priorityBrims
-            .indexWhere((p) => bName.contains(p) || p.contains(bName));
-        if (aPriorityIndex != -1 && bPriorityIndex != -1) {
-          return aPriorityIndex.compareTo(bPriorityIndex);
-        } else if (aPriorityIndex != -1) {
-          return -1;
-        } else if (bPriorityIndex != -1) {
-          return 1;
-        }
+        final priority = _compareByStylePriority(a.name, b.name, const [
+          'medium curved',
+          'shovel width',
+          'chl',
+          'wtp',
+        ]);
+        if (priority != 0) return priority;
+      } else if (selectedWesternStyle == 'City') {
+        final priority = _compareByStylePriority(a.name, b.name, const [
+          'flat/rd',
+          'pulled down',
+          'cattleman',
+          'flip up',
+          'pencil curl',
+        ]);
+        if (priority != 0) return priority;
       }
       return _compareShapeProductPriority(
         _brimProductsMap[a.name] ?? [],
@@ -233,6 +368,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
       );
     });
     _sortedBrimShapes = sortedBrim;
+    _syncBrimSelectionToAvailable();
+  }
+
+  int _compareByStylePriority(
+    String aName,
+    String bName,
+    List<String> priorities,
+  ) {
+    final aLower = aName.toLowerCase();
+    final bLower = bName.toLowerCase();
+    final aPriorityIndex = priorities.indexWhere(
+      (p) => aLower.contains(p) || p.contains(aLower),
+    );
+    final bPriorityIndex = priorities.indexWhere(
+      (p) => bLower.contains(p) || p.contains(bLower),
+    );
+    if (aPriorityIndex != -1 && bPriorityIndex != -1) {
+      return aPriorityIndex.compareTo(bPriorityIndex);
+    } else if (aPriorityIndex != -1) {
+      return -1;
+    } else if (bPriorityIndex != -1) {
+      return 1;
+    }
+    return 0;
   }
 
   int _compareShapeProductPriority(
@@ -249,6 +408,104 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final aHasAny = aProds.isNotEmpty ? 1 : 0;
     final bHasAny = bProds.isNotEmpty ? 1 : 0;
     return bHasAny.compareTo(aHasAny);
+  }
+
+  List<HatShapeInfo> get _allBrimShapeOptions =>
+      _sortedBrimShapes ??
+      (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
+
+  /// Brim shapes that have at least one catalog product for the selected crown.
+  List<HatShapeInfo> get _availableBrimShapes {
+    final all = _allBrimShapeOptions;
+    if (selectedCrownShape == null || _allProducts == null) return all;
+    return all
+        .where((brim) => _productCountForCrownAndBrim(brim) > 0)
+        .toList();
+  }
+
+  int _productCountForCrownAndBrim(HatShapeInfo brim) {
+    if (_allProducts == null || selectedCrownShape == null) return 0;
+    var products = ShopifyService.filterProducts(
+      _allProducts!,
+      hatType: selectedHatType?.name,
+      westernStyle: selectedWesternStyle,
+      crownShape: selectedCrownShape!.name,
+      brimShape: brim.name,
+    );
+    if (selectedCrownShape!.name.toLowerCase().contains('cattleman')) {
+      products = products.where((p) {
+        final title = (p['title'] ?? '').toString().toLowerCase();
+        final handle = (p['handle'] ?? '').toString().toLowerCase();
+        return !(title.contains('open road') || handle.contains('open-road'));
+      }).toList();
+    }
+    return products.length;
+  }
+
+  void _syncBrimSelectionToAvailable() {
+    final available = _availableBrimShapes;
+    if (selectedBrimShape != null &&
+        !available.any((b) => b.name == selectedBrimShape!.name)) {
+      selectedBrimShape = null;
+      _currentBrimCarouselIndex = 0;
+      if (_brimCarouselController.hasClients) {
+        _brimCarouselController.jumpToPage(0);
+      }
+    }
+  }
+
+  void _applyCityCrownCarouselDefaults() {
+    if (selectedWesternStyle != 'City') return;
+    _currentCrownCarouselIndex = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_crownCarouselController.hasClients) {
+        _crownCarouselController.jumpToPage(0);
+      }
+    });
+  }
+
+  void _applyCityBrimCarouselDefaults() {
+    if (selectedWesternStyle != 'City') return;
+    _currentBrimCarouselIndex = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_brimCarouselController.hasClients) {
+        _brimCarouselController.jumpToPage(0);
+      }
+    });
+  }
+
+  void _onWesternStyleSelected(String name) {
+    setState(() {
+      selectedWesternStyle = name;
+      selectedCrownShape = null;
+      selectedBrimShape = null;
+      _refreshShapeProductMaps();
+      if (name == 'City') {
+        _applyCityCrownCarouselDefaults();
+        _applyCityBrimCarouselDefaults();
+      }
+    });
+  }
+
+  void _selectCrownAndAdvance(HatShapeInfo shape, int index) {
+    setState(() {
+      selectedCrownShape = shape;
+      _currentCrownCarouselIndex = index;
+      _flippedCardIndex = null;
+      _syncBrimSelectionToAvailable();
+    });
+    _nextPage();
+  }
+
+  void _selectBrimAndAdvance(HatShapeInfo shape, int index) {
+    setState(() {
+      selectedBrimShape = shape;
+      _currentBrimCarouselIndex = index;
+      _flippedBrimCardIndex = null;
+    });
+    _nextPage();
   }
 
   Map<String, List<Map<String, String>>> _buildShapeProductMap(
@@ -348,11 +605,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Future<void> _loadDynamicChoices() async {
     try {
-      final choices = await ShopifyService.fetchValidationChoices();
+      final choices =
+          await ShopifyService.fetchValidationChoices(forceRefresh: true);
       final List<String> crownStrings = choices['crown_shapes'] ?? [];
       final List<String> brimStrings = choices['brim_shapes'] ?? [];
+      final List<String> materialStrings = choices['material_types'] ?? [];
 
       setState(() {
+        _materialTypes = materialStrings.map(_mapStringToHatType).toList();
         _rawCrownShapes = crownStrings.map((name) {
           return _mapStringToShapeInfo(name, isCrown: true);
         }).toList();
@@ -363,16 +623,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
         _isLoadingChoices = false;
         _refreshShapeProductMaps();
+        _materialExampleUrls = _computeMaterialExampleImages();
       });
     } catch (e) {
       print('Error loading dynamic validation choices: $e');
       setState(() {
-        _rawCrownShapes = [...feltCrownShapes, ...strawCrownShapes];
-        final seen = <String>{};
-        _rawCrownShapes = _rawCrownShapes.where((s) => seen.add(s.name)).toList();
+        _materialTypes = [];
+        _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
         _rawBrimShapes = List.from(brimShapes);
         _isLoadingChoices = false;
         _refreshShapeProductMaps();
+        _materialExampleUrls = _computeMaterialExampleImages();
       });
     }
   }
@@ -397,7 +658,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   List<Widget> get _pages {
     final pages = <Widget>[_buildVisualHatTypeSelection()];
-    if (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw') {
+    if (_needsWesternStyleStep(selectedHatType?.name)) {
       pages.add(_buildVisualWesternSelection());
     }
     pages.addAll([
@@ -413,10 +674,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (!overrideValidation) {
       if (_currentPageIndex == 0 && selectedHatType == null) {
         setState(() {
-          selectedHatType = hatTypes.first;
+          selectedHatType = _availableHatTypes.first;
         });
       }
-      bool hasWestern = (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw');
+      bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
       int westernIndex = hasWestern ? 1 : -1;
       int crownIndex = hasWestern ? 2 : 1;
       int brimIndex = hasWestern ? 3 : 2;
@@ -435,12 +696,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
             } else {
               selectedCrownShape = sorted.first;
             }
+            _syncBrimSelectionToAvailable();
           }
         });
       }
       if (_currentPageIndex == brimIndex && selectedBrimShape == null) {
         setState(() {
-          final sorted = _sortedBrimShapes ?? (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
+          final sorted = _availableBrimShapes;
           if (sorted.isNotEmpty) {
             if (_currentBrimCarouselIndex < sorted.length) {
               selectedBrimShape = sorted[_currentBrimCarouselIndex];
@@ -541,8 +803,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   onPageChanged: (index) {
                     setState(() {
                       _currentPageIndex = index;
-                      _flippedCardIndex = null; // Reset flip when moving between main pages
+                      _flippedCardIndex = null;
                       _flippedBrimCardIndex = null;
+                      if (index == 0) {
+                        _materialExampleUrls = _computeMaterialExampleImages();
+                      }
                     });
                   },
                   children: _pages,
@@ -566,7 +831,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
-    bool hasWestern = (selectedHatType?.name == 'Felt' || selectedHatType?.name == 'Straw');
+    bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
     if (_currentPageIndex == 0) return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
@@ -701,73 +966,105 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ),
         ),
         Expanded(
-          child: GridView.count(
-            crossAxisCount: 2,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85, // Adjusted to fit all 3 options better on smaller screens
-            children: hatTypes.map((typeInfo) {
-              final isSelected = selectedHatType == typeInfo;
-              return Card(
-                elevation: 0,
-                clipBehavior: Clip.antiAlias,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
-                    width: isSelected ? 3 : 1,
-                  ),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      selectedHatType = typeInfo;
-                      selectedWesternStyle = null;
-                      selectedCrownShape = null;
-                      selectedBrimShape = null;
-                      _refreshShapeProductMaps();
-                    });
-                    if (typeInfo.name == 'Ballcap') {
-                      _submitSearch();
-                    } else {
-                      _nextPage();
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: typeInfo.imagePath != 'assets/images/placeholder.png'
-                            ? Image.asset(
-                                typeInfo.imagePath,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                color: Colors.grey[50],
-                                child: const Icon(Icons.category, size: 48, color: Colors.grey),
-                              ),
+          child: FutureBuilder<List<dynamic>>(
+            future: _allProductsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF559C99)),
+                );
+              }
+
+              return GridView.count(
+                crossAxisCount: 2,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85,
+                children: _availableHatTypes.map((typeInfo) {
+                  final isSelected = selectedHatType == typeInfo;
+                  final imageUrl = _materialExampleUrls[typeInfo.name];
+
+                  return Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected
+                            ? const Color(0xFF559C99)
+                            : Colors.grey.shade200,
+                        width: isSelected ? 3 : 1,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        color: Colors.white,
-                        child: Text(
-                          typeInfo.name.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2D2926),
-                            letterSpacing: 2.0,
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          selectedHatType = typeInfo;
+                          selectedWesternStyle = null;
+                          selectedCrownShape = null;
+                          selectedBrimShape = null;
+                          _refreshShapeProductMaps();
+                        });
+                        if (_skipsShapeWizard(typeInfo.name)) {
+                          _submitSearch();
+                        } else {
+                          _nextPage();
+                        }
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0.0, -0.35),
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Image.asset(
+                                      typeInfo.imagePath,
+                                      fit: BoxFit.cover,
+                                      alignment: const Alignment(0.0, -0.35),
+                                    ),
+                                  )
+                                : (typeInfo.imagePath !=
+                                        'assets/images/placeholder.png'
+                                    ? Image.asset(
+                                        typeInfo.imagePath,
+                                        fit: BoxFit.cover,
+                                        alignment: const Alignment(0.0, -0.35),
+                                      )
+                                    : Container(
+                                        color: Colors.grey[50],
+                                        child: const Icon(Icons.category,
+                                            size: 48, color: Colors.grey),
+                                      )),
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            color: Colors.white,
+                            child: Text(
+                              typeInfo.name.toUpperCase(),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF2D2926),
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                }).toList(),
               );
-            }).toList(),
+            },
           ),
         ),
       ],
@@ -912,12 +1209,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                     child: InkWell(
                       onTap: () {
-                        setState(() {
-                          selectedWesternStyle = name;
-                          selectedCrownShape = null;
-                          selectedBrimShape = null;
-                          _refreshShapeProductMaps();
-                        });
+                        _onWesternStyleSelected(name);
                         _nextPage();
                       },
                       child: Column(
@@ -985,10 +1277,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(2),
         onTap: () {
-          setState(() {
-            selectedWesternStyle = name;
-            selectedCrownShape = null;
-          });
+          _onWesternStyleSelected(name);
           _nextPage();
         },
         child: Column(
@@ -1273,10 +1562,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 onPageChanged: (index) {
                   setState(() {
                     _currentCrownCarouselIndex = index;
-                    _flippedCardIndex = null; // reset flip on swipe
+                    _flippedCardIndex = null;
                     final sorted = _sortedCrownShapes ?? _currentCrownShapes;
                     if (index < sorted.length) {
                       selectedCrownShape = sorted[index];
+                      _syncBrimSelectionToAvailable();
                     }
                   });
                 },
@@ -1301,27 +1591,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
                     child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        if (!isCentered) {
-                          // Tapped a peekaboo card — scroll to it instead of flipping
-                          _crownCarouselController.animateToPage(
-                            index,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeInOut,
-                          );
-                          return;
-                        }
                         if (isFlipped) {
                           setState(() {
-                            _flippedCardIndex = null; // flip back
+                            _flippedCardIndex = null;
                           });
-                        } else {
-                          // Front face tapped -> select and move next
-                          setState(() {
-                            selectedCrownShape = shape;
-                          });
-                          _nextPage();
+                          return;
                         }
+                        _selectCrownAndAdvance(shape, index);
                       },
                       child: TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
@@ -1457,11 +1735,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               width: double.infinity,
                                               child: ElevatedButton(
                                                 onPressed: () {
-                                                  setState(() {
-                                                    selectedCrownShape = shape;
-                                                    _flippedCardIndex = null;
-                                                  });
-                                                  _nextPage();
+                                                  _selectCrownAndAdvance(shape, index);
                                                 },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: const Color(0xFF559C99),
@@ -1473,7 +1747,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   elevation: 0,
                                                 ),
                                                 child: Text(
-                                                  'SELECT THIS SHAPE',
+                                                  'SELECT THIS CROWN',
                                                   style: GoogleFonts.montserrat(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w700,
@@ -1593,6 +1867,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
                                                 ),
                                                 const SizedBox(height: 12),
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  child: ElevatedButton(
+                                                    onPressed: () => _selectCrownAndAdvance(shape, index),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFF559C99),
+                                                      foregroundColor: Colors.white,
+                                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(30),
+                                                      ),
+                                                      elevation: 0,
+                                                    ),
+                                                    child: Text(
+                                                      'SELECT THIS CROWN',
+                                                      style: GoogleFonts.montserrat(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 1.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
                                                 OutlinedButton(
                                                   onPressed: () {
                                                     setState(() {
@@ -1895,7 +2193,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           }),
                         ],
                         onChanged: (val) {
-                          setState(() => selectedCrownShape = val);
+                          setState(() {
+                            selectedCrownShape = val;
+                            _syncBrimSelectionToAvailable();
+                          });
                         },
                       ),
                     ],
@@ -1945,7 +2246,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     children: [
                       const Text('Brim Shape:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                       DropdownButton<HatShapeInfo?>(
-                        value: (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes).contains(selectedBrimShape) ? selectedBrimShape : null,
+                        value: _availableBrimShapes.contains(selectedBrimShape) ? selectedBrimShape : null,
                         isExpanded: false,
                         isDense: true,
                         underline: const SizedBox(),
@@ -1953,7 +2254,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         dropdownColor: Theme.of(context).scaffoldBackgroundColor,
                         hint: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                         selectedItemBuilder: (BuildContext context) {
-                          return <HatShapeInfo?>[null, ...(_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes)].map<Widget>((HatShapeInfo? item) {
+                          return <HatShapeInfo?>[null, ..._availableBrimShapes].map<Widget>((HatShapeInfo? item) {
                             return Text(
                               item?.name ?? 'Any',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -1965,7 +2266,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             value: null,
                             child: Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
-                          ...(_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes).map((shape) {
+                          ..._availableBrimShapes.map((shape) {
                             return DropdownMenuItem<HatShapeInfo?>(
                               value: shape,
                               child: Text(shape.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -2181,11 +2482,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
           );
         }
 
-        final sortedShapes = _sortedBrimShapes ??
-            List<HatShapeInfo>.from(
-              _rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes,
-            );
+        final sortedShapes = _availableBrimShapes;
         final shopifyProductsMap = _brimProductsMap;
+
+        if (sortedShapes.isEmpty) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                child: Text(
+                  'Select Brim Shape:',
+                  style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      selectedCrownShape == null
+                          ? 'Select a crown shape first.'
+                          : 'No brim shapes in stock for ${selectedCrownShape!.name} with your current selections.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
 
         return Column(
           children: [
@@ -2207,9 +2537,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       setState(() {
                         _currentBrimCarouselIndex = index;
                         _flippedBrimCardIndex = null;
-                        final sorted = _sortedBrimShapes ?? (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
-                        if (index < sorted.length) {
-                          selectedBrimShape = sorted[index];
+                        if (index < sortedShapes.length) {
+                          selectedBrimShape = sortedShapes[index];
                         }
                       });
                     },
@@ -2234,25 +2563,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
                         child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            if (!isCentered) {
-                              _brimCarouselController.animateToPage(
-                                index,
-                                duration: const Duration(milliseconds: 350),
-                                curve: Curves.easeInOut,
-                              );
-                              return;
-                            }
                             if (isFlipped) {
                               setState(() {
                                 _flippedBrimCardIndex = null;
                               });
-                            } else {
-                              setState(() {
-                                selectedBrimShape = shape;
-                              });
-                              _nextPage();
+                              return;
                             }
+                            _selectBrimAndAdvance(shape, index);
                           },
                           child: TweenAnimationBuilder<double>(
                             tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
@@ -2387,11 +2706,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   width: double.infinity,
                                                   child: ElevatedButton(
                                                     onPressed: () {
-                                                      setState(() {
-                                                        selectedBrimShape = shape;
-                                                        _flippedBrimCardIndex = null;
-                                                      });
-                                                      _nextPage();
+                                                      _selectBrimAndAdvance(shape, index);
                                                     },
                                                     style: ElevatedButton.styleFrom(
                                                       backgroundColor: const Color(0xFF559C99),
@@ -2403,7 +2718,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                       elevation: 0,
                                                     ),
                                                     child: Text(
-                                                      'SELECT THIS SHAPE',
+                                                      'SELECT THIS BRIM',
                                                       style: GoogleFonts.montserrat(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w700,
@@ -2519,6 +2834,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                       style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
                                                     ),
                                                     const SizedBox(height: 12),
+                                                    SizedBox(
+                                                      width: double.infinity,
+                                                      child: ElevatedButton(
+                                                        onPressed: () => _selectBrimAndAdvance(shape, index),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: const Color(0xFF559C99),
+                                                          foregroundColor: Colors.white,
+                                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(30),
+                                                          ),
+                                                          elevation: 0,
+                                                        ),
+                                                        child: Text(
+                                                          'SELECT THIS BRIM',
+                                                          style: GoogleFonts.montserrat(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
                                                     OutlinedButton(
                                                       onPressed: () {
                                                         setState(() {

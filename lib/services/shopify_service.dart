@@ -170,7 +170,7 @@ class ShopifyService {
       final prodStetsonProfile = parseMetafieldValue(product['stetsonProfile']);
 
       if (hatType != null && hatType != 'Any Type') {
-        if (!prodHatType.toLowerCase().contains(hatType.toLowerCase())) {
+        if (!_matchesHatType(prodHatType, hatType)) {
           return false;
         }
       }
@@ -224,6 +224,17 @@ class ShopifyService {
     }).toList();
   }
 
+  static bool _matchesHatType(String prodHatType, String hatType) {
+    final prod = prodHatType.toLowerCase();
+    final target = hatType.toLowerCase();
+    if (target.contains('beanie') && target.contains('flat')) {
+      return prod.contains('beanie') ||
+          prod.contains('flat cap') ||
+          prod.contains('flatcap');
+    }
+    return prod.contains(target);
+  }
+
   static bool _matchShape(String prod, String ui) {
     final pNorm = prod
         .toLowerCase()
@@ -257,7 +268,14 @@ class ShopifyService {
     return pClean == uClean || pClean.contains(uClean) || uClean.contains(pClean);
   }
 
-  static Future<Map<String, List<String>>> fetchValidationChoices() async {
+  static Future<Map<String, List<String>>> fetchValidationChoices({
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) {
+      _cachedValidationChoices = null;
+      _validationCacheTime = null;
+    }
+
     if (_cachedValidationChoices != null &&
         _isCacheValid(_validationCacheTime)) {
       return _cachedValidationChoices!;
@@ -265,7 +283,8 @@ class ShopifyService {
 
     if (_inflightValidation != null) return _inflightValidation!;
 
-    _inflightValidation = _downloadValidationChoices().then((choices) {
+    _inflightValidation = _downloadValidationChoices(forceRefresh: forceRefresh)
+        .then((choices) {
       _cachedValidationChoices = choices;
       _validationCacheTime = DateTime.now();
       _inflightValidation = null;
@@ -278,9 +297,16 @@ class ShopifyService {
     return _inflightValidation!;
   }
 
-  static Future<Map<String, List<String>>> _downloadValidationChoices() async {
+  static Future<Map<String, List<String>>> _downloadValidationChoices({
+    bool forceRefresh = false,
+  }) async {
+    final uri = Uri.parse('${DatabaseService.baseUrl}/api/validation_choices')
+        .replace(
+      queryParameters:
+          forceRefresh ? const {'refresh': 'true'} : const <String, String>{},
+    );
     final response = await http.get(
-      Uri.parse('${DatabaseService.baseUrl}/api/validation_choices'),
+      uri,
       headers: const {'Content-Type': 'application/json'},
     );
 
@@ -289,6 +315,7 @@ class ShopifyService {
       return {
         'crown_shapes': List<String>.from(data['crown_shapes'] ?? []),
         'brim_shapes': List<String>.from(data['brim_shapes'] ?? []),
+        'material_types': List<String>.from(data['material_types'] ?? []),
       };
     }
     throw Exception('Failed to load choices: ${response.statusCode}');

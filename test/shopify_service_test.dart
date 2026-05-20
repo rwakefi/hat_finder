@@ -50,6 +50,23 @@ void main() {
     expect(shaped, hasLength(1));
   });
 
+  test('filterProducts matches Beanie/Flat Cap material', () {
+    final products = [
+      {
+        'feltStrawOrBallcap': {'value': '["Beanie/Flat Cap"]'},
+      },
+      {
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+      },
+    ];
+
+    final caps = ShopifyService.filterProducts(
+      products,
+      hatType: 'Beanie/Flat Cap',
+    );
+    expect(caps, hasLength(1));
+  });
+
   test('fetch caches reuse in-flight request', () async {
     ShopifyService.clearCache();
     // Cache layer is exercised indirectly; ensure clearCache resets state.

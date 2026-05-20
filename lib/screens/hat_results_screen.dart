@@ -443,7 +443,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final brimShape = _metaValue(hat['brimShape']);
     final brimWidth = _metaValue(hat['brimWidth']);
     final backstrap = _metaValue(hat['backstrap']);
-    final isBallcap = widget.hatType == 'Ballcap';
+    final hatTypeLower = (widget.hatType ?? '').toLowerCase();
+    final isBallcap = hatTypeLower.contains('ballcap') ||
+        hatTypeLower.contains('beanie') ||
+        hatTypeLower.contains('flat cap');
 
     final swatchColors = _swatchColorsFor(hat);
     final imageCacheWidth = (MediaQuery.sizeOf(context).width * 0.5 *
