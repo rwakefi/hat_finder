@@ -1,23 +1,29 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'shop_webview_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/shopify_service.dart';
 import '../services/database_service.dart';
 import '../models/hat.dart';
+import '../models/head_measurement_profile.dart';
+import '../models/head_shape_profile.dart';
 
 class HatResultsScreen extends StatefulWidget {
+  final HeadShapeProfile? headShapeProfile;
+  final HeadMeasurementProfile? headMeasurementProfile;
   final String? hatType;
   final String? westernStyle;
   final String? crownShape;
   final List<double>? crownHeights;
   final String? brimShape;
   final List<String>? brimWidths;
+
   /// Instant results from the wizard cache (full catalog loaded in background).
   final List<dynamic>? preloadedHats;
 
   const HatResultsScreen({
     super.key,
+    this.headShapeProfile,
+    this.headMeasurementProfile,
     this.hatType,
     this.westernStyle,
     this.crownShape,
@@ -89,8 +95,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   void _rebuildSwatchCache(List<dynamic> hats) {
     _swatchCache = {
-      for (final hat in hats)
-        (hat['id'] as String): _computeSwatchColors(hat),
+      for (final hat in hats) (hat['id'] as String): _computeSwatchColors(hat),
     };
   }
 
@@ -113,7 +118,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   /// Felt hats only; straw and ballcaps never show color swatches.
-  bool _shouldShowColorSwatches(dynamic hat) => _isFeltHat(hat) && !_isStrawHat(hat);
+  bool _shouldShowColorSwatches(dynamic hat) =>
+      _isFeltHat(hat) && !_isStrawHat(hat);
 
   bool _variantIsAvailable(dynamic node) {
     if (node['availableForSale'] == true) return true;
@@ -186,7 +192,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         scrolledUnderElevation: 0,
         toolbarHeight: 90,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
+          icon:
+              const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -215,7 +222,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           // Turquoise progress accent line
           Container(height: 3, color: _turquoise),
           _buildSearchSummary(),
-          Divider(height: 1, color: _borderGrey),
+          const Divider(height: 1, color: _borderGrey),
           Expanded(
             child: FutureBuilder<List<dynamic>>(
               future: _hatsFuture,
@@ -231,7 +238,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           'Finding Your Perfect Hat...',
                           style: GoogleFonts.montserrat(
                             fontSize: 14,
-                            color: _espresso.withOpacity(0.5),
+                            color: _espresso.withValues(alpha: 0.5),
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.w500,
                           ),
@@ -252,7 +259,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.search_off_rounded,
-                              size: 56, color: _espresso.withOpacity(0.2)),
+                              size: 56,
+                              color: _espresso.withValues(alpha: 0.2)),
                           const SizedBox(height: 16),
                           Text(
                             'No Matches Found',
@@ -269,7 +277,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
                               fontSize: 15,
-                              color: _espresso.withOpacity(0.5),
+                              color: _espresso.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -279,7 +287,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 }
 
                 final hats = snapshot.data!;
-                if (_swatchCache.isEmpty || _swatchCache.length != hats.length) {
+                if (_swatchCache.isEmpty ||
+                    _swatchCache.length != hats.length) {
                   _rebuildSwatchCache(hats);
                 }
 
@@ -298,7 +307,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     : hats.where((hat) {
                         return _swatchColorsFor(hat).any(
                           (entry) =>
-                              entry.color.toLowerCase() == _selectedColor!.toLowerCase(),
+                              entry.color.toLowerCase() ==
+                              _selectedColor!.toLowerCase(),
                         );
                       }).toList();
 
@@ -311,7 +321,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                         child: Row(
                           children: [
-                            Icon(Icons.palette_outlined, size: 16, color: _espresso.withOpacity(0.4)),
+                            Icon(Icons.palette_outlined,
+                                size: 16,
+                                color: _espresso.withValues(alpha: 0.4)),
                             const SizedBox(width: 8),
                             Text(
                               'COLOR',
@@ -333,14 +345,21 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                     Padding(
                                       padding: const EdgeInsets.only(right: 6),
                                       child: GestureDetector(
-                                        onTap: () => setState(() => _selectedColor = null),
+                                        onTap: () => setState(
+                                            () => _selectedColor = null),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 6),
                                           decoration: BoxDecoration(
-                                            color: _selectedColor == null ? _turquoise : _white,
-                                            borderRadius: BorderRadius.circular(16),
+                                            color: _selectedColor == null
+                                                ? _turquoise
+                                                : _white,
+                                            borderRadius:
+                                                BorderRadius.circular(16),
                                             border: Border.all(
-                                              color: _selectedColor == null ? _turquoise : _borderGrey,
+                                              color: _selectedColor == null
+                                                  ? _turquoise
+                                                  : _borderGrey,
                                             ),
                                           ),
                                           child: Text(
@@ -348,7 +367,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                             style: GoogleFonts.montserrat(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
-                                              color: _selectedColor == null ? _white : _espresso,
+                                              color: _selectedColor == null
+                                                  ? _white
+                                                  : _espresso,
                                             ),
                                           ),
                                         ),
@@ -356,18 +377,27 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                     ),
                                     // Color chips
                                     ...sortedColors.map((color) {
-                                      final isSelected = _selectedColor == color;
+                                      final isSelected =
+                                          _selectedColor == color;
                                       return Padding(
-                                        padding: const EdgeInsets.only(right: 6),
+                                        padding:
+                                            const EdgeInsets.only(right: 6),
                                         child: GestureDetector(
-                                          onTap: () => setState(() => _selectedColor = color),
+                                          onTap: () => setState(
+                                              () => _selectedColor = color),
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 14, vertical: 6),
                                             decoration: BoxDecoration(
-                                              color: isSelected ? _turquoise : _white,
-                                              borderRadius: BorderRadius.circular(16),
+                                              color: isSelected
+                                                  ? _turquoise
+                                                  : _white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
                                               border: Border.all(
-                                                color: isSelected ? _turquoise : _borderGrey,
+                                                color: isSelected
+                                                    ? _turquoise
+                                                    : _borderGrey,
                                               ),
                                             ),
                                             child: Text(
@@ -375,7 +405,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                               style: GoogleFonts.montserrat(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
-                                                color: isSelected ? _white : _espresso,
+                                                color: isSelected
+                                                    ? _white
+                                                    : _espresso,
                                               ),
                                             ),
                                           ),
@@ -390,7 +422,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         ),
                       ),
                     if (sortedColors.isNotEmpty)
-                      Divider(height: 1, color: _borderGrey),
+                      const Divider(height: 1, color: _borderGrey),
                     // Grid
                     Expanded(
                       child: filteredHats.isEmpty
@@ -399,16 +431,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 'No hats in this color.',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
-                                  color: _espresso.withOpacity(0.4),
+                                  color: _espresso.withValues(alpha: 0.4),
                                 ),
                               ),
                             )
                           : GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                              padding:
+                                  const EdgeInsets.fromLTRB(12, 12, 12, 32),
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
-                              cacheExtent: 400,
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
@@ -438,18 +471,16 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     // Metafield values
     final crownShape = _metaValue(hat['crownShape']);
-    final crownHeight = _metaValue(hat['crownHeight']);
     final material = _metaValue(hat['material']);
     final brimShape = _metaValue(hat['brimShape']);
-    final brimWidth = _metaValue(hat['brimWidth']);
-    final backstrap = _metaValue(hat['backstrap']);
     final hatTypeLower = (widget.hatType ?? '').toLowerCase();
     final isBallcap = hatTypeLower.contains('ballcap') ||
         hatTypeLower.contains('beanie') ||
         hatTypeLower.contains('flat cap');
 
     final swatchColors = _swatchColorsFor(hat);
-    final imageCacheWidth = (MediaQuery.sizeOf(context).width * 0.5 *
+    final imageCacheWidth = (MediaQuery.sizeOf(context).width *
+            0.5 *
             MediaQuery.devicePixelRatioOf(context))
         .round();
 
@@ -499,7 +530,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         border: Border.all(color: _borderGrey, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -512,7 +543,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Hero image
-             Expanded(
+            Expanded(
               flex: 5,
               child: Container(
                 color: _offWhite,
@@ -528,12 +559,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => Center(
                                 child: Icon(Icons.image_outlined,
-                                    color: _espresso.withOpacity(0.15), size: 36),
+                                    color: _espresso.withValues(alpha: 0.15),
+                                    size: 36),
                               ),
                             )
                           : Center(
                               child: Icon(Icons.image_outlined,
-                                  color: _espresso.withOpacity(0.15), size: 36),
+                                  color: _espresso.withValues(alpha: 0.15),
+                                  size: 36),
                             ),
                     ),
                     if (swatchColors.isNotEmpty)
@@ -543,7 +576,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: swatchColors.map((entry) {
-                            final swatchColor = _mapColorNameToColor(entry.color);
+                            final swatchColor =
+                                _mapColorNameToColor(entry.color);
                             return Tooltip(
                               message: entry.color,
                               preferBelow: false,
@@ -555,7 +589,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 color: _white,
                               ),
                               decoration: BoxDecoration(
-                                color: _espresso.withOpacity(0.92),
+                                color: _espresso.withValues(alpha: 0.92),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Semantics(
@@ -577,14 +611,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                         color: swatchColor,
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: swatchColor.computeLuminance() > 0.8
-                                              ? _espresso.withOpacity(0.2)
+                                          color: swatchColor
+                                                      .computeLuminance() >
+                                                  0.8
+                                              ? _espresso.withValues(alpha: 0.2)
                                               : Colors.white30,
                                           width: 1.0,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.12),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.12),
                                             blurRadius: 2,
                                             offset: const Offset(0, 1),
                                           ),
@@ -654,18 +691,22 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               url: productUrl,
                               brand: widget.westernStyle,
                             );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      success ? 'Added to Registry' : 'Failed to save.'),
-                                  backgroundColor: success ? _turquoise : Colors.red,
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Added to Registry'
+                                      : 'Failed to save.',
                                 ),
-                              );
-                            }
+                                backgroundColor:
+                                    success ? _turquoise : Colors.red,
+                              ),
+                            );
                           },
                           child: Icon(Icons.bookmark_border_rounded,
-                              color: _espresso.withOpacity(0.4), size: 20),
+                              color: _espresso.withValues(alpha: 0.4),
+                              size: 20),
                         ),
                         const Spacer(),
                         Text(
@@ -698,7 +739,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             label,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: _espresso.withOpacity(0.5),
+              color: _espresso.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -725,42 +766,145 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return Container(
       color: _offWhite,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        spacing: 20,
-        runSpacing: 10,
+      child: Column(
         children: [
-          _buildSummaryChip('Type', widget.hatType ?? 'Any'),
-          if (widget.westernStyle != null)
-            _buildSummaryChip('Style', widget.westernStyle!),
-          _buildSummaryChip(
-              'Crown',
-              '${widget.crownShape ?? 'Any'} (${widget.crownHeights != null ? widget.crownHeights!.map((h) => formatMeasurement(h)).join(", ") : 'Any'})'),
-          _buildSummaryChip(
-              'Brim',
-              '${widget.brimShape ?? 'Any'} (${widget.brimWidths != null ? widget.brimWidths!.join(", ") : 'Any'})'),
+          if (widget.headShapeProfile != null) ...[
+            _buildFitProfileSummary(widget.headShapeProfile!),
+            const SizedBox(height: 12),
+          ],
+          if (widget.headMeasurementProfile != null) ...[
+            _buildMeasurementSummary(widget.headMeasurementProfile!),
+            const SizedBox(height: 12),
+          ],
+          Wrap(
+            alignment: WrapAlignment.spaceEvenly,
+            spacing: 20,
+            runSpacing: 10,
+            children: [
+              _buildSummaryChip('Type', widget.hatType ?? 'Any'),
+              if (widget.westernStyle != null)
+                _buildSummaryChip('Style', widget.westernStyle!),
+              _buildSummaryChip('Crown',
+                  '${widget.crownShape ?? 'Any'} (${widget.crownHeights != null ? widget.crownHeights!.map((h) => formatMeasurement(h)).join(", ") : 'Any'})'),
+              _buildSummaryChip('Brim',
+                  '${widget.brimShape ?? 'Any'} (${widget.brimWidths != null ? widget.brimWidths!.join(", ") : 'Any'})'),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFitProfileSummary(HeadShapeProfile profile) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.face_retouching_natural_outlined,
+          size: 18,
+          color: _turquoise,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '${profile.shortLabel}: ${profile.fitGuidance}',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              height: 1.35,
+              color: _espresso.withValues(alpha: 0.72),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMeasurementSummary(HeadMeasurementProfile measurement) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.straighten_outlined,
+          size: 18,
+          color: _turquoise,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Size starting point: ${measurement.shortLabel}. ${measurement.guidance}',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              height: 1.35,
+              color: _espresso.withValues(alpha: 0.72),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Color _mapColorNameToColor(String colorName) {
     final name = colorName.toLowerCase().trim();
     if (name.contains('black')) return const Color(0xFF1A1A1A);
-    if (name.contains('chocolate') || name.contains('brown') || name.contains('dark brown')) return const Color(0xFF4E3629);
-    if (name.contains('silver grey') || name.contains('silver gray') || name.contains('granite') || name.contains('silver-grey') || name.contains('silver-gray')) return const Color(0xFFB0B3B5);
-    if (name.contains('grey') || name.contains('gray') || name.contains('sliver grey')) return const Color(0xFF8E8E93);
-    if (name.contains('bone') || name.contains('cream') || name.contains('ivory') || name.contains('white')) return const Color(0xFFE5DDCB);
-    if (name.contains('stonewash') || name.contains('stone')) return const Color(0xFF8FA1A6);
-    if (name.contains('burgundy') || name.contains('wine')) return const Color(0xFF6B1D2F);
-    if (name.contains('cognac') || name.contains('chestnut')) return const Color(0xFF8F4A24);
-    if (name.contains('sand') || name.contains('natural') || name.contains('tan') || name.contains('fawn') || name.contains('beige')) return const Color(0xFFDFD5C6);
+    if (name.contains('chocolate') ||
+        name.contains('brown') ||
+        name.contains('dark brown')) {
+      return const Color(0xFF4E3629);
+    }
+    if (name.contains('silver grey') ||
+        name.contains('silver gray') ||
+        name.contains('granite') ||
+        name.contains('silver-grey') ||
+        name.contains('silver-gray')) {
+      return const Color(0xFFB0B3B5);
+    }
+    if (name.contains('grey') ||
+        name.contains('gray') ||
+        name.contains('sliver grey')) {
+      return const Color(0xFF8E8E93);
+    }
+    if (name.contains('bone') ||
+        name.contains('cream') ||
+        name.contains('ivory') ||
+        name.contains('white')) {
+      return const Color(0xFFE5DDCB);
+    }
+    if (name.contains('stonewash') || name.contains('stone')) {
+      return const Color(0xFF8FA1A6);
+    }
+    if (name.contains('burgundy') || name.contains('wine')) {
+      return const Color(0xFF6B1D2F);
+    }
+    if (name.contains('cognac') || name.contains('chestnut')) {
+      return const Color(0xFF8F4A24);
+    }
+    if (name.contains('sand') ||
+        name.contains('natural') ||
+        name.contains('tan') ||
+        name.contains('fawn') ||
+        name.contains('beige')) {
+      return const Color(0xFFDFD5C6);
+    }
     if (name.contains('pecan')) return const Color(0xFF8B5A2B);
-    if (name.contains('caramel') || name.contains('gold') || name.contains('yellow')) return const Color(0xFFC68E17);
+    if (name.contains('caramel') ||
+        name.contains('gold') ||
+        name.contains('yellow')) {
+      return const Color(0xFFC68E17);
+    }
     if (name.contains('mist')) return const Color(0xFFE5E7E9);
-    if (name.contains('sage') || name.contains('olive') || name.contains('green')) return const Color(0xFF9CAF88);
+    if (name.contains('sage') ||
+        name.contains('olive') ||
+        name.contains('green')) {
+      return const Color(0xFF9CAF88);
+    }
     if (name.contains('red')) return const Color(0xFFC0392B);
-    if (name.contains('blue') || name.contains('navy')) return const Color(0xFF1B4F72);
+    if (name.contains('blue') || name.contains('navy')) {
+      return const Color(0xFF1B4F72);
+    }
     return Colors.grey.shade400;
   }
 

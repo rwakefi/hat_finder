@@ -1,11 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class DatabaseService {
-  // Local development URL (port 8081 as configured in backend/main.py)
-  static const String baseUrl = 'http://127.0.0.1:8081';
-  
-  // Production URL: https://hatfinder-production.up.railway.app
+  static String get baseUrl => AppConfig.apiBaseUrl;
 
   static Future<bool> saveHat({
     required String name,
@@ -33,7 +32,7 @@ class DatabaseService {
       }
       return false;
     } catch (e) {
-      print('Error saving hat: $e');
+      debugPrint('Error saving hat: $e');
       return false;
     }
   }
@@ -46,7 +45,7 @@ class DatabaseService {
       }
       return [];
     } catch (e) {
-      print('Error fetching saved hats: $e');
+      debugPrint('Error fetching saved hats: $e');
       return [];
     }
   }

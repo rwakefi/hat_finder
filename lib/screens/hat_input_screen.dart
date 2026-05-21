@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
+import '../models/head_measurement_profile.dart';
+import '../models/head_shape_profile.dart';
 import 'hat_results_screen.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' show pi, Random;
 import '../services/shopify_service.dart';
 
 class HatInputScreen extends StatefulWidget {
-  const HatInputScreen({super.key});
+  const HatInputScreen({
+    super.key,
+    this.headShapeProfile,
+    this.headMeasurementProfile,
+  });
+
+  final HeadShapeProfile? headShapeProfile;
+  final HeadMeasurementProfile? headMeasurementProfile;
 
   @override
   State<HatInputScreen> createState() => _HatInputScreenState();
@@ -16,8 +24,10 @@ class HatInputScreen extends StatefulWidget {
 
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
-  final PageController _crownCarouselController = PageController(viewportFraction: 0.76);
-  final PageController _brimCarouselController = PageController(viewportFraction: 0.76);
+  final PageController _crownCarouselController =
+      PageController(viewportFraction: 0.76);
+  final PageController _brimCarouselController =
+      PageController(viewportFraction: 0.76);
   int _currentPageIndex = 0;
   int _currentCrownCarouselIndex = 0;
   int _currentBrimCarouselIndex = 0;
@@ -26,6 +36,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<HatShapeInfo>? _sortedCrownShapes;
   List<HatShapeInfo>? _sortedBrimShapes;
   bool _isLoadingChoices = true;
+  bool _hasAppliedProfileDefaults = false;
   List<HatShapeInfo> _rawCrownShapes = [];
   List<HatShapeInfo> _rawBrimShapes = [];
   List<HatShapeInfo> _materialTypes = [];
@@ -70,7 +81,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
         n.contains('flat cap');
   }
 
-  bool _matchShape(String prod, String ui) => ShopifyService.matchShape(prod, ui);
+  bool _matchShape(String prod, String ui) =>
+      ShopifyService.matchShape(prod, ui);
 
   bool _isOpenRoadProduct(dynamic product) {
     final title = (product['title'] ?? '').toString().toLowerCase();
@@ -84,9 +96,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       final typeName = selectedHatType?.name;
       if (typeName == 'Felt' || typeName == 'Straw') return crownShapes;
       final seen = <String>{};
-      return [...crownShapes]
-          .where((s) => seen.add(s.name))
-          .toList();
+      return [...crownShapes].where((s) => seen.add(s.name)).toList();
     }
 
     final typeName = selectedHatType?.name;
@@ -116,7 +126,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         );
       }).toList();
     }
-    
+
     return _rawCrownShapes;
   }
 
@@ -165,7 +175,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
       final matched = crownShapes.firstWhere(
         (s) {
           final sName = s.name.toLowerCase();
-          return sName == normalized || sName.contains(normalized) || normalized.contains(sName);
+          return sName == normalized ||
+              sName.contains(normalized) ||
+              normalized.contains(sName);
         },
         orElse: () {
           var lookup = normalized.replaceAll("'s", '').trim();
@@ -194,7 +206,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               name,
               'assets/images/placeholder.png',
               'Custom shaped crown.',
-              history: 'This shape is customized for your individual look and feel. Each hat is meticulously shaped to the customer\'s exact preferences.',
+              history:
+                  'This shape is customized for your individual look and feel. Each hat is meticulously shaped to the customer\'s exact preferences.',
               famousWearers: [],
               physicalDescription: 'Individually creased custom crown.',
             ),
@@ -214,7 +227,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
       final matched = brimShapes.firstWhere(
         (s) {
           final sName = s.name.toLowerCase();
-          return sName == normalized || sName.contains(normalized) || normalized.contains(sName);
+          return sName == normalized ||
+              sName.contains(normalized) ||
+              normalized.contains(sName);
         },
         orElse: () {
           String lookup = normalized;
@@ -261,7 +276,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               name,
               'assets/images/placeholder.png',
               'Custom shaped brim.',
-              history: 'A customized brim roll and curve shaped exactly to your preference.',
+              history:
+                  'A customized brim roll and curve shaped exactly to your preference.',
               famousWearers: [],
               physicalDescription: 'Individually shaped custom brim.',
             ),
@@ -277,6 +293,34 @@ class _HatInputScreenState extends State<HatInputScreen> {
         physicalDescription: matched.physicalDescription,
         galleryImages: matched.galleryImages,
       );
+    }
+  }
+
+  HatShapeInfo _defaultHatTypeForProfile(HeadShapeProfile profile) {
+    final target = profile.defaultMaterial.toLowerCase();
+    return _availableHatTypes.firstWhere(
+      (type) => type.name.toLowerCase().contains(target),
+      orElse: () => _mapStringToHatType(profile.defaultMaterial),
+    );
+  }
+
+  void _applyHeadShapeProfileDefaults({bool refreshMaps = false}) {
+    final profile = widget.headShapeProfile;
+    if (profile == null) return;
+
+    final defaultType = _defaultHatTypeForProfile(profile);
+    final canApplyDefaultType = selectedHatType == null ||
+        selectedHatType!.name.toLowerCase().contains(
+              profile.defaultMaterial.toLowerCase(),
+            );
+
+    if (!_hasAppliedProfileDefaults || canApplyDefaultType) {
+      selectedHatType = defaultType;
+      _hasAppliedProfileDefaults = true;
+    }
+
+    if (refreshMaps) {
+      _refreshShapeProductMaps();
     }
   }
 
@@ -331,6 +375,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     final sortedCrown = List<HatShapeInfo>.from(crownShapes);
     sortedCrown.sort((a, b) {
+      final profilePriority = _compareByHeadShapePriority(
+        a,
+        b,
+        isCrown: true,
+      );
+      if (profilePriority != 0) return profilePriority;
       if (selectedWesternStyle == 'City') {
         final priority = _compareByStylePriority(a.name, b.name, const [
           'pinch front',
@@ -353,6 +403,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     final sortedBrim = List<HatShapeInfo>.from(brimShapeList);
     sortedBrim.sort((a, b) {
+      final profilePriority = _compareByHeadShapePriority(
+        a,
+        b,
+        isCrown: false,
+      );
+      if (profilePriority != 0) return profilePriority;
       if (selectedWesternStyle == 'Western') {
         final priority = _compareByStylePriority(a.name, b.name, const [
           'medium curved',
@@ -415,6 +471,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
       return false;
     }).toList(growable: false);
+  }
+
+  int _compareByHeadShapePriority(
+    HatShapeInfo a,
+    HatShapeInfo b, {
+    required bool isCrown,
+  }) {
+    final profile = widget.headShapeProfile;
+    if (profile == null) return 0;
+
+    final priorities =
+        isCrown ? profile.crownPriorities : profile.brimPriorities;
+    return _compareByStylePriority(a.name, b.name, priorities);
   }
 
   int _compareByStylePriority(
@@ -548,7 +617,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     for (final product in _allProducts!) {
       if (product['featuredImage']?['url'] == null) continue;
-      final meta = _metaValue(isCrown ? product['crownShape'] : product['brimShape']);
+      final meta =
+          _metaValue(isCrown ? product['crownShape'] : product['brimShape']);
 
       for (final shape in shapes) {
         if (!_matchShape(meta, shape.name)) continue;
@@ -582,38 +652,53 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return map;
   }
 
-  Map<String, String>? _getFallbackProduct(List<dynamic> products, HatShapeInfo shape, {required bool isCrown}) {
+  Map<String, String>? _getFallbackProduct(
+      List<dynamic> products, HatShapeInfo shape,
+      {required bool isCrown}) {
     if (products.isEmpty) return null;
-    
+
     // 1. Try keyword matching
     try {
       final chosenName = shape.name.toLowerCase();
       String? keyword;
       if (isCrown) {
-        if (chosenName.contains('cattleman')) keyword = 'cattleman';
-        else if (chosenName.contains('gus')) keyword = 'gus';
-        else if (chosenName.contains('teardrop')) keyword = 'teardrop';
-        else if (chosenName.contains('brick')) keyword = 'brick';
-        else if (chosenName.contains('gambler')) keyword = 'gambler';
-        else if (chosenName.contains('punch')) keyword = 'punch';
+        if (chosenName.contains('cattleman')) {
+          keyword = 'cattleman';
+        } else if (chosenName.contains('gus')) {
+          keyword = 'gus';
+        } else if (chosenName.contains('teardrop')) {
+          keyword = 'teardrop';
+        } else if (chosenName.contains('brick')) {
+          keyword = 'brick';
+        } else if (chosenName.contains('gambler')) {
+          keyword = 'gambler';
+        } else if (chosenName.contains('punch')) {
+          keyword = 'punch';
+        }
       } else {
-        if (chosenName.contains('curved') || chosenName.contains('curve')) keyword = 'curved';
-        else if (chosenName.contains('flat')) keyword = 'flat';
-        else if (chosenName.contains('curl')) keyword = 'curl';
-        else if (chosenName.contains('downturned') || chosenName.contains('pulled')) keyword = 'downturned';
+        if (chosenName.contains('curved') || chosenName.contains('curve')) {
+          keyword = 'curved';
+        } else if (chosenName.contains('flat')) {
+          keyword = 'flat';
+        } else if (chosenName.contains('curl')) {
+          keyword = 'curl';
+        } else if (chosenName.contains('downturned') ||
+            chosenName.contains('pulled')) {
+          keyword = 'downturned';
+        }
       }
 
       if (keyword != null) {
-        final matched = products.firstWhere(
-          (p) {
-            final val = _metaValue(isCrown ? p['crownShape'] : p['brimShape']).toLowerCase();
-            final isMatch = val.contains(keyword!) && p['featuredImage']?['url'] != null;
-            if (isMatch && isCrown && keyword == 'cattleman') {
-              return !_isOpenRoadProduct(p);
-            }
-            return isMatch;
+        final matched = products.firstWhere((p) {
+          final val = _metaValue(isCrown ? p['crownShape'] : p['brimShape'])
+              .toLowerCase();
+          final isMatch =
+              val.contains(keyword!) && p['featuredImage']?['url'] != null;
+          if (isMatch && isCrown && keyword == 'cattleman') {
+            return !_isOpenRoadProduct(p);
           }
-        );
+          return isMatch;
+        });
         return {
           'url': matched['featuredImage']['url'] as String,
           'title': matched['title'] as String,
@@ -627,8 +712,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Future<void> _loadDynamicChoices() async {
     try {
-      final choices =
-          await ShopifyService.fetchValidationChoices();
+      final choices = await ShopifyService.fetchValidationChoices();
       final List<String> crownStrings = choices['crown_shapes'] ?? [];
       final List<String> brimStrings = choices['brim_shapes'] ?? [];
       final List<String> materialStrings = choices['material_types'] ?? [];
@@ -643,12 +727,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
           return _mapStringToShapeInfo(name, isCrown: false);
         }).toList();
 
+        _applyHeadShapeProfileDefaults();
         _isLoadingChoices = false;
         _refreshShapeProductMaps();
         _materialExampleUrls = _computeMaterialExampleImages();
       });
     } catch (e) {
-      print('Error loading dynamic validation choices: $e');
+      debugPrint('Error loading dynamic validation choices: $e');
       setState(() {
         _materialTypes = [];
         _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
@@ -663,6 +748,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   void initState() {
     super.initState();
+    _applyHeadShapeProfileDefaults();
     _allProductsFuture = ShopifyService.fetchLiteProducts().then((products) {
       _onProductsLoaded(products);
       return products;
@@ -737,7 +823,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         });
       }
     }
-    
+
     _pageController.nextPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -769,10 +855,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => HatResultsScreen(
+          headShapeProfile: widget.headShapeProfile,
+          headMeasurementProfile: widget.headMeasurementProfile,
           hatType: selectedHatType?.name,
           westernStyle: selectedWesternStyle,
           crownShape: selectedCrownShape?.name,
-          crownHeights: targetCrownHeights.isNotEmpty ? targetCrownHeights : null,
+          crownHeights:
+              targetCrownHeights.isNotEmpty ? targetCrownHeights : null,
           brimShape: selectedBrimShape?.name,
           brimWidths: targetBrimWidths.isNotEmpty ? targetBrimWidths : null,
           preloadedHats: preloaded,
@@ -792,20 +881,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-              Image.asset(
-                'assets/images/Moon Ridge Header Logo.png', 
-                height: 55.0, 
+            Image.asset(
+              'assets/images/Moon Ridge Header Logo.png',
+              height: 55.0,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'FINE TUNING',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: const Color(0xFF2D2926),
+                letterSpacing: 2.5,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 2),
-              Text(
-                'FINE TUNING',
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  color: const Color(0xFF2D2926),
-                  letterSpacing: 2.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            ),
           ],
         ),
         centerTitle: true,
@@ -820,10 +909,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: Column(
             children: [
               _buildProgressBar(),
+              if (widget.headShapeProfile != null)
+                _buildHeadShapeProfileBanner(widget.headShapeProfile!),
+              if (widget.headMeasurementProfile != null)
+                _buildHeadMeasurementBanner(widget.headMeasurementProfile!),
               Expanded(
                 child: PageView(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
+                  physics:
+                      const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
                   onPageChanged: (index) {
                     setState(() {
                       _currentPageIndex = index;
@@ -845,18 +939,109 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  Widget _buildHeadShapeProfileBanner(HeadShapeProfile profile) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF4F1EA),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE4DED1)),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.face_retouching_natural_outlined,
+            color: Color(0xFF559C99),
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${profile.shortLabel} fit profile',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2D2926),
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  profile.fitGuidance,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF2D2926).withValues(alpha: 0.72),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeadMeasurementBanner(HeadMeasurementProfile measurement) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 9, 18, 11),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFFFFF),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE4DED1)),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.straighten_outlined,
+            color: Color(0xFF559C99),
+            size: 21,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Size starting point: ${measurement.shortLabel}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF2D2926).withValues(alpha: 0.72),
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProgressBar() {
     return LinearProgressIndicator(
       value: (_currentPageIndex + 1) / _pages.length.toDouble(),
       backgroundColor: Colors.grey[200],
-      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)), // Turquoise accent
+      valueColor: const AlwaysStoppedAnimation<Color>(
+          Color(0xFF559C99)), // Turquoise accent
     );
   }
 
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
     bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
-    if (_currentPageIndex == 0) return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
+    if (_currentPageIndex == 0) {
+      return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
+    }
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
     if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
@@ -871,7 +1056,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -884,11 +1069,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               OutlinedButton(
-                onPressed: _currentPageIndex > 0 ? _previousPage : () => Navigator.of(context).pop(),
+                onPressed: _currentPageIndex > 0
+                    ? _previousPage
+                    : () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -911,15 +1099,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-               onPressed: _currentPageIndex < _pages.length - 1 ? _nextPage : _submitSearch,
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: const Color(0xFF2D2926),
-                   foregroundColor: Colors.white,
-                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                   shape: RoundedRectangleBorder(
-                     borderRadius: BorderRadius.circular(30),
-                   ),
-                   elevation: 0,
+                onPressed: _currentPageIndex < _pages.length - 1
+                    ? _nextPage
+                    : _submitSearch,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2926),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -934,8 +1125,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      _currentPageIndex < _pages.length - 1 
-                          ? Icons.arrow_forward 
+                      _currentPageIndex < _pages.length - 1
+                          ? Icons.arrow_forward
                           : Icons.check,
                       size: 18,
                     ),
@@ -974,8 +1165,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 ),
                 child: Text(
                   'ANY MATERIAL',
@@ -1001,7 +1194,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
               return GridView.count(
                 crossAxisCount: 2,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.85,
@@ -1046,8 +1240,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     imageUrl,
                                     fit: BoxFit.cover,
                                     alignment: const Alignment(0.0, -0.35),
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Image.asset(
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Image.asset(
                                       typeInfo.imagePath,
                                       fit: BoxFit.cover,
                                       alignment: const Alignment(0.0, -0.35),
@@ -1120,8 +1315,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 ),
                 child: Text(
                   'ANY STYLE',
@@ -1140,13 +1337,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
             future: _allProductsFuture,
             builder: (context, snapshot) {
               final styles = [
-                {'name': 'Western', 'title': 'Western', 'desc': 'Classic cowboy styles.', 'fallback': 'assets/images/western.jpg'},
-                {'name': 'City', 'title': 'City', 'desc': 'Fedoras and dress hats.', 'fallback': 'assets/images/city.png'},
-                {'name': 'Outdoor', 'title': 'Outdoor/Sportsman', 'desc': 'Sun and adventure hats.', 'fallback': 'assets/images/outdoor.png'},
+                {
+                  'name': 'Western',
+                  'title': 'Western',
+                  'desc': 'Classic cowboy styles.',
+                  'fallback': 'assets/images/western.jpg'
+                },
+                {
+                  'name': 'City',
+                  'title': 'City',
+                  'desc': 'Fedoras and dress hats.',
+                  'fallback': 'assets/images/city.png'
+                },
+                {
+                  'name': 'Outdoor',
+                  'title': 'Outdoor/Sportsman',
+                  'desc': 'Sun and adventure hats.',
+                  'fallback': 'assets/images/outdoor.png'
+                },
               ];
 
               return GridView.builder(
-                padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 40.0),
+                padding: const EdgeInsets.only(
+                    left: 12, right: 12, top: 12, bottom: 40.0),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
@@ -1158,7 +1371,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   final style = styles[index];
                   final name = style['name'] as String;
                   final isSelected = selectedWesternStyle == name;
-                  
+
                   String? imageUrl;
                   if (snapshot.hasData) {
                     try {
@@ -1166,52 +1379,75 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       if (selectedHatType != null) {
                         final target = selectedHatType!.name.toLowerCase();
                         products.sort((a, b) {
-                          final aType = _metaValue(a['feltStrawOrBallcap']).toLowerCase();
-                          final bType = _metaValue(b['feltStrawOrBallcap']).toLowerCase();
+                          final aType =
+                              _metaValue(a['feltStrawOrBallcap']).toLowerCase();
+                          final bType =
+                              _metaValue(b['feltStrawOrBallcap']).toLowerCase();
                           final aMatches = aType.contains(target) ? 1 : 0;
                           final bMatches = bType.contains(target) ? 1 : 0;
                           return bMatches.compareTo(aMatches);
                         });
                       }
                       final Set<String> usedUrls = {};
-                      
+
                       // Pre-process to find unique images for each style in the list
                       for (int i = 0; i < styles.length; i++) {
                         final styleName = styles[i]['name'];
                         String? foundUrl;
-                        
+
                         if (styleName == 'Western') {
-                          final westernProfiles = ['01', '1', '2', '11', '18', '33', '45', '48', '50', '72', '75', '77', '91', '94', '9G'];
+                          final westernProfiles = [
+                            '01',
+                            '1',
+                            '2',
+                            '11',
+                            '18',
+                            '33',
+                            '45',
+                            '48',
+                            '50',
+                            '72',
+                            '75',
+                            '77',
+                            '91',
+                            '94',
+                            '9G'
+                          ];
                           foundUrl = products.firstWhere((p) {
                             final profile = _metaValue(p['stetsonProfile']);
-                            final title = (p['title'] ?? '').toString().toLowerCase();
-                            final handle = (p['handle'] ?? '').toString().toLowerCase();
+                            final title =
+                                (p['title'] ?? '').toString().toLowerCase();
+                            final handle =
+                                (p['handle'] ?? '').toString().toLowerCase();
                             final url = p['featuredImage']?['url'] as String?;
-                            
+
                             // EXCLUDE OPEN ROADS from Western representative image
-                            final isOpenRoad = title.contains('open road') || handle.contains('open-road');
-                            
-                            return westernProfiles.contains(profile) && 
-                                   url != null && 
-                                   !usedUrls.contains(url) && 
-                                   !isOpenRoad;
+                            final isOpenRoad = title.contains('open road') ||
+                                handle.contains('open-road');
+
+                            return westernProfiles.contains(profile) &&
+                                url != null &&
+                                !usedUrls.contains(url) &&
+                                !isOpenRoad;
                           }, orElse: () => null)?['featuredImage']?['url'];
                         } else if (styleName == 'City') {
                           foundUrl = products.firstWhere((p) {
                             final url = p['featuredImage']?['url'] as String?;
-                            return _metaValue(p['city']).toLowerCase() == 'true' && 
-                                   url != null && 
-                                   !usedUrls.contains(url);
+                            return _metaValue(p['city']).toLowerCase() ==
+                                    'true' &&
+                                url != null &&
+                                !usedUrls.contains(url);
                           }, orElse: () => null)?['featuredImage']?['url'];
                         } else if (styleName == 'Outdoor') {
                           foundUrl = products.firstWhere((p) {
                             final url = p['featuredImage']?['url'] as String?;
-                            return _metaValue(p['outdoors']).toLowerCase() == 'true' && 
-                                   url != null && 
-                                   !usedUrls.contains(url);
+                            return _metaValue(p['outdoors']).toLowerCase() ==
+                                    'true' &&
+                                url != null &&
+                                !usedUrls.contains(url);
                           }, orElse: () => null)?['featuredImage']?['url'];
                         }
-                        
+
                         if (foundUrl != null) {
                           usedUrls.add(foundUrl);
                           if (i == index) imageUrl = foundUrl;
@@ -1227,7 +1463,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                        color: isSelected
+                            ? const Color(0xFF559C99)
+                            : Colors.grey.shade200,
                         width: isSelected ? 3 : 1,
                       ),
                     ),
@@ -1244,21 +1482,25 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 ? Image.network(
                                     imageUrl,
                                     fit: BoxFit.cover,
-                                    alignment: const Alignment(0.0, -0.35), // Keep hat crown beautifully in center allocation
+                                    alignment: const Alignment(0.0,
+                                        -0.35), // Keep hat crown beautifully in center allocation
                                   )
                                 : (style['fallback'] != null
                                     ? Image.asset(
                                         style['fallback'] as String,
                                         fit: BoxFit.cover,
-                                        alignment: const Alignment(0.0, -0.35), // Keep hat crown beautifully in center allocation
+                                        alignment: const Alignment(0.0,
+                                            -0.35), // Keep hat crown beautifully in center allocation
                                       )
                                     : Container(
                                         color: Colors.grey[50],
-                                        child: const Icon(Icons.style, size: 48, color: Colors.grey),
+                                        child: const Icon(Icons.style,
+                                            size: 48, color: Colors.grey),
                                       )),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 8.0),
                             color: Colors.white,
                             child: Text(
                               (style['title'] ?? name).toUpperCase(),
@@ -1286,83 +1528,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildStyleCard(String name, String description, {String? fallbackImagePath, String? imageUrl, IconData? icon}) {
-    final isSelected = selectedWesternStyle == name;
-    return Card(
-      elevation: isSelected ? 0 : 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8), // Soft rounded
-        side: BorderSide(
-          color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade300, // Turquoise selection
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(2),
-        onTap: () {
-          _onWesternStyleSelected(name);
-          _nextPage();
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Full-bleed Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2)),
-                child: imageUrl != null
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        errorBuilder: (_, __, ___) => _buildFallbackImage(fallbackImagePath, icon),
-                      )
-                    : _buildFallbackImage(fallbackImagePath, icon),
-              ),
-            ),
-            // Text at the bottom
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Text(
-                name.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  color: const Color(0xFF2D2926),
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackImage(String? fallbackImagePath, IconData? icon) {
-    return fallbackImagePath != null
-        ? Image.asset(
-            fallbackImagePath,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            errorBuilder: (_, __, ___) => Container(
-              color: Colors.white,
-              child: const Icon(Icons.category, size: 48, color: Colors.grey),
-            ),
-          )
-        : Container(
-            color: Colors.white,
-            child: Icon(icon ?? Icons.category, size: 48, color: Colors.grey),
-          );
-  }
-
-  void _showShapeDetailSheet(BuildContext context, HatShapeInfo shape, String type) {
+  void _showShapeDetailSheet(
+      BuildContext context, HatShapeInfo shape, String type) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1394,7 +1561,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ),
                   // Header
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: Column(
                       children: [
                         Text(
@@ -1407,7 +1575,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Container(width: 40, height: 2, color: const Color(0xFF559C99)),
+                        Container(
+                            width: 40,
+                            height: 2,
+                            color: const Color(0xFF559C99)),
                         const SizedBox(height: 12),
                         Text(
                           type == 'wearers' ? 'FAMOUS WEARERS' : 'THE SHAPE',
@@ -1426,7 +1597,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   Expanded(
                     child: type == 'wearers'
                         ? _buildFamousWearersContent(shape, scrollController)
-                        : _buildPhysicalDescriptionContent(shape, scrollController),
+                        : _buildPhysicalDescriptionContent(
+                            shape, scrollController),
                   ),
                 ],
               ),
@@ -1437,7 +1609,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildFamousWearersContent(HatShapeInfo shape, ScrollController controller) {
+  Widget _buildFamousWearersContent(
+      HatShapeInfo shape, ScrollController controller) {
     if (shape.famousWearers.isEmpty) {
       return Center(
         child: Padding(
@@ -1457,8 +1630,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       itemCount: shape.famousWearers.length,
-      separatorBuilder: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+      separatorBuilder: (_, __) => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
         child: Divider(color: Colors.white12, height: 1),
       ),
       itemBuilder: (context, index) {
@@ -1472,7 +1645,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF559C99).withOpacity(0.15),
+                    color: const Color(0xFF559C99).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Center(
@@ -1519,7 +1692,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildPhysicalDescriptionContent(HatShapeInfo shape, ScrollController controller) {
+  Widget _buildPhysicalDescriptionContent(
+      HatShapeInfo shape, ScrollController controller) {
     return SingleChildScrollView(
       controller: controller,
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -1531,10 +1705,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF559C99).withOpacity(0.15),
+              color: const Color(0xFF559C99).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: const Icon(Icons.straighten, color: Color(0xFF559C99), size: 28),
+            child: const Icon(Icons.straighten,
+                color: Color(0xFF559C99), size: 28),
           ),
           const SizedBox(height: 20),
           Text(
@@ -1544,7 +1719,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             style: GoogleFonts.playfairDisplay(
               fontSize: 17,
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               height: 1.7,
               fontStyle: FontStyle.italic,
             ),
@@ -1564,7 +1739,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
           );
         }
 
-        final sortedShapes = _sortedCrownShapes ?? List<HatShapeInfo>.from(_currentCrownShapes);
+        final sortedShapes =
+            _sortedCrownShapes ?? List<HatShapeInfo>.from(_currentCrownShapes);
         final shopifyProductsMap = _crownProductsMap;
 
         return Column(
@@ -1574,7 +1750,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
               child: Text(
                 'Select Crown Shape:',
-                style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
+                style: GoogleFonts.playfairDisplay(
+                    fontSize: 22, color: const Color(0xFF2D2926)),
               ),
             ),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
@@ -1582,374 +1759,533 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Stack(
                 children: [
                   PageView.builder(
-                controller: _crownCarouselController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentCrownCarouselIndex = index;
-                    _flippedCardIndex = null;
-                    final sorted = _sortedCrownShapes ?? _currentCrownShapes;
-                    if (index < sorted.length) {
-                      selectedCrownShape = sorted[index];
-                      _onCrownSelectionChanged();
-                    }
-                  });
-                },
-                itemCount: sortedShapes.length,
-                itemBuilder: (context, index) {
-                  final shape = sortedShapes[index];
-                  final isSelected = selectedCrownShape?.name == shape.name;
-                  final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
-                  String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
-                  String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
-                  
-                  if (imageUrl == null && snapshot.hasData) {
-                    final fallback = _getFallbackProduct(snapshot.data!, shape, isCrown: true);
-                    if (fallback != null) {
-                      imageUrl = fallback['url'];
-                      productTitle = '${fallback['title']} (Representative)';
-                    }
-                  }
-                  final bool isFlipped = _flippedCardIndex == index;
-                  final bool isCentered = index == _currentCrownCarouselIndex;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (isFlipped) {
-                          setState(() {
-                            _flippedCardIndex = null;
-                          });
-                          return;
+                    controller: _crownCarouselController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentCrownCarouselIndex = index;
+                        _flippedCardIndex = null;
+                        final sorted =
+                            _sortedCrownShapes ?? _currentCrownShapes;
+                        if (index < sorted.length) {
+                          selectedCrownShape = sorted[index];
+                          _onCrownSelectionChanged();
                         }
-                        _selectCrownAndAdvance(shape, index);
-                      },
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                        builder: (context, angle, _) {
-                          // Determine which face to show
-                          final showBack = angle > pi / 2;
-                          return Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()
-                              ..setEntry(3, 2, 0.001) // perspective
-                              ..rotateY(angle),
-                            child: showBack
-                                // ── BACK FACE (history) ──
-                                ? Transform(
-                                    alignment: Alignment.center,
-                                    transform: Matrix4.identity()..rotateY(pi), // un-mirror text
-                                    child: Card(
-                                      clipBehavior: Clip.antiAlias,
-                                      elevation: 0,
-                                      color: const Color(0xFF2D2926),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        side: BorderSide(
-                                          color: isSelected ? const Color(0xFF559C99) : const Color(0xFF3D3936),
-                                          width: isSelected ? 3 : 1,
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              shape.name.toUpperCase(),
-                                              textAlign: TextAlign.center,
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                                letterSpacing: 3.0,
-                                              ),
+                      });
+                    },
+                    itemCount: sortedShapes.length,
+                    itemBuilder: (context, index) {
+                      final shape = sortedShapes[index];
+                      final isSelected = selectedCrownShape?.name == shape.name;
+                      final shopifyProducts =
+                          shopifyProductsMap[shape.name] ?? [];
+                      String? imageUrl = shopifyProducts.isNotEmpty
+                          ? shopifyProducts.first['url']
+                          : null;
+                      String? productTitle = shopifyProducts.isNotEmpty
+                          ? shopifyProducts.first['title']
+                          : null;
+
+                      if (imageUrl == null && snapshot.hasData) {
+                        final fallback = _getFallbackProduct(
+                            snapshot.data!, shape,
+                            isCrown: true);
+                        if (fallback != null) {
+                          imageUrl = fallback['url'];
+                          productTitle =
+                              '${fallback['title']} (Representative)';
+                        }
+                      }
+                      final bool isFlipped = _flippedCardIndex == index;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (isFlipped) {
+                              setState(() {
+                                _flippedCardIndex = null;
+                              });
+                              return;
+                            }
+                            _selectCrownAndAdvance(shape, index);
+                          },
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                                begin: 0, end: isFlipped ? pi : 0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOutCubic,
+                            builder: (context, angle, _) {
+                              // Determine which face to show
+                              final showBack = angle > pi / 2;
+                              return Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()
+                                  ..setEntry(3, 2, 0.001) // perspective
+                                  ..rotateY(angle),
+                                child: showBack
+                                    // ── BACK FACE (history) ──
+                                    ? Transform(
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()
+                                          ..rotateY(pi), // un-mirror text
+                                        child: Card(
+                                          clipBehavior: Clip.antiAlias,
+                                          elevation: 0,
+                                          color: const Color(0xFF2D2926),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            side: BorderSide(
+                                              color: isSelected
+                                                  ? const Color(0xFF559C99)
+                                                  : const Color(0xFF3D3936),
+                                              width: isSelected ? 3 : 1,
                                             ),
-                                            const SizedBox(height: 6),
-                                            Container(
-                                              width: 40,
-                                              height: 2,
-                                              color: const Color(0xFF559C99),
-                                            ),
-                                            const SizedBox(height: 14),
-                                            Text(
-                                              'THE HISTORY',
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
-                                                color: const Color(0xFF559C99),
-                                                letterSpacing: 3.0,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Expanded(
-                                              child: SingleChildScrollView(
-                                                child: Text(
-                                                  shape.history.isNotEmpty
-                                                      ? shape.history
-                                                      : shape.description,
-                                                  textAlign: TextAlign.center,
-                                                  style: GoogleFonts.playfairDisplay(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w400,
-                                                    color: Colors.white.withOpacity(0.9),
-                                                    height: 1.6,
-                                                    fontStyle: FontStyle.italic,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            // ── Two info buttons ──
-                                            Row(
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                20, 16, 20, 12),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
                                               children: [
+                                                Text(
+                                                  shape.name.toUpperCase(),
+                                                  textAlign: TextAlign.center,
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                    letterSpacing: 3.0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Container(
+                                                  width: 40,
+                                                  height: 2,
+                                                  color:
+                                                      const Color(0xFF559C99),
+                                                ),
+                                                const SizedBox(height: 14),
+                                                Text(
+                                                  'THE HISTORY',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                    color:
+                                                        const Color(0xFF559C99),
+                                                    letterSpacing: 3.0,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 10),
                                                 Expanded(
-                                                  child: OutlinedButton.icon(
-                                                    onPressed: () => _showShapeDetailSheet(context, shape, 'wearers'),
-                                                    icon: const Icon(Icons.people_outline, size: 18),
-                                                    label: Text(
-                                                      'FAMOUS\nWEARERS',
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.montserrat(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w700,
-                                                        letterSpacing: 1.5,
-                                                        height: 1.3,
+                                                  child: SingleChildScrollView(
+                                                    child: Text(
+                                                      shape.history.isNotEmpty
+                                                          ? shape.history
+                                                          : shape.description,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts
+                                                          .playfairDisplay(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        color: Colors.white
+                                                            .withValues(
+                                                                alpha: 0.9),
+                                                        height: 1.6,
+                                                        fontStyle:
+                                                            FontStyle.italic,
                                                       ),
-                                                    ),
-                                                    style: OutlinedButton.styleFrom(
-                                                      foregroundColor: Colors.white70,
-                                                      side: const BorderSide(color: Colors.white24),
-                                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                                     ),
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: OutlinedButton.icon(
-                                                    onPressed: () => _showShapeDetailSheet(context, shape, 'physical'),
-                                                    icon: const Icon(Icons.straighten, size: 18),
-                                                    label: Text(
-                                                      'THE\nSHAPE',
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.montserrat(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w700,
-                                                        letterSpacing: 1.5,
-                                                        height: 1.3,
+                                                const SizedBox(height: 10),
+                                                // ── Two info buttons ──
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child:
+                                                          OutlinedButton.icon(
+                                                        onPressed: () =>
+                                                            _showShapeDetailSheet(
+                                                                context,
+                                                                shape,
+                                                                'wearers'),
+                                                        icon: const Icon(
+                                                            Icons
+                                                                .people_outline,
+                                                            size: 18),
+                                                        label: Text(
+                                                          'FAMOUS\nWEARERS',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: GoogleFonts
+                                                              .montserrat(
+                                                            fontSize: 10,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                            height: 1.3,
+                                                          ),
+                                                        ),
+                                                        style: OutlinedButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              Colors.white70,
+                                                          side:
+                                                              const BorderSide(
+                                                                  color: Colors
+                                                                      .white24),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 14),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10)),
+                                                        ),
                                                       ),
                                                     ),
-                                                    style: OutlinedButton.styleFrom(
-                                                      foregroundColor: Colors.white70,
-                                                      side: const BorderSide(color: Colors.white24),
-                                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child:
+                                                          OutlinedButton.icon(
+                                                        onPressed: () =>
+                                                            _showShapeDetailSheet(
+                                                                context,
+                                                                shape,
+                                                                'physical'),
+                                                        icon: const Icon(
+                                                            Icons.straighten,
+                                                            size: 18),
+                                                        label: Text(
+                                                          'THE\nSHAPE',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: GoogleFonts
+                                                              .montserrat(
+                                                            fontSize: 10,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                            height: 1.3,
+                                                          ),
+                                                        ),
+                                                        style: OutlinedButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              Colors.white70,
+                                                          side:
+                                                              const BorderSide(
+                                                                  color: Colors
+                                                                      .white24),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 14),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10)),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 10),
+                                                // ── Select button ──
+                                                SizedBox(
+                                                  width: double.infinity,
+                                                  child: ElevatedButton(
+                                                    onPressed: () {
+                                                      _selectCrownAndAdvance(
+                                                          shape, index);
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFF559C99),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 12),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(30),
+                                                      ),
+                                                      elevation: 0,
+                                                    ),
+                                                    child: Text(
+                                                      'SELECT THIS CROWN',
+                                                      style: GoogleFonts
+                                                          .montserrat(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        letterSpacing: 1.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _flippedCardIndex = null;
+                                                    });
+                                                  },
+                                                  child: Text(
+                                                    'TAP TO FLIP BACK',
+                                                    style:
+                                                        GoogleFonts.montserrat(
+                                                      fontSize: 8,
+                                                      color: Colors.white30,
+                                                      letterSpacing: 2.0,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 10),
-                                            // ── Select button ──
-                                            SizedBox(
-                                              width: double.infinity,
-                                              child: ElevatedButton(
-                                                onPressed: () {
-                                                  _selectCrownAndAdvance(shape, index);
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF559C99),
-                                                  foregroundColor: Colors.white,
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(30),
+                                          ),
+                                        ),
+                                      )
+                                    // ── FRONT FACE (image) ──
+                                    : Card(
+                                        clipBehavior: Clip.antiAlias,
+                                        elevation: 0,
+                                        color: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? const Color(0xFF559C99)
+                                                : Colors.grey.shade200,
+                                            width: isSelected ? 3 : 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            // Image — naturally sized to sit at the top
+                                            Flexible(
+                                              fit: FlexFit.loose,
+                                              child: Stack(
+                                                children: [
+                                                  Transform.translate(
+                                                    offset: const Offset(0, 0),
+                                                    child: imageUrl != null
+                                                        ? Image.network(
+                                                            imageUrl,
+                                                            fit: BoxFit.contain,
+                                                            alignment: Alignment
+                                                                .topCenter)
+                                                        : Image.asset(
+                                                            shape.imagePath,
+                                                            fit: BoxFit.contain,
+                                                            alignment: Alignment
+                                                                .topCenter),
                                                   ),
-                                                  elevation: 0,
-                                                ),
-                                                child: Text(
-                                                  'SELECT THIS CROWN',
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                    letterSpacing: 1.5,
-                                                  ),
-                                                ),
+                                                  if (productTitle != null &&
+                                                      productTitle.isNotEmpty)
+                                                    Positioned(
+                                                      top: 10,
+                                                      left: 12,
+                                                      right: 12,
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            'Example:',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: GoogleFonts
+                                                                .montserrat(
+                                                              fontSize: 10,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                              letterSpacing:
+                                                                  1.5,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 2),
+                                                          Text(
+                                                            productTitle,
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: GoogleFonts
+                                                                .cormorantGaramond(
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: const Color(
+                                                                  0xFF6B6058),
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(height: 4),
-                                            TextButton(
-                                              onPressed: () {
-                                                setState(() {
-                                                  _flippedCardIndex = null;
-                                                });
-                                              },
-                                              child: Text(
-                                                'TAP TO FLIP BACK',
-                                                style: GoogleFonts.montserrat(
-                                                  fontSize: 8,
-                                                  color: Colors.white30,
-                                                  letterSpacing: 2.0,
-                                                  fontWeight: FontWeight.w500,
+                                            // Text section pulled up tight
+                                            Transform.translate(
+                                              offset: const Offset(0, -35),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        14, 0, 14, 0),
+                                                child: Column(
+                                                  children: [
+                                                    Text(
+                                                      shape.name.toUpperCase(),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts
+                                                          .montserrat(
+                                                        fontSize: 24,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color: const Color(
+                                                            0xFF2D2926),
+                                                        letterSpacing: 1.5,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      shape.description,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          color:
+                                                              Colors.grey[700],
+                                                          height: 1.3),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    SizedBox(
+                                                      width: double.infinity,
+                                                      child: ElevatedButton(
+                                                        onPressed: () =>
+                                                            _selectCrownAndAdvance(
+                                                                shape, index),
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              const Color(
+                                                                  0xFF559C99),
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 12),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        30),
+                                                          ),
+                                                          elevation: 0,
+                                                        ),
+                                                        child: Text(
+                                                          'SELECT THIS CROWN',
+                                                          style: GoogleFonts
+                                                              .montserrat(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            letterSpacing: 1.5,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    OutlinedButton(
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _flippedCardIndex =
+                                                              index;
+                                                        });
+                                                      },
+                                                      style: OutlinedButton
+                                                          .styleFrom(
+                                                        foregroundColor:
+                                                            const Color(
+                                                                0xFF559C99),
+                                                        side: const BorderSide(
+                                                            color: Color(
+                                                                0xFF559C99),
+                                                            width: 1),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 16,
+                                                                vertical: 8),
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20)),
+                                                      ),
+                                                      child: Text(
+                                                        'FLIP FOR MORE INFO',
+                                                        style: GoogleFonts
+                                                            .montserrat(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          letterSpacing: 1.0,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  )
-                                // ── FRONT FACE (image) ──
-                                : Card(
-                                    clipBehavior: Clip.antiAlias,
-                                    elevation: 0,
-                                    color: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(
-                                        color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
-                                        width: isSelected ? 3 : 1,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        // Image — naturally sized to sit at the top
-                                        Flexible(
-                                          fit: FlexFit.loose,
-                                          child: Stack(
-                                            children: [
-                                              Transform.translate(
-                                                offset: const Offset(0, 0),
-                                                child: imageUrl != null
-                                                    ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
-                                                    : Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
-                                              ),
-                                              if (productTitle != null && productTitle.isNotEmpty)
-                                                Positioned(
-                                                  top: 10, left: 12, right: 12,
-                                                  child: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        'Example:',
-                                                        textAlign: TextAlign.center,
-                                                        style: GoogleFonts.montserrat(
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: Colors.grey[600],
-                                                          letterSpacing: 1.5,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        productTitle,
-                                                        textAlign: TextAlign.center,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: GoogleFonts.cormorantGaramond(
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: const Color(0xFF6B6058),
-                                                          fontStyle: FontStyle.italic,
-                                                          letterSpacing: 0.5,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Text section pulled up tight
-                                        Transform.translate(
-                                          offset: const Offset(0, -35),
-                                          child: Padding(
-                                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
-                                            child: Column(
-                                              children: [
-                                                
-                                                Text(
-                                                  shape.name.toUpperCase(),
-                                                  textAlign: TextAlign.center,
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 24,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: const Color(0xFF2D2926),
-                                                    letterSpacing: 1.5,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  shape.description,
-                                                  textAlign: TextAlign.center,
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
-                                                ),
-                                                const SizedBox(height: 12),
-                                                SizedBox(
-                                                  width: double.infinity,
-                                                  child: ElevatedButton(
-                                                    onPressed: () => _selectCrownAndAdvance(shape, index),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: const Color(0xFF559C99),
-                                                      foregroundColor: Colors.white,
-                                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(30),
-                                                      ),
-                                                      elevation: 0,
-                                                    ),
-                                                    child: Text(
-                                                      'SELECT THIS CROWN',
-                                                      style: GoogleFonts.montserrat(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w700,
-                                                        letterSpacing: 1.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                OutlinedButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _flippedCardIndex = index;
-                                                    });
-                                                  },
-                                                  style: OutlinedButton.styleFrom(
-                                                    foregroundColor: const Color(0xFF559C99),
-                                                    side: const BorderSide(color: Color(0xFF559C99), width: 1),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                                  ),
-                                                  child: Text(
-                                                    'FLIP FOR MORE INFO',
-                                                    style: GoogleFonts.montserrat(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
-                                                      letterSpacing: 1.0,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   // Left arrow — subtle swipe hint
                   if (_currentCrownCarouselIndex > 0)
                     Positioned(
@@ -1969,10 +2305,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2006,10 +2342,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -2059,7 +2395,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     const SizedBox(width: 50),
                     // Center: Next Up label + hat name
                     Expanded(
-                      child: (_currentCrownCarouselIndex + 1 < sortedShapes.length)
+                      child: (_currentCrownCarouselIndex + 1 <
+                              sortedShapes.length)
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -2075,7 +2412,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   ),
                                 ),
                                 Text(
-                                  sortedShapes[_currentCrownCarouselIndex + 1].name,
+                                  sortedShapes[_currentCrownCarouselIndex + 1]
+                                      .name,
                                   style: GoogleFonts.cormorantGaramond(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -2128,11 +2466,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (snapshot.hasData && selectedCrownShape != null) {
           try {
             final product = snapshot.data!.firstWhere(
-              (p) => _matchShape(_metaValue(p['crownShape']), selectedCrownShape!.name) && p['featuredImage']?['url'] != null,
+              (p) =>
+                  _matchShape(
+                      _metaValue(p['crownShape']), selectedCrownShape!.name) &&
+                  p['featuredImage']?['url'] != null,
             );
             crownImageUrl = product['featuredImage']['url'];
           } catch (_) {
-            final fallback = _getFallbackProduct(snapshot.data!, selectedCrownShape!, isCrown: true);
+            final fallback = _getFallbackProduct(
+                snapshot.data!, selectedCrownShape!,
+                isCrown: true);
             if (fallback != null) {
               crownImageUrl = fallback['url'];
             }
@@ -2143,11 +2486,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (snapshot.hasData && selectedBrimShape != null) {
           try {
             final product = snapshot.data!.firstWhere(
-              (p) => _matchShape(_metaValue(p['brimShape']), selectedBrimShape!.name) && p['featuredImage']?['url'] != null,
+              (p) =>
+                  _matchShape(
+                      _metaValue(p['brimShape']), selectedBrimShape!.name) &&
+                  p['featuredImage']?['url'] != null,
             );
             brimImageUrl = product['featuredImage']['url'];
           } catch (_) {
-            final fallback = _getFallbackProduct(snapshot.data!, selectedBrimShape!, isCrown: false);
+            final fallback = _getFallbackProduct(
+                snapshot.data!, selectedBrimShape!,
+                isCrown: false);
             if (fallback != null) {
               brimImageUrl = fallback['url'];
             }
@@ -2160,161 +2508,224 @@ class _HatInputScreenState extends State<HatInputScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionHeader('Crown', Icons.architecture),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: selectedCrownShape != null 
-                      ? (crownImageUrl != null 
-                          ? Image.network(crownImageUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)))
-                          : Image.asset(selectedCrownShape!.imagePath, fit: BoxFit.cover))
-                      : null,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Crown Shape:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      DropdownButton<HatShapeInfo?>(
-                        value: _currentCrownShapes.contains(selectedCrownShape) ? selectedCrownShape : null,
-                        isExpanded: false,
-                        isDense: true,
-                        underline: const SizedBox(),
-                        icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                        dropdownColor: Theme.of(context).scaffoldBackgroundColor,
-                        hint: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        selectedItemBuilder: (BuildContext context) {
-                          return <HatShapeInfo?>[null, ..._currentCrownShapes].map<Widget>((HatShapeInfo? item) {
-                            return Text(
-                              item?.name ?? 'Any',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                            );
-                          }).toList();
-                        },
-                        items: [
-                          const DropdownMenuItem<HatShapeInfo?>(
-                            value: null,
-                            child: Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          ..._currentCrownShapes.map((shape) {
-                            return DropdownMenuItem<HatShapeInfo?>(
-                              value: shape,
-                              child: Text(shape.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            );
-                          }),
-                        ],
-                        onChanged: (val) {
-                          setState(() {
-                            selectedCrownShape = val;
-                            _onCrownSelectionChanged();
-                          });
-                        },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildMeasurementDropdown(
-            label: 'Crown Height',
-            selectedItems: targetCrownHeights,
-            min: 4.25,
-            max: 5.0,
-            onChanged: (val) => setState(() => targetCrownHeights = val),
-          ),
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Brim', Icons.waves),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: selectedBrimShape != null 
-                      ? (brimImageUrl != null 
-                          ? Image.network(brimImageUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)))
-                          : Image.asset(selectedBrimShape!.imagePath, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey))))
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Brim Shape:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      DropdownButton<HatShapeInfo?>(
-                        value: _availableBrimShapes.contains(selectedBrimShape) ? selectedBrimShape : null,
-                        isExpanded: false,
-                        isDense: true,
-                        underline: const SizedBox(),
-                        icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                        dropdownColor: Theme.of(context).scaffoldBackgroundColor,
-                        hint: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        selectedItemBuilder: (BuildContext context) {
-                          return <HatShapeInfo?>[null, ..._availableBrimShapes].map<Widget>((HatShapeInfo? item) {
-                            return Text(
-                              item?.name ?? 'Any',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                            );
-                          }).toList();
-                        },
-                        items: [
-                          const DropdownMenuItem<HatShapeInfo?>(
-                            value: null,
-                            child: Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
+                      clipBehavior: Clip.antiAlias,
+                      child: selectedCrownShape != null
+                          ? (crownImageUrl != null
+                              ? Image.network(crownImageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.image,
+                                              color: Colors.grey)))
+                              : Image.asset(selectedCrownShape!.imagePath,
+                                  fit: BoxFit.cover))
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Crown Shape:',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
+                          DropdownButton<HatShapeInfo?>(
+                            value:
+                                _currentCrownShapes.contains(selectedCrownShape)
+                                    ? selectedCrownShape
+                                    : null,
+                            isExpanded: false,
+                            isDense: true,
+                            underline: const SizedBox(),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.grey),
+                            dropdownColor:
+                                Theme.of(context).scaffoldBackgroundColor,
+                            hint: const Text('Any',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 18)),
+                            selectedItemBuilder: (BuildContext context) {
+                              return <HatShapeInfo?>[
+                                null,
+                                ..._currentCrownShapes
+                              ].map<Widget>((HatShapeInfo? item) {
+                                return Text(
+                                  item?.name ?? 'Any',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18),
+                                );
+                              }).toList();
+                            },
+                            items: [
+                              const DropdownMenuItem<HatShapeInfo?>(
+                                value: null,
+                                child: Text('Any',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                              ..._currentCrownShapes.map((shape) {
+                                return DropdownMenuItem<HatShapeInfo?>(
+                                  value: shape,
+                                  child: Text(shape.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                );
+                              }),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                selectedCrownShape = val;
+                                _onCrownSelectionChanged();
+                              });
+                            },
                           ),
-                          ..._availableBrimShapes.map((shape) {
-                            return DropdownMenuItem<HatShapeInfo?>(
-                              value: shape,
-                              child: Text(shape.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            );
-                          }),
                         ],
-                        onChanged: (val) {
-                          setState(() => selectedBrimShape = val);
-                        },
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildDropdown(
-            label: 'Brim Width',
-            selectedItems: targetBrimWidths,
-            items: brimWidths,
-            onChanged: (val) => setState(() => targetBrimWidths = val),
-          ),
-          const SizedBox(height: 50), // Padding to prevent the button from covering the last item
+              ),
+              const SizedBox(height: 24),
+              _buildMeasurementDropdown(
+                label: 'Crown Height',
+                selectedItems: targetCrownHeights,
+                min: 4.25,
+                max: 5.0,
+                onChanged: (val) => setState(() => targetCrownHeights = val),
+              ),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 24),
+              _buildSectionHeader('Brim', Icons.waves),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: selectedBrimShape != null
+                          ? (brimImageUrl != null
+                              ? Image.network(brimImageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.image,
+                                              color: Colors.grey)))
+                              : Image.asset(selectedBrimShape!.imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.image,
+                                              color: Colors.grey))))
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Brim Shape:',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey)),
+                          DropdownButton<HatShapeInfo?>(
+                            value:
+                                _availableBrimShapes.contains(selectedBrimShape)
+                                    ? selectedBrimShape
+                                    : null,
+                            isExpanded: false,
+                            isDense: true,
+                            underline: const SizedBox(),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.grey),
+                            dropdownColor:
+                                Theme.of(context).scaffoldBackgroundColor,
+                            hint: const Text('Any',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 18)),
+                            selectedItemBuilder: (BuildContext context) {
+                              return <HatShapeInfo?>[
+                                null,
+                                ..._availableBrimShapes
+                              ].map<Widget>((HatShapeInfo? item) {
+                                return Text(
+                                  item?.name ?? 'Any',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18),
+                                );
+                              }).toList();
+                            },
+                            items: [
+                              const DropdownMenuItem<HatShapeInfo?>(
+                                value: null,
+                                child: Text('Any',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                              ..._availableBrimShapes.map((shape) {
+                                return DropdownMenuItem<HatShapeInfo?>(
+                                  value: shape,
+                                  child: Text(shape.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                );
+                              }),
+                            ],
+                            onChanged: (val) {
+                              setState(() => selectedBrimShape = val);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildDropdown(
+                label: 'Brim Width',
+                selectedItems: targetBrimWidths,
+                items: brimWidths,
+                onChanged: (val) => setState(() => targetBrimWidths = val),
+              ),
+              const SizedBox(
+                  height:
+                      50), // Padding to prevent the button from covering the last item
             ],
           ),
         );
@@ -2352,7 +2763,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
       children: [
         Text(
           '$label:',
-          style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -2373,7 +2785,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
                 GestureDetector(
                   onTap: () => onChanged([]),
-                  child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Any',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -2405,7 +2818,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       }
                       onChanged(newItems);
                     },
-                    child: Text(item, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    child: Text(item,
+                        style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
                   ),
                 ],
               );
@@ -2427,13 +2844,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
     for (double i = min; i <= max + 0.01; i += 0.25) {
       increments.add(i);
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '$label:',
-          style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -2454,7 +2872,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
                 GestureDetector(
                   onTap: () => onChanged([]),
-                  child: const Text('Any', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Any',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -2486,7 +2905,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       }
                       onChanged(newItems);
                     },
-                    child: Text(formatMeasurement(val), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    child: Text(formatMeasurement(val),
+                        style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
                   ),
                 ],
               );
@@ -2496,6 +2919,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       ],
     );
   }
+
   Widget _buildVisualBrimSelection() {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
@@ -2516,7 +2940,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
                 child: Text(
                   'Select Brim Shape:',
-                  style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 22, color: const Color(0xFF2D2926)),
                 ),
               ),
               Expanded(
@@ -2548,7 +2973,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
               child: Text(
                 'Select Brim Shape:',
-                style: GoogleFonts.playfairDisplay(fontSize: 22, color: const Color(0xFF2D2926)),
+                style: GoogleFonts.playfairDisplay(
+                    fontSize: 22, color: const Color(0xFF2D2926)),
               ),
             ),
             // Carousel with swipe arrows
@@ -2570,22 +2996,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     itemBuilder: (context, index) {
                       final shape = sortedShapes[index];
                       final isSelected = selectedBrimShape?.name == shape.name;
-                      final shopifyProducts = shopifyProductsMap[shape.name] ?? [];
-                      String? imageUrl = shopifyProducts.isNotEmpty ? shopifyProducts.first['url'] : null;
-                      String? productTitle = shopifyProducts.isNotEmpty ? shopifyProducts.first['title'] : null;
-                      
+                      final shopifyProducts =
+                          shopifyProductsMap[shape.name] ?? [];
+                      String? imageUrl = shopifyProducts.isNotEmpty
+                          ? shopifyProducts.first['url']
+                          : null;
+                      String? productTitle = shopifyProducts.isNotEmpty
+                          ? shopifyProducts.first['title']
+                          : null;
+
                       if (imageUrl == null && snapshot.hasData) {
-                        final fallback = _getFallbackProduct(snapshot.data!, shape, isCrown: false);
+                        final fallback = _getFallbackProduct(
+                            snapshot.data!, shape,
+                            isCrown: false);
                         if (fallback != null) {
                           imageUrl = fallback['url'];
-                          productTitle = '${fallback['title']} (Representative)';
+                          productTitle =
+                              '${fallback['title']} (Representative)';
                         }
                       }
                       final bool isFlipped = _flippedBrimCardIndex == index;
-                      final bool isCentered = index == _currentBrimCarouselIndex;
 
                       return Padding(
-                        padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
+                        padding: const EdgeInsets.only(
+                            left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
@@ -2598,7 +3032,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             _selectBrimAndAdvance(shape, index);
                           },
                           child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
+                            tween: Tween<double>(
+                                begin: 0, end: isFlipped ? pi : 0),
                             duration: const Duration(milliseconds: 500),
                             curve: Curves.easeInOutCubic,
                             builder: (context, angle, _) {
@@ -2612,22 +3047,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     // ── BACK FACE (history) ──
                                     ? Transform(
                                         alignment: Alignment.center,
-                                        transform: Matrix4.identity()..rotateY(pi),
+                                        transform: Matrix4.identity()
+                                          ..rotateY(pi),
                                         child: Card(
                                           clipBehavior: Clip.antiAlias,
                                           elevation: 0,
                                           color: const Color(0xFF2D2926),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
                                             side: BorderSide(
-                                              color: isSelected ? const Color(0xFF559C99) : const Color(0xFF3D3936),
+                                              color: isSelected
+                                                  ? const Color(0xFF559C99)
+                                                  : const Color(0xFF3D3936),
                                               width: isSelected ? 3 : 1,
                                             ),
                                           ),
                                           child: Padding(
-                                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                                            padding: const EdgeInsets.fromLTRB(
+                                                20, 16, 20, 12),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
                                               children: [
                                                 Text(
                                                   shape.name.toUpperCase(),
@@ -2643,7 +3084,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 Container(
                                                   width: 40,
                                                   height: 2,
-                                                  color: const Color(0xFF559C99),
+                                                  color:
+                                                      const Color(0xFF559C99),
                                                 ),
                                                 const SizedBox(height: 14),
                                                 Text(
@@ -2651,7 +3093,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   style: GoogleFonts.montserrat(
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w700,
-                                                    color: const Color(0xFF559C99),
+                                                    color:
+                                                        const Color(0xFF559C99),
                                                     letterSpacing: 3.0,
                                                   ),
                                                 ),
@@ -2662,13 +3105,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                       shape.history.isNotEmpty
                                                           ? shape.history
                                                           : shape.description,
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.playfairDisplay(
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts
+                                                          .playfairDisplay(
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w400,
-                                                        color: Colors.white.withOpacity(0.9),
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        color: Colors.white
+                                                            .withValues(
+                                                                alpha: 0.9),
                                                         height: 1.6,
-                                                        fontStyle: FontStyle.italic,
+                                                        fontStyle:
+                                                            FontStyle.italic,
                                                       ),
                                                     ),
                                                   ),
@@ -2678,47 +3127,92 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 Row(
                                                   children: [
                                                     Expanded(
-                                                      child: OutlinedButton.icon(
-                                                        onPressed: () => _showShapeDetailSheet(context, shape, 'wearers'),
-                                                        icon: const Icon(Icons.people_outline, size: 18),
+                                                      child:
+                                                          OutlinedButton.icon(
+                                                        onPressed: () =>
+                                                            _showShapeDetailSheet(
+                                                                context,
+                                                                shape,
+                                                                'wearers'),
+                                                        icon: const Icon(
+                                                            Icons
+                                                                .people_outline,
+                                                            size: 18),
                                                         label: Text(
                                                           'FAMOUS\nWEARERS',
-                                                          textAlign: TextAlign.center,
-                                                          style: GoogleFonts.montserrat(
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: GoogleFonts
+                                                              .montserrat(
                                                             fontSize: 10,
-                                                            fontWeight: FontWeight.w700,
+                                                            fontWeight:
+                                                                FontWeight.w700,
                                                             letterSpacing: 1.5,
                                                             height: 1.3,
                                                           ),
                                                         ),
-                                                        style: OutlinedButton.styleFrom(
-                                                          foregroundColor: Colors.white70,
-                                                          side: const BorderSide(color: Colors.white24),
-                                                          padding: const EdgeInsets.symmetric(vertical: 14),
-                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                        style: OutlinedButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              Colors.white70,
+                                                          side:
+                                                              const BorderSide(
+                                                                  color: Colors
+                                                                      .white24),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 14),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10)),
                                                         ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Expanded(
-                                                      child: OutlinedButton.icon(
-                                                        onPressed: () => _showShapeDetailSheet(context, shape, 'physical'),
-                                                        icon: const Icon(Icons.straighten, size: 18),
+                                                      child:
+                                                          OutlinedButton.icon(
+                                                        onPressed: () =>
+                                                            _showShapeDetailSheet(
+                                                                context,
+                                                                shape,
+                                                                'physical'),
+                                                        icon: const Icon(
+                                                            Icons.straighten,
+                                                            size: 18),
                                                         label: Text(
                                                           'THE\nSHAPE',
-                                                          textAlign: TextAlign.center,
-                                                          style: GoogleFonts.montserrat(
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: GoogleFonts
+                                                              .montserrat(
                                                             fontSize: 10,
-                                                            fontWeight: FontWeight.w700,
+                                                            fontWeight:
+                                                                FontWeight.w700,
                                                             letterSpacing: 1.5,
                                                             height: 1.3,
                                                           ),
                                                         ),
-                                                        style: OutlinedButton.styleFrom(
-                                                          foregroundColor: Colors.white70,
-                                                          side: const BorderSide(color: Colors.white24),
-                                                          padding: const EdgeInsets.symmetric(vertical: 14),
-                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                        style: OutlinedButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              Colors.white70,
+                                                          side:
+                                                              const BorderSide(
+                                                                  color: Colors
+                                                                      .white24),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 14),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10)),
                                                         ),
                                                       ),
                                                     ),
@@ -2730,22 +3224,34 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   width: double.infinity,
                                                   child: ElevatedButton(
                                                     onPressed: () {
-                                                      _selectBrimAndAdvance(shape, index);
+                                                      _selectBrimAndAdvance(
+                                                          shape, index);
                                                     },
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: const Color(0xFF559C99),
-                                                      foregroundColor: Colors.white,
-                                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(30),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFF559C99),
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 12),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(30),
                                                       ),
                                                       elevation: 0,
                                                     ),
                                                     child: Text(
                                                       'SELECT THIS BRIM',
-                                                      style: GoogleFonts.montserrat(
+                                                      style: GoogleFonts
+                                                          .montserrat(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.w700,
+                                                        fontWeight:
+                                                            FontWeight.w700,
                                                         letterSpacing: 1.5,
                                                       ),
                                                     ),
@@ -2772,14 +3278,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         elevation: 0,
                                         color: Colors.white,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
                                           side: BorderSide(
-                                            color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+                                            color: isSelected
+                                                ? const Color(0xFF559C99)
+                                                : Colors.grey.shade200,
                                             width: isSelected ? 3 : 1,
                                           ),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
                                           children: [
                                             // Image — naturally sized to sit at the top
                                             Flexible(
@@ -2789,40 +3299,70 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   Transform.translate(
                                                     offset: const Offset(0, 0),
                                                     child: imageUrl != null
-                                                        ? Image.network(imageUrl, fit: BoxFit.contain, alignment: Alignment.topCenter)
+                                                        ? Image.network(
+                                                            imageUrl,
+                                                            fit: BoxFit.contain,
+                                                            alignment: Alignment
+                                                                .topCenter)
                                                         : Container(
                                                             color: Colors.white,
-                                                            child: Image.asset(shape.imagePath, fit: BoxFit.contain, alignment: Alignment.topCenter),
+                                                            child: Image.asset(
+                                                                shape.imagePath,
+                                                                fit: BoxFit
+                                                                    .contain,
+                                                                alignment: Alignment
+                                                                    .topCenter),
                                                           ),
                                                   ),
-                                                  if (productTitle != null && productTitle.isNotEmpty)
+                                                  if (productTitle != null &&
+                                                      productTitle.isNotEmpty)
                                                     Positioned(
-                                                      top: 10, left: 12, right: 12,
+                                                      top: 10,
+                                                      left: 12,
+                                                      right: 12,
                                                       child: Column(
-                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
                                                         children: [
                                                           Text(
                                                             'Example:',
-                                                            textAlign: TextAlign.center,
-                                                            style: GoogleFonts.montserrat(
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: GoogleFonts
+                                                                .montserrat(
                                                               fontSize: 10,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: Colors.grey[600],
-                                                              letterSpacing: 1.5,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                              letterSpacing:
+                                                                  1.5,
                                                             ),
                                                           ),
-                                                          const SizedBox(height: 2),
+                                                          const SizedBox(
+                                                              height: 2),
                                                           Text(
                                                             productTitle,
-                                                            textAlign: TextAlign.center,
+                                                            textAlign: TextAlign
+                                                                .center,
                                                             maxLines: 1,
-                                                            overflow: TextOverflow.ellipsis,
-                                                            style: GoogleFonts.cormorantGaramond(
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: GoogleFonts
+                                                                .cormorantGaramond(
                                                               fontSize: 20,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: const Color(0xFF6B6058),
-                                                              fontStyle: FontStyle.italic,
-                                                              letterSpacing: 0.5,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: const Color(
+                                                                  0xFF6B6058),
+                                                              fontStyle:
+                                                                  FontStyle
+                                                                      .italic,
+                                                              letterSpacing:
+                                                                  0.5,
                                                             ),
                                                           ),
                                                         ],
@@ -2835,47 +3375,73 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                             Transform.translate(
                                               offset: const Offset(0, -35),
                                               child: Padding(
-                                                padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        14, 0, 14, 0),
                                                 child: Column(
                                                   children: [
-                                                    
                                                     Text(
                                                       shape.name.toUpperCase(),
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.montserrat(
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts
+                                                          .montserrat(
                                                         fontSize: 24,
-                                                        fontWeight: FontWeight.w800,
-                                                        color: const Color(0xFF2D2926),
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color: const Color(
+                                                            0xFF2D2926),
                                                         letterSpacing: 1.5,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(
                                                       shape.description,
-                                                      textAlign: TextAlign.center,
+                                                      textAlign:
+                                                          TextAlign.center,
                                                       maxLines: 2,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.3),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          color:
+                                                              Colors.grey[700],
+                                                          height: 1.3),
                                                     ),
                                                     const SizedBox(height: 12),
                                                     SizedBox(
                                                       width: double.infinity,
                                                       child: ElevatedButton(
-                                                        onPressed: () => _selectBrimAndAdvance(shape, index),
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor: const Color(0xFF559C99),
-                                                          foregroundColor: Colors.white,
-                                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(30),
+                                                        onPressed: () =>
+                                                            _selectBrimAndAdvance(
+                                                                shape, index),
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              const Color(
+                                                                  0xFF559C99),
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 12),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        30),
                                                           ),
                                                           elevation: 0,
                                                         ),
                                                         child: Text(
                                                           'SELECT THIS BRIM',
-                                                          style: GoogleFonts.montserrat(
+                                                          style: GoogleFonts
+                                                              .montserrat(
                                                             fontSize: 12,
-                                                            fontWeight: FontWeight.w700,
+                                                            fontWeight:
+                                                                FontWeight.w700,
                                                             letterSpacing: 1.5,
                                                           ),
                                                         ),
@@ -2885,20 +3451,37 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                     OutlinedButton(
                                                       onPressed: () {
                                                         setState(() {
-                                                          _flippedBrimCardIndex = index;
+                                                          _flippedBrimCardIndex =
+                                                              index;
                                                         });
                                                       },
-                                                      style: OutlinedButton.styleFrom(
-                                                        foregroundColor: const Color(0xFF559C99),
-                                                        side: const BorderSide(color: Color(0xFF559C99), width: 1),
-                                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                      style: OutlinedButton
+                                                          .styleFrom(
+                                                        foregroundColor:
+                                                            const Color(
+                                                                0xFF559C99),
+                                                        side: const BorderSide(
+                                                            color: Color(
+                                                                0xFF559C99),
+                                                            width: 1),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 16,
+                                                                vertical: 8),
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20)),
                                                       ),
                                                       child: Text(
                                                         'FLIP FOR MORE INFO',
-                                                        style: GoogleFonts.montserrat(
+                                                        style: GoogleFonts
+                                                            .montserrat(
                                                           fontSize: 10,
-                                                          fontWeight: FontWeight.w700,
+                                                          fontWeight:
+                                                              FontWeight.w700,
                                                           letterSpacing: 1.0,
                                                         ),
                                                       ),
@@ -2920,19 +3503,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   // Left arrow
                   if (_currentBrimCarouselIndex > 0)
                     Positioned(
-                      left: 2, top: 0, bottom: 20,
+                      left: 2,
+                      top: 0,
+                      bottom: 20,
                       child: Center(
                         child: GestureDetector(
                           onTap: () => _brimCarouselController.previousPage(
-                            duration: const Duration(milliseconds: 350), curve: Curves.easeInOut),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut),
                           child: Container(
-                            width: 28, height: 28,
+                            width: 28,
+                            height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 1))],
+                              color: Colors.white.withValues(alpha: 0.7),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1))
+                              ],
                             ),
-                            child: Icon(Icons.chevron_left_rounded, size: 18, color: Colors.grey[600]),
+                            child: Icon(Icons.chevron_left_rounded,
+                                size: 18, color: Colors.grey[600]),
                           ),
                         ),
                       ),
@@ -2940,19 +3533,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   // Right arrow
                   if (_currentBrimCarouselIndex < sortedShapes.length - 1)
                     Positioned(
-                      right: 2, top: 0, bottom: 20,
+                      right: 2,
+                      top: 0,
+                      bottom: 20,
                       child: Center(
                         child: GestureDetector(
                           onTap: () => _brimCarouselController.nextPage(
-                            duration: const Duration(milliseconds: 350), curve: Curves.easeInOut),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut),
                           child: Container(
-                            width: 28, height: 28,
+                            width: 28,
+                            height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 1))],
+                              color: Colors.white.withValues(alpha: 0.7),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1))
+                              ],
                             ),
-                            child: Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey[600]),
+                            child: Icon(Icons.chevron_right_rounded,
+                                size: 18, color: Colors.grey[600]),
                           ),
                         ),
                       ),
@@ -2973,7 +3576,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     height: 6,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(3),
-                      color: i == _currentBrimCarouselIndex ? const Color(0xFF2D2926) : Colors.grey.shade300,
+                      color: i == _currentBrimCarouselIndex
+                          ? const Color(0xFF2D2926)
+                          : Colors.grey.shade300,
                     ),
                   ),
                 ),
@@ -2988,7 +3593,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   children: [
                     const SizedBox(width: 50),
                     Expanded(
-                      child: (_currentBrimCarouselIndex + 1 < sortedShapes.length)
+                      child: (_currentBrimCarouselIndex + 1 <
+                              sortedShapes.length)
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -2997,15 +3603,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 Text(
                                   'NEXT UP: ',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 12, fontWeight: FontWeight.w600,
-                                    color: Colors.grey[500], letterSpacing: 1.8,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500],
+                                    letterSpacing: 1.8,
                                   ),
                                 ),
                                 Text(
-                                  sortedShapes[_currentBrimCarouselIndex + 1].name,
+                                  sortedShapes[_currentBrimCarouselIndex + 1]
+                                      .name,
                                   style: GoogleFonts.cormorantGaramond(
-                                    fontSize: 20, fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF2D2926), fontStyle: FontStyle.italic,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2D2926),
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
                               ],
@@ -3023,8 +3634,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           'SKIP',
                           textAlign: TextAlign.right,
                           style: GoogleFonts.montserrat(
-                            fontSize: 14, fontWeight: FontWeight.w700,
-                            color: const Color(0xFF559C99), letterSpacing: 1.8,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF559C99),
+                            letterSpacing: 1.8,
                             decoration: TextDecoration.underline,
                             decorationColor: const Color(0xFF559C99),
                           ),

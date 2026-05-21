@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -21,14 +20,15 @@ class HatFinderApp extends StatelessWidget {
         brightness: Brightness.light, // Shift to Premium Light Mode
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF559C99), // Turquoise Accent
-          primary: const Color(0xFF2D2926),    // Dark Espresso
-          secondary: const Color(0xFF559C99),  // Turquoise
+          primary: const Color(0xFF2D2926), // Dark Espresso
+          secondary: const Color(0xFF559C99), // Turquoise
           surface: Colors.white,
           onPrimary: Colors.white,
           onSecondary: Colors.white,
         ),
         scaffoldBackgroundColor: Colors.white,
-        textTheme: GoogleFonts.montserratTextTheme(Theme.of(context).textTheme).apply(
+        textTheme:
+            GoogleFonts.montserratTextTheme(Theme.of(context).textTheme).apply(
           bodyColor: const Color(0xFF2D2926),
           displayColor: const Color(0xFF2D2926),
         ),
