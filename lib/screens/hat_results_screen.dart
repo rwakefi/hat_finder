@@ -4,10 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/shopify_service.dart';
 import '../services/database_service.dart';
 import '../models/hat.dart';
+import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final HeadShapeProfile? headShapeProfile;
+  final HeadMeasurementProfile? headMeasurementProfile;
   final String? hatType;
   final String? westernStyle;
   final String? crownShape;
@@ -21,6 +23,7 @@ class HatResultsScreen extends StatefulWidget {
   const HatResultsScreen({
     super.key,
     this.headShapeProfile,
+    this.headMeasurementProfile,
     this.hatType,
     this.westernStyle,
     this.crownShape,
@@ -769,6 +772,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             _buildFitProfileSummary(widget.headShapeProfile!),
             const SizedBox(height: 12),
           ],
+          if (widget.headMeasurementProfile != null) ...[
+            _buildMeasurementSummary(widget.headMeasurementProfile!),
+            const SizedBox(height: 12),
+          ],
           Wrap(
             alignment: WrapAlignment.spaceEvenly,
             spacing: 20,
@@ -801,6 +808,32 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         Expanded(
           child: Text(
             '${profile.shortLabel}: ${profile.fitGuidance}',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              height: 1.35,
+              color: _espresso.withValues(alpha: 0.72),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMeasurementSummary(HeadMeasurementProfile measurement) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.straighten_outlined,
+          size: 18,
+          color: _turquoise,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Size starting point: ${measurement.shortLabel}. ${measurement.guidance}',
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(

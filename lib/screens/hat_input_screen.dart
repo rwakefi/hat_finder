@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
+import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import 'hat_results_screen.dart';
 import 'dart:async';
@@ -11,9 +12,11 @@ class HatInputScreen extends StatefulWidget {
   const HatInputScreen({
     super.key,
     this.headShapeProfile,
+    this.headMeasurementProfile,
   });
 
   final HeadShapeProfile? headShapeProfile;
+  final HeadMeasurementProfile? headMeasurementProfile;
 
   @override
   State<HatInputScreen> createState() => _HatInputScreenState();
@@ -853,6 +856,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       MaterialPageRoute(
         builder: (context) => HatResultsScreen(
           headShapeProfile: widget.headShapeProfile,
+          headMeasurementProfile: widget.headMeasurementProfile,
           hatType: selectedHatType?.name,
           westernStyle: selectedWesternStyle,
           crownShape: selectedCrownShape?.name,
@@ -907,6 +911,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               _buildProgressBar(),
               if (widget.headShapeProfile != null)
                 _buildHeadShapeProfileBanner(widget.headShapeProfile!),
+              if (widget.headMeasurementProfile != null)
+                _buildHeadMeasurementBanner(widget.headMeasurementProfile!),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -977,6 +983,43 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeadMeasurementBanner(HeadMeasurementProfile measurement) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 9, 18, 11),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFFFFF),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE4DED1)),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.straighten_outlined,
+            color: Color(0xFF559C99),
+            size: 21,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Size starting point: ${measurement.shortLabel}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF2D2926).withValues(alpha: 0.72),
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

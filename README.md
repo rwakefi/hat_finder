@@ -1,8 +1,9 @@
 # Moon Ridge Hat Finder
 
 Flutter app for guided Moon Ridge hat recommendations backed by Shopify catalog
-metadata. The current v1 direction is a fit quiz plus guided material, style,
-crown, and brim selection. Camera/image analysis is intentionally deferred.
+metadata. The current v1 direction is a fit quiz, optional manual size
+measurement, and guided material, style, crown, and brim selection.
+Camera/image analysis and camera permissions are intentionally deferred.
 
 ## Backend Configuration
 
@@ -36,5 +37,4 @@ flutter test
 flutter analyze
 ```
 
-Analyzer warnings are still being reduced, but tests should pass before handing
-the branch to external testers.
+Analyzer and tests should pass before handing the branch to external testers.
