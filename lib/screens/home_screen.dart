@@ -14,7 +14,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const Color _espresso = Color(0xFF2D2926);
-  static const Color _beige = Color(0xFFE8E4DA);
   static const Color _surface = Color(0xFFFAF8F5);
 
   @override
@@ -33,7 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                constraints:
+                    BoxConstraints(minHeight: constraints.maxHeight - 44),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

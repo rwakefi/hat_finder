@@ -394,9 +394,20 @@ class ShopifyService {
 
   /// Call during splash so the hat wizard opens with catalog already in memory.
   static void preloadWizardCatalog() {
-    unawaited(fetchValidationChoices());
-    unawaited(fetchLiteProducts());
-    unawaited(fetchFullProducts());
+    _preload('validation choices', fetchValidationChoices());
+    _preload('lite catalog', fetchLiteProducts());
+    _preload('full catalog', fetchFullProducts());
+  }
+
+  static void _preload<T>(String label, Future<T> future) {
+    unawaited(
+      future.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace _) {
+          debugPrint('Shopify preload failed for $label: $error');
+        },
+      ),
+    );
   }
 
   /// Clears caches (useful for tests or pull-to-refresh later).
