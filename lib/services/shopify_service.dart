@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
 
@@ -26,7 +28,7 @@ class _ProductMeta {
 }
 
 class ShopifyService {
-  static const Duration _cacheTtl = Duration(minutes: 5);
+  static const Duration _cacheTtl = Duration(minutes: 15);
 
   static final Map<String, _ProductMeta> _parsedMetaById = {};
 
@@ -73,6 +75,22 @@ class ShopifyService {
 
   /// Shared shape matching for wizard UI and filtering.
   static bool matchShape(String prod, String ui) => _matchShape(prod, ui);
+
+  /// Returns cached lite catalog if splash/home preload already finished.
+  static List<dynamic>? peekLiteProducts() {
+    if (_cachedLiteProducts != null && _isCacheValid(_liteCacheTime)) {
+      return _cachedLiteProducts;
+    }
+    return null;
+  }
+
+  static Map<String, List<String>>? peekValidationChoices() {
+    if (_cachedValidationChoices != null &&
+        _isCacheValid(_validationCacheTime)) {
+      return _cachedValidationChoices;
+    }
+    return null;
+  }
 
   /// Lightweight catalog for the input wizard (no per-variant inventory).
   static Future<List<dynamic>> fetchLiteProducts({bool forceRefresh = false}) {
@@ -133,6 +151,16 @@ class ShopifyService {
     return future;
   }
 
+  static List<dynamic> _parseProductNodes(String body) {
+    final data = jsonDecode(body);
+    if (data['errors'] != null) {
+      throw Exception('GraphQL Error: ${data['errors']}');
+    }
+    return (data['data']['products']['edges'] as List<dynamic>)
+        .map((p) => p['node'])
+        .toList();
+  }
+
   static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
     final uri = Uri.parse(
       '${DatabaseService.baseUrl}/api/shopify_products?lite=${lite ? 'true' : 'false'}',
@@ -146,14 +174,7 @@ class ShopifyService {
       throw Exception('Failed to load products: ${response.statusCode}');
     }
 
-    final data = jsonDecode(response.body);
-    if (data['errors'] != null) {
-      throw Exception('GraphQL Error: ${data['errors']}');
-    }
-
-    return (data['data']['products']['edges'] as List<dynamic>)
-        .map((p) => p['node'])
-        .toList();
+    return compute(_parseProductNodes, response.body);
   }
 
   static Future<List<dynamic>> searchHats({
@@ -369,6 +390,13 @@ class ShopifyService {
       };
     }
     throw Exception('Failed to load choices: ${response.statusCode}');
+  }
+
+  /// Call during splash so the hat wizard opens with catalog already in memory.
+  static void preloadWizardCatalog() {
+    unawaited(fetchValidationChoices());
+    unawaited(fetchLiteProducts());
+    unawaited(fetchFullProducts());
   }
 
   /// Clears caches (useful for tests or pull-to-refresh later).

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import os
 import time
 import json
+import asyncio
 import pg8000
 import urllib.parse
 import httpx
@@ -19,6 +20,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
 SHOPIFY_STORE_URL = os.environ.get("SHOPIFY_STORE_URL", "https://raftermhatco.myshopify.com")
 SHOPIFY_CACHE_TTL_SECONDS = int(os.environ.get("SHOPIFY_CACHE_TTL_SECONDS", "300"))
+SHOPIFY_DB_CACHE_TTL_SECONDS = int(os.environ.get("SHOPIFY_DB_CACHE_TTL_SECONDS", "3600"))
 
 _http_client: httpx.AsyncClient | None = None
 _shopify_cache: dict[str, tuple[float, Any]] = {}
@@ -60,6 +62,72 @@ def _cache_get(cache: dict[str, tuple[float, Any]], key: str) -> Any | None:
 
 def _cache_set(cache: dict[str, tuple[float, Any]], key: str, payload: Any) -> None:
     cache[key] = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
+
+
+def _db_cache_get(cache_key: str) -> Any | None:
+    """Read catalog payload from Railway Postgres when still fresh."""
+    if not DATABASE_URL or SHOPIFY_DB_CACHE_TTL_SECONDS <= 0:
+        return None
+    conn = get_db_connection()
+    if not conn:
+        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT payload, EXTRACT(EPOCH FROM updated_at) AS updated_epoch
+            FROM shopify_catalog_cache
+            WHERE cache_key = %s
+            """,
+            (cache_key,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        payload_raw, updated_epoch = row[0], float(row[1])
+        if time.time() - updated_epoch >= SHOPIFY_DB_CACHE_TTL_SECONDS:
+            return None
+        if isinstance(payload_raw, str):
+            return json.loads(payload_raw)
+        return payload_raw
+    except Exception as e:
+        print(f"⚠️ DB cache read failed ({cache_key}): {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def _db_cache_set(cache_key: str, payload: Any) -> None:
+    if not DATABASE_URL:
+        return
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO shopify_catalog_cache (cache_key, payload, updated_at)
+            VALUES (%s, %s::jsonb, NOW())
+            ON CONFLICT (cache_key)
+            DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()
+            """,
+            (cache_key, json.dumps(payload)),
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"⚠️ DB cache write failed ({cache_key}): {e}")
+    finally:
+        conn.close()
+
+
+async def _db_cache_get_async(cache_key: str) -> Any | None:
+    return await asyncio.to_thread(_db_cache_get, cache_key)
+
+
+async def _db_cache_set_async(cache_key: str, payload: Any) -> None:
+    await asyncio.to_thread(_db_cache_set, cache_key, payload)
+
 
 async def _shopify_graphql(query: str) -> dict:
     if not SHOPIFY_ACCESS_TOKEN:
@@ -119,18 +187,175 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS shopify_catalog_cache (
+                cache_key TEXT PRIMARY KEY,
+                payload JSONB NOT NULL,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
-        print("✅ Database initialized (table found_hats checked/created).")
+        print("✅ Database initialized (found_hats + shopify_catalog_cache).")
     except Exception as e:
         print(f"❌ Failed to init DB: {e}")
     finally:
         conn.close()
+
+async def _build_products_payload(lite: bool) -> dict:
+    if lite:
+        variants_block = """
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  price
+                }
+              }
+            }"""
+    else:
+        variants_block = """
+            variants(first: 250) {
+              edges {
+                node {
+                  id
+                  price
+                  inventoryQuantity
+                  availableForSale
+                  selectedOptions {
+                    name
+                    value
+                  }
+                }
+              }
+            }"""
+
+    query = f"""
+    query {{
+      products(first: 250) {{
+        edges {{
+          node {{
+            {_PRODUCT_FIELDS}
+            {variants_block}
+          }}
+        }}
+      }}
+    }}
+    """
+    return await _shopify_graphql(query)
+
+
+async def _build_validation_payload() -> dict:
+    query = """
+    query {
+      metafieldDefinitions(first: 100, ownerType: PRODUCT) {
+        edges {
+          node {
+            key
+            namespace
+            validations {
+              name
+              value
+            }
+          }
+        }
+      }
+    }
+    """
+    res_json = await _shopify_graphql(query)
+    if "errors" in res_json:
+        raise HTTPException(status_code=500, detail=f"GraphQL errors: {res_json['errors']}")
+
+    definitions = res_json.get("data", {}).get("metafieldDefinitions", {}).get("edges", [])
+
+    crown_choices = []
+    brim_choices = []
+    material_choices = []
+
+    for edge in definitions:
+        node = edge["node"]
+        namespace = node.get("namespace")
+        key = node.get("key")
+        validations = node.get("validations", [])
+
+        if namespace == "custom":
+            choices = []
+            for val in validations:
+                if val.get("name") == "choices":
+                    try:
+                        choices = json.loads(val.get("value", "[]"))
+                    except Exception:
+                        choices = []
+
+            if key == "crown_shape":
+                crown_choices = choices
+            elif key == "brim_shape":
+                brim_choices = choices
+            elif key == "felt_straw_or_ballcap":
+                material_choices = choices
+
+    return {
+        "crown_shapes": crown_choices,
+        "brim_shapes": brim_choices,
+        "material_types": material_choices,
+    }
+
+
+async def _resolve_products(lite: bool, *, force_refresh: bool = False) -> dict:
+    cache_key = "lite" if lite else "full"
+    if not force_refresh:
+        cached = _cache_get(_shopify_cache, cache_key)
+        if cached is not None:
+            return cached
+        db_cached = await _db_cache_get_async(f"products_{cache_key}")
+        if db_cached is not None:
+            _cache_set(_shopify_cache, cache_key, db_cached)
+            return db_cached
+
+    payload = await _build_products_payload(lite)
+    _cache_set(_shopify_cache, cache_key, payload)
+    await _db_cache_set_async(f"products_{cache_key}", payload)
+    return payload
+
+
+async def _resolve_validation(*, force_refresh: bool = False) -> dict:
+    global _validation_cache
+    if not force_refresh:
+        if _validation_cache is not None:
+            expires_at, payload = _validation_cache
+            if time.time() < expires_at:
+                return payload
+        db_cached = await _db_cache_get_async("validation_choices")
+        if db_cached is not None:
+            _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, db_cached)
+            return db_cached
+
+    payload = await _build_validation_payload()
+    _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
+    await _db_cache_set_async("validation_choices", payload)
+    return payload
+
+
+async def _warm_shopify_caches() -> None:
+    """Populate memory + Railway DB caches so first app request is fast."""
+    tasks = [
+        _resolve_products(lite=True),
+        _resolve_validation(),
+        _resolve_products(lite=False),
+    ]
+    for coro in tasks:
+        try:
+            await coro
+        except Exception as e:
+            print(f"⚠️ Shopify cache warm failed: {e}")
+    print("✅ Shopify catalog caches warmed.")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _http_client
     init_db()
     _http_client = httpx.AsyncClient(timeout=30.0)
+    asyncio.create_task(_warm_shopify_caches())
     yield
     await _http_client.aclose()
     _http_client = None
@@ -198,57 +423,13 @@ def get_hats():
         conn.close()
 
 @app.get("/api/shopify_products")
-async def get_shopify_products(lite: bool = Query(False)):
+async def get_shopify_products(
+    lite: bool = Query(False),
+    refresh: bool = Query(False),
+):
     """lite=true returns a smaller payload for the input wizard; full includes variant inventory."""
-    cache_key = "lite" if lite else "full"
-    cached = _cache_get(_shopify_cache, cache_key)
-    if cached is not None:
-        return cached
-
-    if lite:
-        variants_block = """
-            variants(first: 1) {
-              edges {
-                node {
-                  id
-                  price
-                }
-              }
-            }"""
-    else:
-        variants_block = """
-            variants(first: 250) {
-              edges {
-                node {
-                  id
-                  price
-                  inventoryQuantity
-                  availableForSale
-                  selectedOptions {
-                    name
-                    value
-                  }
-                }
-              }
-            }"""
-
-    query = f"""
-    query {{
-      products(first: 250) {{
-        edges {{
-          node {{
-            {_PRODUCT_FIELDS}
-            {variants_block}
-          }}
-        }}
-      }}
-    }}
-    """
-
     try:
-        payload = await _shopify_graphql(query)
-        _cache_set(_shopify_cache, cache_key, payload)
-        return payload
+        return await _resolve_products(lite, force_refresh=refresh)
     except HTTPException:
         raise
     except Exception as e:
@@ -271,68 +452,8 @@ async def get_validation_choices(refresh: bool = False):
     global _validation_cache
     if refresh:
         _validation_cache = None
-    if _validation_cache is not None:
-        expires_at, payload = _validation_cache
-        if time.time() < expires_at:
-            return payload
-
-    query = """
-    query {
-      metafieldDefinitions(first: 100, ownerType: PRODUCT) {
-        edges {
-          node {
-            key
-            namespace
-            validations {
-              name
-              value
-            }
-          }
-        }
-      }
-    }
-    """
-
     try:
-        res_json = await _shopify_graphql(query)
-        if "errors" in res_json:
-            raise HTTPException(status_code=500, detail=f"GraphQL errors: {res_json['errors']}")
-
-        definitions = res_json.get("data", {}).get("metafieldDefinitions", {}).get("edges", [])
-
-        crown_choices = []
-        brim_choices = []
-        material_choices = []
-
-        for edge in definitions:
-            node = edge["node"]
-            namespace = node.get("namespace")
-            key = node.get("key")
-            validations = node.get("validations", [])
-
-            if namespace == "custom":
-                choices = []
-                for val in validations:
-                    if val.get("name") == "choices":
-                        try:
-                            choices = json.loads(val.get("value", "[]"))
-                        except Exception:
-                            choices = []
-
-                if key == "crown_shape":
-                    crown_choices = choices
-                elif key == "brim_shape":
-                    brim_choices = choices
-                elif key == "felt_straw_or_ballcap":
-                    material_choices = choices
-
-        payload = {
-            "crown_shapes": crown_choices,
-            "brim_shapes": brim_choices,
-            "material_types": material_choices,
-        }
-        _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
-        return payload
+        return await _resolve_validation(force_refresh=refresh)
     except HTTPException:
         raise
     except Exception as e:

@@ -35,7 +35,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   int? _flippedBrimCardIndex; // which brim card is showing history
   List<HatShapeInfo>? _sortedCrownShapes;
   List<HatShapeInfo>? _sortedBrimShapes;
-  bool _isLoadingChoices = true;
+  bool _isLoadingChoices = false;
   bool _hasAppliedProfileDefaults = false;
   List<HatShapeInfo> _rawCrownShapes = [];
   List<HatShapeInfo> _rawBrimShapes = [];
@@ -161,7 +161,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         return HatShapeInfo(
           name,
           'assets/images/placeholder.png',
-          'Hats in this material category.',
+          'Hats in this hat type category.',
         );
       },
     );
@@ -358,8 +358,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (!mounted) return;
     setState(() {
       _allProducts = products;
-      _refreshShapeProductMaps();
       _materialExampleUrls = _computeMaterialExampleImages();
+    });
+    Future.microtask(() {
+      if (!mounted) return;
+      setState(_refreshShapeProductMaps);
     });
   }
 
@@ -710,52 +713,86 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return null;
   }
 
+  void _applyFallbackChoices() {
+    _materialTypes = List<HatShapeInfo>.from(hatTypes);
+    _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
+    _rawBrimShapes = List.from(brimShapes);
+    _isLoadingChoices = false;
+    if (_allProducts != null) {
+      _materialExampleUrls = _computeMaterialExampleImages();
+    }
+  }
+
   Future<void> _loadDynamicChoices() async {
+    final cached = ShopifyService.peekValidationChoices();
+    if (cached != null) {
+      _applyChoicesFromApi(cached);
+      return;
+    }
+
     try {
       final choices = await ShopifyService.fetchValidationChoices();
-      final List<String> crownStrings = choices['crown_shapes'] ?? [];
-      final List<String> brimStrings = choices['brim_shapes'] ?? [];
-      final List<String> materialStrings = choices['material_types'] ?? [];
-
-      setState(() {
-        _materialTypes = materialStrings.map(_mapStringToHatType).toList();
-        _rawCrownShapes = crownStrings.map((name) {
-          return _mapStringToShapeInfo(name, isCrown: true);
-        }).toList();
-
-        _rawBrimShapes = brimStrings.map((name) {
-          return _mapStringToShapeInfo(name, isCrown: false);
-        }).toList();
-
-        _applyHeadShapeProfileDefaults();
-        _isLoadingChoices = false;
-        _refreshShapeProductMaps();
-        _materialExampleUrls = _computeMaterialExampleImages();
-      });
+      _applyChoicesFromApi(choices);
     } catch (e) {
       debugPrint('Error loading dynamic validation choices: $e');
-      setState(() {
-        _materialTypes = [];
-        _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
-        _rawBrimShapes = List.from(brimShapes);
-        _isLoadingChoices = false;
-        _refreshShapeProductMaps();
+      if (mounted) {
+        setState(_applyFallbackChoices);
+      }
+    }
+  }
+
+  void _applyChoicesFromApi(Map<String, List<String>> choices) {
+    final crownStrings = choices['crown_shapes'] ?? [];
+    final brimStrings = choices['brim_shapes'] ?? [];
+    final materialStrings = choices['material_types'] ?? [];
+
+    if (!mounted) return;
+    setState(() {
+      _materialTypes = materialStrings.map(_mapStringToHatType).toList();
+      _rawCrownShapes = crownStrings
+          .map((name) => _mapStringToShapeInfo(name, isCrown: true))
+          .toList();
+      _rawBrimShapes = brimStrings
+          .map((name) => _mapStringToShapeInfo(name, isCrown: false))
+          .toList();
+      _applyHeadShapeProfileDefaults();
+      _isLoadingChoices = false;
+      if (_allProducts != null) {
         _materialExampleUrls = _computeMaterialExampleImages();
+      }
+    });
+    if (_allProducts != null) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(_refreshShapeProductMaps);
       });
     }
+  }
+
+  void _startCatalogLoad() {
+    final cached = ShopifyService.peekLiteProducts();
+    if (cached != null) {
+      _allProducts = cached;
+      _allProductsFuture = Future.value(cached);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onProductsLoaded(cached);
+      });
+      return;
+    }
+
+    _allProductsFuture = ShopifyService.fetchLiteProducts().then((products) {
+      if (mounted) _onProductsLoaded(products);
+      return products;
+    });
   }
 
   @override
   void initState() {
     super.initState();
     _applyHeadShapeProfileDefaults();
-    _allProductsFuture = ShopifyService.fetchLiteProducts().then((products) {
-      _onProductsLoaded(products);
-      return products;
-    });
+    _applyFallbackChoices();
+    _startCatalogLoad();
     _loadDynamicChoices();
-    // Warm full catalog in background so results screen can show swatches faster.
-    unawaited(ShopifyService.fetchFullProducts());
   }
 
   @override
@@ -887,7 +924,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              'FINE TUNING',
+              _wizardPhaseTitle,
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 color: const Color(0xFF2D2926),
@@ -1036,6 +1073,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  String get _wizardPhaseTitle =>
+      _currentPageIndex == 0 ? 'TYPE' : 'FINE TUNING';
+
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
     bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
@@ -1148,7 +1188,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: Column(
             children: [
               Text(
-                'Select a Material:',
+                'Select a Hat Type:',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
@@ -1171,7 +1211,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 ),
                 child: Text(
-                  'ANY MATERIAL',
+                  'ANY HAT TYPE',
                   style: GoogleFonts.montserrat(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -1186,13 +1226,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: FutureBuilder<List<dynamic>>(
             future: _allProductsFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF559C99)),
-                );
-              }
+              final catalogLoading = _allProducts == null &&
+                  snapshot.connectionState == ConnectionState.waiting;
 
-              return GridView.count(
+              return Column(
+                children: [
+                  if (catalogLoading)
+                    const LinearProgressIndicator(
+                      minHeight: 2,
+                      color: Color(0xFF559C99),
+                    ),
+                  Expanded(
+                    child: GridView.count(
                 crossAxisCount: 2,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -1282,6 +1327,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   );
                 }).toList(),
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -1733,11 +1781,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFF559C99)),
-          );
-        }
+        final catalogLoading = _allProducts == null &&
+            snapshot.connectionState == ConnectionState.waiting;
 
         final sortedShapes =
             _sortedCrownShapes ?? List<HatShapeInfo>.from(_currentCrownShapes);
@@ -1745,6 +1790,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
         return Column(
           children: [
+            if (catalogLoading)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFF559C99),
+              ),
             // Header — minimal to maximize card space
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
@@ -2924,11 +2974,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFF559C99)),
-          );
-        }
+        final catalogLoading = _allProducts == null &&
+            snapshot.connectionState == ConnectionState.waiting;
 
         final sortedShapes = _availableBrimShapes;
         final shopifyProductsMap = _brimProductsMap;
@@ -2968,6 +3015,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
         return Column(
           children: [
+            if (catalogLoading)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFF559C99),
+              ),
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
