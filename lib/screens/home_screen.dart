@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 20),
                     _OptionBlock(
                       icon: Icons.shopping_bag_outlined,
-                      label: 'BALLCAPS! Or Just Go Shopping',
+                      label: 'JUST TAKE ME TO THE HATS!',
                       caption: 'Browse the full Moon Ridge collection',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
