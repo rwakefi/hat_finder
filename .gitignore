@@ -33,6 +33,13 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Reference video captures should not be committed or bundled.
+assets/images/ScreenRecording_*.mp4
+assets/images/*.mov
+artifacts/**/*.mp4
+artifacts/**/*.mov
+*.m4v
+
 # Symbolication related
 app.*.symbols
 
