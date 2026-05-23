@@ -47,10 +47,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   String? selectedWesternStyle;
 
   HatShapeInfo? selectedCrownShape;
-  List<double> targetCrownHeights = [];
 
   HatShapeInfo? selectedBrimShape;
-  List<String> targetBrimWidths = [];
 
   late Future<List<dynamic>> _allProductsFuture;
   List<dynamic>? _allProducts;
@@ -606,7 +604,43 @@ class _HatInputScreenState extends State<HatInputScreen> {
       _currentBrimCarouselIndex = index;
       _flippedBrimCardIndex = null;
     });
+    _advanceWizardOrFinish();
+  }
+
+  bool get _isOnLastWizardPage => _currentPageIndex >= _pages.length - 1;
+
+  void _advanceWizardOrFinish() {
+    if (_isOnLastWizardPage) {
+      _submitSearch();
+      return;
+    }
     _nextPage();
+  }
+
+  List<HatShapeInfo> _uniqueShapeOptions(Iterable<HatShapeInfo> sources) {
+    final seen = <String>{};
+    final options = <HatShapeInfo>[];
+    for (final shape in sources) {
+      if (seen.add(shape.name)) options.add(shape);
+    }
+    return options;
+  }
+
+  List<HatShapeInfo> _crownOptionsForResults() {
+    return _uniqueShapeOptions([
+      if (selectedCrownShape != null) selectedCrownShape!,
+      ...(_sortedCrownShapes ?? _currentCrownShapes),
+      ...crownShapes,
+    ]);
+  }
+
+  List<HatShapeInfo> _brimOptionsForResults() {
+    return _uniqueShapeOptions([
+      if (selectedBrimShape != null) selectedBrimShape!,
+      ..._availableBrimShapes,
+      ..._allBrimShapeOptions,
+      ...brimShapes,
+    ]);
   }
 
   Map<String, List<Map<String, String>>> _buildShapeProductMap(
@@ -713,10 +747,27 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return null;
   }
 
-  static const _shapeStepTitlePadding =
-      EdgeInsets.fromLTRB(16, 10, 16, 14);
+  static const _wizardStepTitlePadding =
+      EdgeInsets.fromLTRB(16, 16, 16, 8);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 12, bottom: 20);
+
+  TextStyle get _wizardStepTitleStyle => GoogleFonts.playfairDisplay(
+        fontSize: 26,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF2D2926),
+      );
+
+  Widget _buildWizardStepTitle(String title) {
+    return Padding(
+      padding: _wizardStepTitlePadding,
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: _wizardStepTitleStyle,
+      ),
+    );
+  }
 
   Widget _buildExampleProductHeader(String? productTitle) {
     if (productTitle == null || productTitle.isEmpty) {
@@ -854,7 +905,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     pages.addAll([
       _buildVisualCrownSelection(),
       _buildVisualBrimSelection(),
-      _buildDetailsSelection(),
     ]);
     return pages;
   }
@@ -904,6 +954,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
     }
 
+    if (_currentPageIndex >= _pages.length - 1) {
+      _submitSearch();
+      return;
+    }
+
     _pageController.nextPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -926,10 +981,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             hatType: selectedHatType?.name,
             westernStyle: selectedWesternStyle,
             crownShape: selectedCrownShape?.name,
-            crownHeights:
-                targetCrownHeights.isNotEmpty ? targetCrownHeights : null,
             brimShape: selectedBrimShape?.name,
-            brimWidths: targetBrimWidths.isNotEmpty ? targetBrimWidths : null,
           );
 
     Navigator.of(context).push(
@@ -940,10 +992,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           hatType: selectedHatType?.name,
           westernStyle: selectedWesternStyle,
           crownShape: selectedCrownShape?.name,
-          crownHeights:
-              targetCrownHeights.isNotEmpty ? targetCrownHeights : null,
           brimShape: selectedBrimShape?.name,
-          brimWidths: targetBrimWidths.isNotEmpty ? targetBrimWidths : null,
+          crownShapeOptions: _crownOptionsForResults(),
+          brimShapeOptions: _brimOptionsForResults(),
           preloadedHats: preloaded,
         ),
       ),
@@ -1131,7 +1182,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     int crownIndex = hasWestern ? 2 : 1;
     if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
     if (_currentPageIndex == crownIndex) return 'Next: Brim Shape';
-    return 'Next: Details';
+    return 'Find Hats';
   }
 
   Widget _buildBottomNav() {
@@ -1229,17 +1280,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: _wizardStepTitlePadding,
           child: Column(
             children: [
               Text(
                 'Select a Hat Type:',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2D2926),
-                ),
+                style: _wizardStepTitleStyle,
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -1387,17 +1434,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: _wizardStepTitlePadding,
           child: Column(
             children: [
               Text(
                 'Select Style:',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2D2926),
-                ),
+                style: _wizardStepTitleStyle,
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -1840,14 +1883,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            Padding(
-              padding: _shapeStepTitlePadding,
-              child: Text(
-                'Select Crown Shape:',
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 22, color: const Color(0xFF2D2926)),
-              ),
-            ),
+            _buildWizardStepTitle('Select Crown Shape:'),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             Expanded(
               child: Stack(
@@ -2494,469 +2530,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildDetailsSelection() {
-    return FutureBuilder<List<dynamic>>(
-      future: _allProductsFuture,
-      builder: (context, snapshot) {
-        // Dynamically find matching image from Shopify products
-        String? crownImageUrl;
-        if (snapshot.hasData && selectedCrownShape != null) {
-          try {
-            final product = snapshot.data!.firstWhere(
-              (p) =>
-                  _matchShape(
-                      _metaValue(p['crownShape']), selectedCrownShape!.name) &&
-                  p['featuredImage']?['url'] != null,
-            );
-            crownImageUrl = product['featuredImage']['url'];
-          } catch (_) {
-            final fallback = _getFallbackProduct(
-                snapshot.data!, selectedCrownShape!,
-                isCrown: true);
-            if (fallback != null) {
-              crownImageUrl = fallback['url'];
-            }
-          }
-        }
-
-        String? brimImageUrl;
-        if (snapshot.hasData && selectedBrimShape != null) {
-          try {
-            final product = snapshot.data!.firstWhere(
-              (p) =>
-                  _matchShape(
-                      _metaValue(p['brimShape']), selectedBrimShape!.name) &&
-                  p['featuredImage']?['url'] != null,
-            );
-            brimImageUrl = product['featuredImage']['url'];
-          } catch (_) {
-            final fallback = _getFallbackProduct(
-                snapshot.data!, selectedBrimShape!,
-                isCrown: false);
-            if (fallback != null) {
-              brimImageUrl = fallback['url'];
-            }
-          }
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader('Crown', Icons.architecture),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: selectedCrownShape != null
-                          ? (crownImageUrl != null
-                              ? Image.network(crownImageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.image,
-                                              color: Colors.grey)))
-                              : Image.asset(selectedCrownShape!.imagePath,
-                                  fit: BoxFit.cover))
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Crown Shape:',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.grey)),
-                          DropdownButton<HatShapeInfo?>(
-                            value:
-                                _currentCrownShapes.contains(selectedCrownShape)
-                                    ? selectedCrownShape
-                                    : null,
-                            isExpanded: false,
-                            isDense: true,
-                            underline: const SizedBox(),
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.grey),
-                            dropdownColor:
-                                Theme.of(context).scaffoldBackgroundColor,
-                            hint: const Text('Any',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 18)),
-                            selectedItemBuilder: (BuildContext context) {
-                              return <HatShapeInfo?>[
-                                null,
-                                ..._currentCrownShapes
-                              ].map<Widget>((HatShapeInfo? item) {
-                                return Text(
-                                  item?.name ?? 'Any',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18),
-                                );
-                              }).toList();
-                            },
-                            items: [
-                              const DropdownMenuItem<HatShapeInfo?>(
-                                value: null,
-                                child: Text('Any',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                              ..._currentCrownShapes.map((shape) {
-                                return DropdownMenuItem<HatShapeInfo?>(
-                                  value: shape,
-                                  child: Text(shape.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                );
-                              }),
-                            ],
-                            onChanged: (val) {
-                              setState(() {
-                                selectedCrownShape = val;
-                                _onCrownSelectionChanged();
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildMeasurementDropdown(
-                label: 'Crown Height',
-                selectedItems: targetCrownHeights,
-                min: 4.25,
-                max: 5.0,
-                onChanged: (val) => setState(() => targetCrownHeights = val),
-              ),
-              const SizedBox(height: 32),
-              const Divider(),
-              const SizedBox(height: 24),
-              _buildSectionHeader('Brim', Icons.waves),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: selectedBrimShape != null
-                          ? (brimImageUrl != null
-                              ? Image.network(brimImageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.image,
-                                              color: Colors.grey)))
-                              : Image.asset(selectedBrimShape!.imagePath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.image,
-                                              color: Colors.grey))))
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Brim Shape:',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.grey)),
-                          DropdownButton<HatShapeInfo?>(
-                            value:
-                                _availableBrimShapes.contains(selectedBrimShape)
-                                    ? selectedBrimShape
-                                    : null,
-                            isExpanded: false,
-                            isDense: true,
-                            underline: const SizedBox(),
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.grey),
-                            dropdownColor:
-                                Theme.of(context).scaffoldBackgroundColor,
-                            hint: const Text('Any',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 18)),
-                            selectedItemBuilder: (BuildContext context) {
-                              return <HatShapeInfo?>[
-                                null,
-                                ..._availableBrimShapes
-                              ].map<Widget>((HatShapeInfo? item) {
-                                return Text(
-                                  item?.name ?? 'Any',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18),
-                                );
-                              }).toList();
-                            },
-                            items: [
-                              const DropdownMenuItem<HatShapeInfo?>(
-                                value: null,
-                                child: Text('Any',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                              ..._availableBrimShapes.map((shape) {
-                                return DropdownMenuItem<HatShapeInfo?>(
-                                  value: shape,
-                                  child: Text(shape.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                );
-                              }),
-                            ],
-                            onChanged: (val) {
-                              setState(() => selectedBrimShape = val);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildDropdown(
-                label: 'Brim Width',
-                selectedItems: targetBrimWidths,
-                items: brimWidths,
-                onChanged: (val) => setState(() => targetBrimWidths = val),
-              ),
-              const SizedBox(
-                  height:
-                      50), // Padding to prevent the button from covering the last item
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Row(
-        children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required List<String> selectedItems,
-    required List<String> items,
-    required ValueChanged<List<String>> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$label:',
-          style: const TextStyle(
-              fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 16.0,
-          runSpacing: 4.0,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Checkbox(
-                  value: selectedItems.isEmpty,
-                  onChanged: (val) {
-                    if (val == true) {
-                      onChanged([]);
-                    }
-                  },
-                  activeColor: Theme.of(context).colorScheme.primary,
-                ),
-                GestureDetector(
-                  onTap: () => onChanged([]),
-                  child: const Text('Any',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            ...items.map((item) {
-              final isSelected = selectedItems.contains(item);
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (val) {
-                      final newItems = List<String>.from(selectedItems);
-                      if (val == true) {
-                        newItems.add(item);
-                      } else {
-                        newItems.remove(item);
-                      }
-                      onChanged(newItems);
-                    },
-                    activeColor: Theme.of(context).colorScheme.primary,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      final newItems = List<String>.from(selectedItems);
-                      if (isSelected) {
-                        newItems.remove(item);
-                      } else {
-                        newItems.add(item);
-                      }
-                      onChanged(newItems);
-                    },
-                    child: Text(item,
-                        style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal)),
-                  ),
-                ],
-              );
-            }),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMeasurementDropdown({
-    required String label,
-    required List<double> selectedItems,
-    required double min,
-    required double max,
-    required ValueChanged<List<double>> onChanged,
-  }) {
-    final List<double> increments = [];
-    for (double i = min; i <= max + 0.01; i += 0.25) {
-      increments.add(i);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$label:',
-          style: const TextStyle(
-              fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 16.0,
-          runSpacing: 4.0,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Checkbox(
-                  value: selectedItems.isEmpty,
-                  onChanged: (val) {
-                    if (val == true) {
-                      onChanged([]);
-                    }
-                  },
-                  activeColor: Theme.of(context).colorScheme.primary,
-                ),
-                GestureDetector(
-                  onTap: () => onChanged([]),
-                  child: const Text('Any',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            ...increments.map((val) {
-              final isSelected = selectedItems.contains(val);
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (checked) {
-                      final newItems = List<double>.from(selectedItems);
-                      if (checked == true) {
-                        newItems.add(val);
-                      } else {
-                        newItems.remove(val);
-                      }
-                      onChanged(newItems);
-                    },
-                    activeColor: Theme.of(context).colorScheme.primary,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      final newItems = List<double>.from(selectedItems);
-                      if (isSelected) {
-                        newItems.remove(val);
-                      } else {
-                        newItems.add(val);
-                      }
-                      onChanged(newItems);
-                    },
-                    child: Text(formatMeasurement(val),
-                        style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal)),
-                  ),
-                ],
-              );
-            }),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildVisualBrimSelection() {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
@@ -2970,14 +2543,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (sortedShapes.isEmpty) {
           return Column(
             children: [
-              Padding(
-                padding: _shapeStepTitlePadding,
-                child: Text(
-                  'Select Brim Shape:',
-                  style: GoogleFonts.playfairDisplay(
-                      fontSize: 22, color: const Color(0xFF2D2926)),
-                ),
-              ),
+              _buildWizardStepTitle('Select Brim Shape:'),
               Expanded(
                 child: Center(
                   child: Padding(
@@ -3007,14 +2573,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            Padding(
-              padding: _shapeStepTitlePadding,
-              child: Text(
-                'Select Brim Shape:',
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 22, color: const Color(0xFF2D2926)),
-              ),
-            ),
+            _buildWizardStepTitle('Select Brim Shape:'),
             // Carousel with swipe arrows
             Expanded(
               child: Stack(
@@ -3609,7 +3168,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() => selectedBrimShape = null);
-                          _nextPage(overrideValidation: true);
+                          _submitSearch();
                         },
                         child: Text(
                           'SKIP',

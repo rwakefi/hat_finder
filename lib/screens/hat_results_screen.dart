@@ -6,6 +6,7 @@ import '../services/database_service.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../widgets/fine_tuning_tray.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final HeadShapeProfile? headShapeProfile;
@@ -19,6 +20,8 @@ class HatResultsScreen extends StatefulWidget {
 
   /// Instant results from the wizard cache (full catalog loaded in background).
   final List<dynamic>? preloadedHats;
+  final List<HatShapeInfo>? crownShapeOptions;
+  final List<HatShapeInfo>? brimShapeOptions;
 
   const HatResultsScreen({
     super.key,
@@ -31,6 +34,8 @@ class HatResultsScreen extends StatefulWidget {
     this.brimShape,
     this.brimWidths,
     this.preloadedHats,
+    this.crownShapeOptions,
+    this.brimShapeOptions,
   });
 
   @override
@@ -41,6 +46,12 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   late Future<List<dynamic>> _hatsFuture;
   String? _selectedColor;
   Map<String, List<({String color, String variantGid})>> _swatchCache = {};
+  List<dynamic>? _fullCatalog;
+  bool _fineTuningExpanded = false;
+  late String? _filterCrownShape;
+  late String? _filterBrimShape;
+  late List<double> _filterCrownHeights;
+  late List<String> _filterBrimWidths;
 
   // Brand colors — consistent with the rest of the app & moonridgecompany.com
   static const Color _espresso = Color(0xFF2D2926);
@@ -52,40 +63,96 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   @override
   void initState() {
     super.initState();
+    _filterCrownShape = widget.crownShape;
+    _filterBrimShape = widget.brimShape;
+    _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
+    _filterBrimWidths = List<String>.from(widget.brimWidths ?? []);
+
     if (widget.preloadedHats != null) {
       _rebuildSwatchCache(widget.preloadedHats!);
       _hatsFuture = Future.value(widget.preloadedHats);
-      _refreshWithFullCatalog();
     } else {
-      _hatsFuture = ShopifyService.searchHats(
-        hatType: widget.hatType,
-        westernStyle: widget.westernStyle,
-        crownShape: widget.crownShape,
-        crownHeights: widget.crownHeights,
-        brimShape: widget.brimShape,
-        brimWidths: widget.brimWidths,
-      );
+      _hatsFuture = _fetchFilteredHats();
+    }
+    _loadFullCatalog();
+  }
+
+  bool get _showsFineTuningTray {
+    final type = (widget.hatType ?? '').toLowerCase();
+    return !type.contains('ballcap') &&
+        !type.contains('beanie') &&
+        !type.contains('flat cap');
+  }
+
+  Future<List<dynamic>> _fetchFilteredHats() async {
+    final all = await ShopifyService.fetchFullProducts();
+    _fullCatalog = all;
+    return _filterCatalog(all);
+  }
+
+  Future<void> _loadFullCatalog() async {
+    if (_fullCatalog != null) {
+      _applyFilters();
+      return;
+    }
+    try {
+      final all = await ShopifyService.fetchFullProducts();
+      if (!mounted) return;
+      _fullCatalog = all;
+      _applyFilters();
+    } catch (_) {
+      // Keep showing current results if catalog load fails.
     }
   }
 
-  Future<void> _refreshWithFullCatalog() async {
-    try {
-      final hats = await ShopifyService.searchHats(
-        hatType: widget.hatType,
-        westernStyle: widget.westernStyle,
-        crownShape: widget.crownShape,
-        crownHeights: widget.crownHeights,
-        brimShape: widget.brimShape,
-        brimWidths: widget.brimWidths,
-      );
-      if (!mounted) return;
-      setState(() {
-        _rebuildSwatchCache(hats);
-        _hatsFuture = Future.value(hats);
-      });
-    } catch (_) {
-      // Keep showing preloaded results if enrichment fails.
-    }
+  List<dynamic> _filterCatalog(List<dynamic> catalog) {
+    return ShopifyService.filterProducts(
+      catalog,
+      hatType: widget.hatType,
+      westernStyle: widget.westernStyle,
+      crownShape: _filterCrownShape,
+      crownHeights:
+          _filterCrownHeights.isEmpty ? null : _filterCrownHeights,
+      brimShape: _filterBrimShape,
+      brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
+    );
+  }
+
+  void _applyFilters() {
+    final source = _fullCatalog;
+    if (source == null) return;
+    final filtered = _filterCatalog(source);
+    setState(() {
+      _selectedColor = null;
+      _rebuildSwatchCache(filtered);
+      _hatsFuture = Future.value(filtered);
+    });
+  }
+
+  void _onFineTuningChanged(FineTuningValues values) {
+    setState(() {
+      _filterCrownShape = values.crownShape;
+      _filterBrimShape = values.brimShape;
+      _filterCrownHeights = List<double>.from(values.crownHeights);
+      _filterBrimWidths = List<String>.from(values.brimWidths);
+    });
+    _applyFilters();
+  }
+
+  String _crownSummaryLabel() {
+    final shape = _filterCrownShape ?? 'Any';
+    final heights = _filterCrownHeights.isEmpty
+        ? 'Any'
+        : _filterCrownHeights.map(formatMeasurement).join(', ');
+    return '$shape ($heights)';
+  }
+
+  String _brimSummaryLabel() {
+    final shape = _filterBrimShape ?? 'Any';
+    final widths = _filterBrimWidths.isEmpty
+        ? 'Any'
+        : _filterBrimWidths.join(', ');
+    return '$shape ($widths)';
   }
 
   String _metaValue(dynamic entry) {
@@ -765,32 +832,51 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Widget _buildSearchSummary() {
     return Container(
       color: _offWhite,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        children: [
-          if (widget.headShapeProfile != null) ...[
-            _buildFitProfileSummary(widget.headShapeProfile!),
-            const SizedBox(height: 12),
-          ],
-          if (widget.headMeasurementProfile != null) ...[
-            _buildMeasurementSummary(widget.headMeasurementProfile!),
-            const SizedBox(height: 12),
-          ],
-          Wrap(
-            alignment: WrapAlignment.spaceEvenly,
-            spacing: 20,
-            runSpacing: 10,
-            children: [
-              _buildSummaryChip('Type', widget.hatType ?? 'Any'),
-              if (widget.westernStyle != null)
-                _buildSummaryChip('Style', widget.westernStyle!),
-              _buildSummaryChip('Crown',
-                  '${widget.crownShape ?? 'Any'} (${widget.crownHeights != null ? widget.crownHeights!.map((h) => formatMeasurement(h)).join(", ") : 'Any'})'),
-              _buildSummaryChip('Brim',
-                  '${widget.brimShape ?? 'Any'} (${widget.brimWidths != null ? widget.brimWidths!.join(", ") : 'Any'})'),
+      constraints: const BoxConstraints(maxHeight: 340),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          children: [
+            if (widget.headShapeProfile != null) ...[
+              _buildFitProfileSummary(widget.headShapeProfile!),
+              const SizedBox(height: 12),
             ],
-          ),
-        ],
+            if (widget.headMeasurementProfile != null) ...[
+              _buildMeasurementSummary(widget.headMeasurementProfile!),
+              const SizedBox(height: 12),
+            ],
+            Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              spacing: 20,
+              runSpacing: 10,
+              children: [
+                _buildSummaryChip('Type', widget.hatType ?? 'Any'),
+                if (widget.westernStyle != null)
+                  _buildSummaryChip('Style', widget.westernStyle!),
+                if (_showsFineTuningTray) ...[
+                  _buildSummaryChip('Crown', _crownSummaryLabel()),
+                  _buildSummaryChip('Brim', _brimSummaryLabel()),
+                ],
+              ],
+            ),
+            if (_showsFineTuningTray) ...[
+              const SizedBox(height: 14),
+              FineTuningTray(
+                expanded: _fineTuningExpanded,
+                onExpandedChanged: (open) =>
+                    setState(() => _fineTuningExpanded = open),
+                crownShape: _filterCrownShape,
+                brimShape: _filterBrimShape,
+                crownHeights: _filterCrownHeights,
+                brimWidths: _filterBrimWidths,
+                crownShapeOptions:
+                    widget.crownShapeOptions ?? crownShapes,
+                brimShapeOptions: widget.brimShapeOptions ?? brimShapes,
+                onChanged: _onFineTuningChanged,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
