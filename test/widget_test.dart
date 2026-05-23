@@ -11,6 +11,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('FIND YOUR PERFECT HAT'), findsOneWidget);
-    expect(find.text('SEARCH BY HAT SHAPE'), findsOneWidget);
+    expect(find.text('SEARCH BY HAT TYPE'), findsOneWidget);
   });
 }

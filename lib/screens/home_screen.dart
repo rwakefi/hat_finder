@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 28),
                     _OptionBlock(
                       icon: Icons.style_outlined,
-                      label: 'SEARCH BY HAT SHAPE',
+                      label: 'SEARCH BY HAT TYPE',
                       caption: 'For those who know what style they want',
                       emphasized: true,
                       onTap: () => Navigator.of(context).push(
