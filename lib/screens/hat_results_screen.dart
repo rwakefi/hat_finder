@@ -696,8 +696,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               SnackBar(
                                 content: Text(
                                   success
-                                      ? 'Added to Registry'
-                                      : 'Failed to save.',
+                                      ? 'Saved to Bookmarks'
+                                      : 'Failed to save bookmark.',
                                 ),
                                 backgroundColor:
                                     success ? _turquoise : Colors.red,

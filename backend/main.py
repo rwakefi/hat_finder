@@ -8,7 +8,7 @@ import asyncio
 import pg8000
 import urllib.parse
 import httpx
-from typing import List, Optional, Any
+from typing import Any
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -195,17 +195,6 @@ def init_db():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS found_hats (
-                id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                brand TEXT,
-                price TEXT,
-                size TEXT,
-                url TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("""
             CREATE TABLE IF NOT EXISTS shopify_catalog_cache (
                 cache_key TEXT PRIMARY KEY,
                 payload JSONB NOT NULL,
@@ -213,7 +202,7 @@ def init_db():
             )
         """)
         conn.commit()
-        print("✅ Database initialized (found_hats + shopify_catalog_cache).")
+        print("✅ Database initialized (shopify_catalog_cache).")
     except Exception as e:
         print(f"❌ Failed to init DB: {e}")
     finally:
@@ -388,59 +377,6 @@ if ALLOWED_ORIGINS:
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "X-Cache-Refresh-Token"],
     )
-
-class Hat(BaseModel):
-    name: str = Field(..., min_length=1, max_length=200)
-    brand: Optional[str] = Field(default=None, max_length=120)
-    price: Optional[str] = Field(default=None, max_length=80)
-    size: Optional[str] = Field(default=None, max_length=80)
-    url: Optional[str] = Field(default=None, max_length=2000)
-
-@app.post("/api/save_hat")
-def save_hat(hat: Hat):
-    conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection failed")
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO found_hats (name, brand, price, size, url) VALUES (%s, %s, %s, %s, %s)",
-            (hat.name, hat.brand, hat.price, hat.size, hat.url)
-        )
-        conn.commit()
-        return {"status": "success", "message": "Hat saved successfully"}
-    except Exception as e:
-        print(f"⚠️ Failed to save hat: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save hat")
-    finally:
-        conn.close()
-
-@app.get("/api/hats")
-def get_hats():
-    conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection failed")
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, brand, price, size, url, created_at FROM found_hats ORDER BY created_at DESC")
-        rows = cursor.fetchall()
-        results = []
-        for row in rows:
-            results.append({
-                "id": row[0],
-                "name": row[1],
-                "brand": row[2],
-                "price": row[3],
-                "size": row[4],
-                "url": row[5],
-                "created_at": str(row[6])
-            })
-        return results
-    except Exception as e:
-        print(f"⚠️ Failed to fetch saved hats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch saved hats")
-    finally:
-        conn.close()
 
 @app.get("/api/shopify_products")
 async def get_shopify_products(
