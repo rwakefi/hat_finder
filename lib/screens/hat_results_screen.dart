@@ -45,7 +45,8 @@ class HatResultsScreen extends StatefulWidget {
 class _HatResultsScreenState extends State<HatResultsScreen> {
   late Future<List<dynamic>> _hatsFuture;
   String? _selectedColor;
-  Map<String, List<({String color, String variantGid})>> _swatchCache = {};
+  Map<String, List<({String color, String variantGid, String? imageUrl})>>
+      _swatchCache = {};
   List<dynamic>? _fullCatalog;
   bool _fineTuningExpanded = false;
   late String? _filterHatType;
@@ -187,7 +188,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     };
   }
 
-  List<({String color, String variantGid})> _swatchColorsFor(dynamic hat) {
+  List<({String color, String variantGid, String? imageUrl})> _swatchColorsFor(
+      dynamic hat) {
     final id = hat['id'] as String?;
     if (id != null && _swatchCache.containsKey(id)) {
       return _swatchCache[id]!;
@@ -217,12 +219,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   /// In-stock felt colors with a variant id for deep-linking (includes single-color felt).
-  List<({String color, String variantGid})> _computeSwatchColors(dynamic hat) {
+  List<({String color, String variantGid, String? imageUrl})>
+      _computeSwatchColors(dynamic hat) {
     if (!_shouldShowColorSwatches(hat)) return [];
 
     final variants = hat['variants']?['edges'] as List<dynamic>? ?? [];
     final availableByColor = <String, bool>{};
     final variantByColor = <String, String>{};
+    final imageByColor = <String, String?>{};
 
     for (final edge in variants) {
       final node = edge['node'];
@@ -238,11 +242,37 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       if (_variantIsAvailable(node)) {
         availableByColor[colorName] = true;
         variantByColor.putIfAbsent(colorName, () => node['id'] as String);
+        final imageUrl = node['image']?['url'] as String?;
+        if (imageUrl != null &&
+            imageUrl.isNotEmpty &&
+            (imageByColor[colorName] == null ||
+                imageByColor[colorName]!.isEmpty)) {
+          imageByColor[colorName] = imageUrl;
+        } else {
+          imageByColor.putIfAbsent(colorName, () => null);
+        }
+      }
+    }
+
+    for (final colorName in availableByColor.keys) {
+      if (imageByColor[colorName] != null &&
+          imageByColor[colorName]!.isNotEmpty) {
+        continue;
+      }
+      final matched = _findProductImageForColor(hat, colorName);
+      if (matched != null) {
+        imageByColor[colorName] = matched;
       }
     }
 
     var colors = availableByColor.keys
-        .map((c) => (color: c, variantGid: variantByColor[c]!))
+        .map(
+          (c) => (
+            color: c,
+            variantGid: variantByColor[c]!,
+            imageUrl: imageByColor[c],
+          ),
+        )
         .toList()
       ..sort((a, b) => a.color.compareTo(b.color));
 
@@ -254,7 +284,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       for (final edge in variants) {
         final node = edge['node'];
         if (node != null && _variantIsAvailable(node) && node['id'] != null) {
-          return [(color: colorMeta, variantGid: node['id'] as String)];
+          final imageUrl = (node['image']?['url'] as String?) ??
+              _findProductImageForColor(hat, colorMeta);
+          return [
+            (
+              color: colorMeta,
+              variantGid: node['id'] as String,
+              imageUrl: imageUrl,
+            ),
+          ];
         }
       }
     }
@@ -666,8 +704,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: swatchColors.map((entry) {
-                            final swatchColor =
-                                _mapColorNameToColor(entry.color);
                             return Tooltip(
                               message: entry.color,
                               preferBelow: false,
@@ -694,29 +730,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                     width: 28,
                                     height: 28,
                                     alignment: Alignment.center,
-                                    child: Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(
-                                        color: swatchColor,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: swatchColor
-                                                      .computeLuminance() >
-                                                  0.8
-                                              ? _espresso.withValues(alpha: 0.2)
-                                              : Colors.white30,
-                                          width: 1.0,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black
-                                                .withValues(alpha: 0.12),
-                                            blurRadius: 2,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
-                                      ),
+                                    child: _buildColorSwatchCircle(
+                                      colorName: entry.color,
+                                      imageUrl: entry.imageUrl,
                                     ),
                                   ),
                                 ),
@@ -960,14 +976,85 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     );
   }
 
+  String? _findProductImageForColor(dynamic hat, String colorName) {
+    final images = hat['images']?['edges'] as List<dynamic>? ?? [];
+    final normalized = colorName.toLowerCase().trim();
+    final slug = normalized.replaceAll(RegExp(r'[\s-]+'), '_');
+    final compact = normalized.replaceAll(RegExp(r'[\s_-]+'), '');
+    final words =
+        normalized.split(RegExp(r'[\s_-]+')).where((w) => w.isNotEmpty);
+
+    String? bestMatch;
+    var bestScore = 0;
+
+    for (final edge in images) {
+      final node = edge['node'];
+      if (node == null) continue;
+      final url = (node['url'] as String? ?? '').toLowerCase();
+      final alt = (node['altText'] as String? ?? '').toLowerCase();
+      if (url.isEmpty) continue;
+      final haystack = '$url $alt';
+
+      if (haystack.contains(slug) || haystack.contains(compact)) {
+        return node['url'] as String;
+      }
+
+      final matchedWords = words.where((w) => haystack.contains(w)).length;
+      if (matchedWords > bestScore && matchedWords == words.length) {
+        bestScore = matchedWords;
+        bestMatch = node['url'] as String;
+      }
+    }
+
+    return bestMatch;
+  }
+
+  Widget _buildColorSwatchCircle({
+    required String colorName,
+    String? imageUrl,
+  }) {
+    final fallback = _mapColorNameToColor(colorName);
+    final borderColor = fallback.computeLuminance() > 0.8
+        ? _espresso.withValues(alpha: 0.2)
+        : Colors.white30;
+
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl != null && imageUrl.isNotEmpty
+          ? Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              width: 18,
+              height: 18,
+              errorBuilder: (_, __, ___) => ColoredBox(color: fallback),
+            )
+          : ColoredBox(color: fallback),
+    );
+  }
+
   Color _mapColorNameToColor(String colorName) {
     final name = colorName.toLowerCase().trim();
     if (name.contains('black')) return const Color(0xFF1A1A1A);
-    if (name.contains('chocolate') ||
-        name.contains('brown') ||
-        name.contains('dark brown')) {
+    if (name.contains('mushroom')) return const Color(0xFFC4B5A5);
+    if (name.contains('steel')) return const Color(0xFF8A939C);
+    if (name.contains('light brown')) return const Color(0xFFB8956A);
+    if (name.contains('chocolate') || name.contains('dark brown')) {
       return const Color(0xFF4E3629);
     }
+    if (name.contains('brown')) return const Color(0xFF6B4423);
     if (name.contains('silver grey') ||
         name.contains('silver gray') ||
         name.contains('granite') ||

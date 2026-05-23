@@ -209,6 +209,7 @@ def init_db():
         conn.close()
 
 async def _build_products_payload(lite: bool) -> dict:
+    extra_product_fields = ""
     if lite:
         variants_block = """
             variants(first: 1) {
@@ -220,6 +221,15 @@ async def _build_products_payload(lite: bool) -> dict:
               }
             }"""
     else:
+        extra_product_fields = """
+            images(first: 20) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }"""
         variants_block = """
             variants(first: 250) {
               edges {
@@ -232,6 +242,9 @@ async def _build_products_payload(lite: bool) -> dict:
                     name
                     value
                   }
+                  image {
+                    url
+                  }
                 }
               }
             }"""
@@ -242,6 +255,7 @@ async def _build_products_payload(lite: bool) -> dict:
         edges {{
           node {{
             {_PRODUCT_FIELDS}
+            {extra_product_fields}
             {variants_block}
           }}
         }}
