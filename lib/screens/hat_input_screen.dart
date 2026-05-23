@@ -713,6 +713,49 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return null;
   }
 
+  static const _shapeStepTitlePadding =
+      EdgeInsets.fromLTRB(16, 10, 16, 14);
+  static const _shapeCardPagePadding =
+      EdgeInsets.only(left: 4, right: 4, top: 12, bottom: 20);
+
+  Widget _buildExampleProductHeader(String? productTitle) {
+    if (productTitle == null || productTitle.isEmpty) {
+      return const SizedBox(height: 14);
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Example:',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            productTitle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6B6058),
+              fontStyle: FontStyle.italic,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _applyFallbackChoices() {
     _materialTypes = List<HatShapeInfo>.from(hatTypes);
     _rawCrownShapes = List<HatShapeInfo>.from(crownShapes);
@@ -922,16 +965,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
               'assets/images/Moon Ridge Header Logo.png',
               height: 55.0,
             ),
-            const SizedBox(height: 2),
-            Text(
-              _wizardPhaseTitle,
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: const Color(0xFF2D2926),
-                letterSpacing: 2.5,
-                fontWeight: FontWeight.w600,
+            if (_wizardPhaseTitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                _wizardPhaseTitle!,
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  color: const Color(0xFF2D2926),
+                  letterSpacing: 2.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         centerTitle: true,
@@ -1073,8 +1118,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  String get _wizardPhaseTitle =>
-      _currentPageIndex == 0 ? 'TYPE' : 'FINE TUNING';
+  String? get _wizardPhaseTitle =>
+      _currentPageIndex == 0 ? 'TYPE' : null;
 
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
@@ -1795,9 +1840,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            // Header — minimal to maximize card space
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+              padding: _shapeStepTitlePadding,
               child: Text(
                 'Select Crown Shape:',
                 style: GoogleFonts.playfairDisplay(
@@ -1848,8 +1892,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       final bool isFlipped = _flippedCardIndex == index;
 
                       return Padding(
-                        padding: const EdgeInsets.only(
-                            left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
+                        padding: _shapeCardPagePadding,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
@@ -2131,85 +2174,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.start,
                                           children: [
-                                            // Image — naturally sized to sit at the top
+                                            _buildExampleProductHeader(
+                                                productTitle),
                                             Flexible(
                                               fit: FlexFit.loose,
-                                              child: Stack(
-                                                children: [
-                                                  Transform.translate(
-                                                    offset: const Offset(0, 0),
-                                                    child: imageUrl != null
-                                                        ? Image.network(
-                                                            imageUrl,
-                                                            fit: BoxFit.contain,
-                                                            alignment: Alignment
-                                                                .topCenter)
-                                                        : Image.asset(
-                                                            shape.imagePath,
-                                                            fit: BoxFit.contain,
-                                                            alignment: Alignment
-                                                                .topCenter),
-                                                  ),
-                                                  if (productTitle != null &&
-                                                      productTitle.isNotEmpty)
-                                                    Positioned(
-                                                      top: 10,
-                                                      left: 12,
-                                                      right: 12,
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            'Example:',
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            style: GoogleFonts
-                                                                .montserrat(
-                                                              fontSize: 10,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                              letterSpacing:
-                                                                  1.5,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 2),
-                                                          Text(
-                                                            productTitle,
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                            style: GoogleFonts
-                                                                .cormorantGaramond(
-                                                              fontSize: 20,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: const Color(
-                                                                  0xFF6B6058),
-                                                              fontStyle:
-                                                                  FontStyle
-                                                                      .italic,
-                                                              letterSpacing:
-                                                                  0.5,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                ],
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        12, 6, 12, 0),
+                                                child: imageUrl != null
+                                                    ? Image.network(
+                                                        imageUrl,
+                                                        fit: BoxFit.contain,
+                                                        alignment: Alignment
+                                                            .topCenter)
+                                                    : Image.asset(
+                                                        shape.imagePath,
+                                                        fit: BoxFit.contain,
+                                                        alignment: Alignment
+                                                            .topCenter),
                                               ),
                                             ),
-                                            // Text section pulled up tight
                                             Transform.translate(
-                                              offset: const Offset(0, -35),
+                                              offset: const Offset(0, -28),
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.fromLTRB(
@@ -2984,7 +2971,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                padding: _shapeStepTitlePadding,
                 child: Text(
                   'Select Brim Shape:',
                   style: GoogleFonts.playfairDisplay(
@@ -3020,9 +3007,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+              padding: _shapeStepTitlePadding,
               child: Text(
                 'Select Brim Shape:',
                 style: GoogleFonts.playfairDisplay(
@@ -3070,8 +3056,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       final bool isFlipped = _flippedBrimCardIndex == index;
 
                       return Padding(
-                        padding: const EdgeInsets.only(
-                            left: 4.0, right: 4.0, top: 3.0, bottom: 20.0),
+                        padding: _shapeCardPagePadding,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
@@ -3343,89 +3328,33 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.start,
                                           children: [
-                                            // Image — naturally sized to sit at the top
+                                            _buildExampleProductHeader(
+                                                productTitle),
                                             Flexible(
                                               fit: FlexFit.loose,
-                                              child: Stack(
-                                                children: [
-                                                  Transform.translate(
-                                                    offset: const Offset(0, 0),
-                                                    child: imageUrl != null
-                                                        ? Image.network(
-                                                            imageUrl,
-                                                            fit: BoxFit.contain,
-                                                            alignment: Alignment
-                                                                .topCenter)
-                                                        : Container(
-                                                            color: Colors.white,
-                                                            child: Image.asset(
-                                                                shape.imagePath,
-                                                                fit: BoxFit
-                                                                    .contain,
-                                                                alignment: Alignment
-                                                                    .topCenter),
-                                                          ),
-                                                  ),
-                                                  if (productTitle != null &&
-                                                      productTitle.isNotEmpty)
-                                                    Positioned(
-                                                      top: 10,
-                                                      left: 12,
-                                                      right: 12,
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            'Example:',
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            style: GoogleFonts
-                                                                .montserrat(
-                                                              fontSize: 10,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                              letterSpacing:
-                                                                  1.5,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 2),
-                                                          Text(
-                                                            productTitle,
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                            style: GoogleFonts
-                                                                .cormorantGaramond(
-                                                              fontSize: 20,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: const Color(
-                                                                  0xFF6B6058),
-                                                              fontStyle:
-                                                                  FontStyle
-                                                                      .italic,
-                                                              letterSpacing:
-                                                                  0.5,
-                                                            ),
-                                                          ),
-                                                        ],
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        12, 6, 12, 0),
+                                                child: imageUrl != null
+                                                    ? Image.network(
+                                                        imageUrl,
+                                                        fit: BoxFit.contain,
+                                                        alignment: Alignment
+                                                            .topCenter)
+                                                    : Container(
+                                                        color: Colors.white,
+                                                        child: Image.asset(
+                                                          shape.imagePath,
+                                                          fit: BoxFit.contain,
+                                                          alignment: Alignment
+                                                              .topCenter,
+                                                        ),
                                                       ),
-                                                    ),
-                                                ],
                                               ),
                                             ),
-                                            // Text section pulled up tight
                                             Transform.translate(
-                                              offset: const Offset(0, -35),
+                                              offset: const Offset(0, -28),
                                               child: Padding(
                                                 padding:
                                                     const EdgeInsets.fromLTRB(
