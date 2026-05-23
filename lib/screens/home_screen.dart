@@ -153,11 +153,15 @@ class _HomeHeroCarousel extends StatefulWidget {
     ),
     _HomeHeroSlide('assets/images/home_carousel_city.jpg'),
     _HomeHeroSlide(
-      'assets/images/red_rocks.webp',
+      'assets/images/outdoor.png',
       imageScale: 0.86,
       alignment: Alignment(0.0, -0.05),
     ),
-    _HomeHeroSlide('assets/images/straw_hat.jpg'),
+    _HomeHeroSlide(
+      'assets/images/city.png',
+      imageScale: 0.92,
+      alignment: Alignment(0.0, -0.02),
+    ),
   ];
 
   @override
@@ -167,7 +171,6 @@ class _HomeHeroCarousel extends StatefulWidget {
 class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
   static const Color _espresso = Color(0xFF2D2926);
   static const Color _turquoise = Color(0xFF559C99);
-  static const Color _surface = Color(0xFFFAF8F5);
 
   final PageController _pageController = PageController();
   Timer? _autoAdvance;
@@ -225,30 +228,13 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: _surface,
-        border: Border(
-          top: BorderSide(
-            color: _espresso.withValues(alpha: 0.12),
-            width: 1,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _espresso.withValues(alpha: 0.07),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: SizedBox(
-        height: widget.height,
-        width: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            PageView.builder(
+    return SizedBox(
+      height: widget.height,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PageView.builder(
             controller: _pageController,
             onPageChanged: (i) => setState(() => _index = i),
             itemCount: _HomeHeroCarousel._slides.length,
@@ -322,8 +308,8 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
             right: 6,
             top: 0,
             bottom: bottomInset + 36,
-            child: Center(
-              child: const HomeSocialLinks(
+            child: const Center(
+              child: HomeSocialLinks(
                 layout: HomeSocialLinksLayout.carouselColumn,
               ),
             ),
@@ -351,8 +337,7 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
               }),
             ),
           ),
-          ],
-        ),
+        ],
       ),
     );
   }

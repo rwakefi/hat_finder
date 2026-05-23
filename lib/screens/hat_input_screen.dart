@@ -1364,8 +1364,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
     bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
+    final styleStepAvailable = hasWestern ||
+        (selectedHatType == null &&
+            _availableHatTypes.any((t) => _needsWesternStyleStep(t.name)));
     if (_currentPageIndex == 0) {
-      return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
+      return styleStepAvailable ? 'Next: Hat Style' : 'Next: Crown Shape';
     }
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
@@ -1627,7 +1630,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: Column(
             children: [
               Text(
-                'Select Style:',
+                'Select Hat Style:',
                 textAlign: TextAlign.center,
                 style: _wizardStepTitleStyle,
               ),
