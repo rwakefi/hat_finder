@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,11 +21,10 @@ class ShopWebViewScreen extends StatefulWidget {
 class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
-  bool _isClampingHorizontalScroll = false;
 
-  static const String _verticalScrollLockScript = r'''
+  static const String _storefrontViewportScript = r'''
 (() => {
-  const styleId = 'hat-finder-vertical-scroll-lock';
+  const styleId = 'hat-finder-storefront-viewport';
   let style = document.getElementById(styleId);
   if (!style) {
     style = document.createElement('style');
@@ -36,10 +33,29 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
   }
   style.textContent = `
     html, body {
+      width: 100% !important;
       overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+    }
+
+    body {
       max-width: 100vw !important;
-      overscroll-behavior-x: none !important;
-      touch-action: pan-y !important;
+      position: relative;
+    }
+
+    main,
+    #MainContent,
+    .shopify-section {
+      max-width: 100vw !important;
+      overflow-x: hidden !important;
+    }
+
+    img,
+    video,
+    canvas,
+    svg,
+    iframe {
+      max-width: 100%;
     }
   `;
 
@@ -47,45 +63,16 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
     document.querySelector('meta[name="viewport"]') ||
     document.head.appendChild(document.createElement('meta'));
   viewport.setAttribute('name', 'viewport');
-  viewport.setAttribute('content', 'width=device-width, initial-scale=1');
+  viewport.setAttribute(
+    'content',
+    'width=device-width, initial-scale=1, maximum-scale=5'
+  );
 
-  const clampHorizontalScroll = () => {
-    document.documentElement.scrollLeft = 0;
-    document.body.scrollLeft = 0;
-    if (window.scrollX !== 0) {
-      window.scrollTo(0, window.scrollY);
-    }
-  };
-
-  if (!window.__hatFinderVerticalScrollLockInstalled) {
-    window.__hatFinderVerticalScrollLockInstalled = true;
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    window.addEventListener('touchstart', (event) => {
-      const touch = event.touches && event.touches[0];
-      if (!touch) return;
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (event) => {
-      const touch = event.touches && event.touches[0];
-      if (!touch) return;
-      const dx = Math.abs(touch.clientX - touchStartX);
-      const dy = Math.abs(touch.clientY - touchStartY);
-      if (dx > dy + 4) {
-        event.preventDefault();
-      }
-      clampHorizontalScroll();
-    }, { passive: false });
-
-    window.addEventListener('scroll', clampHorizontalScroll, { passive: true });
-    window.addEventListener('resize', clampHorizontalScroll, { passive: true });
-    window.setInterval(clampHorizontalScroll, 250);
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollLeft = 0;
+  if (window.scrollX !== 0) {
+    window.scrollTo(0, window.scrollY);
   }
-
-  clampHorizontalScroll();
 })();
 ''';
 
@@ -112,26 +99,11 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
       ..loadRequest(Uri.parse(widget.url));
     unawaited(_controller.setHorizontalScrollBarEnabled(false));
     unawaited(_controller.setOverScrollMode(WebViewOverScrollMode.never));
-    unawaited(
-      _controller.setOnScrollPositionChange((position) {
-        if (_isClampingHorizontalScroll || position.x.abs() < 0.5) {
-          return;
-        }
-        _isClampingHorizontalScroll = true;
-        _controller
-            .scrollTo(0, position.y.round())
-            .whenComplete(() => _isClampingHorizontalScroll = false);
-      }),
-    );
   }
 
   Future<void> _lockWebViewToVerticalScrolling() async {
     try {
-      await _controller.runJavaScript(_verticalScrollLockScript);
-      final position = await _controller.getScrollPosition();
-      if (position.dx.abs() >= 0.5) {
-        await _controller.scrollTo(0, position.dy.round());
-      }
+      await _controller.runJavaScript(_storefrontViewportScript);
     } catch (error) {
       debugPrint(
           'Unable to lock storefront web view to vertical scroll: $error');
@@ -170,12 +142,6 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
         children: [
           WebViewWidget(
             controller: _controller,
-            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-              Factory<TapGestureRecognizer>(() => TapGestureRecognizer()),
-              Factory<VerticalDragGestureRecognizer>(
-                () => VerticalDragGestureRecognizer(),
-              ),
-            },
           ),
           if (_isLoading)
             const Center(
