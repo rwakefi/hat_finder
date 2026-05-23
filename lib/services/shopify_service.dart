@@ -29,6 +29,7 @@ class _ProductMeta {
 
 class ShopifyService {
   static const Duration _cacheTtl = Duration(minutes: 15);
+  static const Duration _requestTimeout = Duration(seconds: 12);
 
   static final Map<String, _ProductMeta> _parsedMetaById = {};
 
@@ -168,7 +169,7 @@ class ShopifyService {
     final response = await http.get(
       uri,
       headers: const {'Content-Type': 'application/json'},
-    );
+    ).timeout(_requestTimeout);
 
     if (response.statusCode != 200) {
       throw Exception('Failed to load products: ${response.statusCode}');
@@ -379,7 +380,7 @@ class ShopifyService {
     final response = await http.get(
       uri,
       headers: const {'Content-Type': 'application/json'},
-    );
+    ).timeout(_requestTimeout);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -393,10 +394,12 @@ class ShopifyService {
   }
 
   /// Call during splash so the hat wizard opens with catalog already in memory.
-  static void preloadWizardCatalog() {
+  static void preloadWizardCatalog({bool includeFullCatalog = false}) {
     _preload('validation choices', fetchValidationChoices());
     _preload('lite catalog', fetchLiteProducts());
-    _preload('full catalog', fetchFullProducts());
+    if (includeFullCatalog) {
+      _preload('full catalog', fetchFullProducts());
+    }
   }
 
   static void _preload<T>(String label, Future<T> future) {
@@ -418,6 +421,9 @@ class ShopifyService {
     _cachedFullTime = null;
     _cachedValidationChoices = null;
     _validationCacheTime = null;
+    _inflightLite = null;
+    _inflightFull = null;
+    _inflightValidation = null;
     _clearParsedMeta();
   }
 }

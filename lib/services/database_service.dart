@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 class DatabaseService {
+  static const Duration _requestTimeout = Duration(seconds: 10);
+
   static String get baseUrl => AppConfig.apiBaseUrl;
 
   static Future<bool> saveHat({
@@ -14,17 +16,19 @@ class DatabaseService {
     String? url,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/save_hat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'brand': brand,
-          'price': price,
-          'size': size,
-          'url': url,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/save_hat'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'name': name,
+              'brand': brand,
+              'price': price,
+              'size': size,
+              'url': url,
+            }),
+          )
+          .timeout(_requestTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -39,7 +43,9 @@ class DatabaseService {
 
   static Future<List<dynamic>> getSavedHats() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/hats'));
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/hats'))
+          .timeout(_requestTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }

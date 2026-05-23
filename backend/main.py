@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import os
 import time
 import json
@@ -21,6 +21,15 @@ SHOPIFY_ACCESS_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
 SHOPIFY_STORE_URL = os.environ.get("SHOPIFY_STORE_URL", "https://raftermhatco.myshopify.com")
 SHOPIFY_CACHE_TTL_SECONDS = int(os.environ.get("SHOPIFY_CACHE_TTL_SECONDS", "300"))
 SHOPIFY_DB_CACHE_TTL_SECONDS = int(os.environ.get("SHOPIFY_DB_CACHE_TTL_SECONDS", "3600"))
+CACHE_REFRESH_TOKEN = os.environ.get("CACHE_REFRESH_TOKEN")
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "ALLOWED_ORIGINS",
+        "https://moonridgecompany.com,https://www.moonridgecompany.com",
+    ).split(",")
+    if origin.strip()
+]
 
 _http_client: httpx.AsyncClient | None = None
 _shopify_cache: dict[str, tuple[float, Any]] = {}
@@ -142,8 +151,17 @@ async def _shopify_graphql(query: str) -> dict:
     }
     response = await _http_client.post(url, json={"query": query}, headers=headers)
     if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=f"Shopify error: {response.text}")
+        print(f"⚠️ Shopify request failed ({response.status_code}): {response.text[:500]}")
+        raise HTTPException(status_code=502, detail="Shopify request failed")
     return response.json()
+
+
+def _ensure_refresh_allowed(request: Request, refresh: bool) -> None:
+    if not refresh:
+        return
+    provided = request.headers.get("X-Cache-Refresh-Token")
+    if not CACHE_REFRESH_TOKEN or provided != CACHE_REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Cache refresh is restricted")
 
 def get_db_connection():
     if not DATABASE_URL:
@@ -362,21 +380,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Enable CORS for all origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "X-Cache-Refresh-Token"],
+    )
 
 class Hat(BaseModel):
-    name: str
-    brand: Optional[str] = None
-    price: Optional[str] = None
-    size: Optional[str] = None
-    url: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    brand: Optional[str] = Field(default=None, max_length=120)
+    price: Optional[str] = Field(default=None, max_length=80)
+    size: Optional[str] = Field(default=None, max_length=80)
+    url: Optional[str] = Field(default=None, max_length=2000)
 
 @app.post("/api/save_hat")
 def save_hat(hat: Hat):
@@ -392,7 +410,8 @@ def save_hat(hat: Hat):
         conn.commit()
         return {"status": "success", "message": "Hat saved successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"⚠️ Failed to save hat: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save hat")
     finally:
         conn.close()
 
@@ -418,25 +437,29 @@ def get_hats():
             })
         return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"⚠️ Failed to fetch saved hats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch saved hats")
     finally:
         conn.close()
 
 @app.get("/api/shopify_products")
 async def get_shopify_products(
+    request: Request,
     lite: bool = Query(False),
     refresh: bool = Query(False),
 ):
     """lite=true returns a smaller payload for the input wizard; full includes variant inventory."""
+    _ensure_refresh_allowed(request, refresh)
     try:
         return await _resolve_products(lite, force_refresh=refresh)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"⚠️ Failed to resolve Shopify products: {e}")
+        raise HTTPException(status_code=500, detail="Unable to load catalog")
 
 class ChatRequest(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, max_length=1000)
 
 @app.post("/api/chat")
 async def chat_with_agent(request: ChatRequest):
@@ -445,11 +468,16 @@ async def chat_with_agent(request: ChatRequest):
         response = await router_agent(request.query)
         return {"response": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"⚠️ Chat agent failed: {e}")
+        raise HTTPException(status_code=500, detail="Unable to complete chat request")
 
 @app.get("/api/validation_choices")
-async def get_validation_choices(refresh: bool = False):
+async def get_validation_choices(
+    request: Request,
+    refresh: bool = False,
+):
     global _validation_cache
+    _ensure_refresh_allowed(request, refresh)
     if refresh:
         _validation_cache = None
     try:
@@ -457,9 +485,9 @@ async def get_validation_choices(refresh: bool = False):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"⚠️ Failed to resolve validation choices: {e}")
+        raise HTTPException(status_code=500, detail="Unable to load validation choices")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
-
