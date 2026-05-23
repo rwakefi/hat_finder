@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    ShopifyService.preloadWizardCatalog();
+    ShopifyService.preloadWizardCatalog(includeFullCatalog: true);
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),

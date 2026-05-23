@@ -321,16 +321,39 @@ async def _build_validation_payload() -> dict:
     }
 
 
+def _full_catalog_has_gallery(payload: dict) -> bool:
+    edges = payload.get("data", {}).get("products", {}).get("edges", [])
+    for edge in edges[:25]:
+        node = edge.get("node") or {}
+        gallery_edges = (node.get("images") or {}).get("edges") or []
+        if gallery_edges:
+            return True
+    return False
+
+
+def _full_catalog_needs_refresh(payload: dict) -> bool:
+    """True when cached full catalog predates variant/gallery image fields."""
+    edges = payload.get("data", {}).get("products", {}).get("edges", [])
+    if not edges:
+        return False
+    return not _full_catalog_has_gallery(payload)
+
+
 async def _resolve_products(lite: bool, *, force_refresh: bool = False) -> dict:
     cache_key = "lite" if lite else "full"
     if not force_refresh:
         cached = _cache_get(_shopify_cache, cache_key)
         if cached is not None:
-            return cached
-        db_cached = await _db_cache_get_async(f"products_{cache_key}")
-        if db_cached is not None:
-            _cache_set(_shopify_cache, cache_key, db_cached)
-            return db_cached
+            if lite or not _full_catalog_needs_refresh(cached):
+                return cached
+            force_refresh = True
+        if not force_refresh:
+            db_cached = await _db_cache_get_async(f"products_{cache_key}")
+            if db_cached is not None:
+                if lite or not _full_catalog_needs_refresh(db_cached):
+                    _cache_set(_shopify_cache, cache_key, db_cached)
+                    return db_cached
+                force_refresh = True
 
     payload = await _build_products_payload(lite)
     _cache_set(_shopify_cache, cache_key, payload)

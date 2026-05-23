@@ -1189,16 +1189,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   void _submitSearch() {
-    final preloaded = _allProducts == null
-        ? null
-        : ShopifyService.filterProducts(
-            _allProducts!,
-            hatType: selectedHatType?.name,
-            westernStyle: selectedWesternStyle,
-            crownShape: selectedCrownShape?.name,
-            brimShape: selectedBrimShape?.name,
-          );
-
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => HatResultsScreen(
@@ -1210,7 +1200,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
           brimShape: selectedBrimShape?.name,
           crownShapeOptions: _crownOptionsForResults(),
           brimShapeOptions: _brimOptionsForResults(),
-          preloadedHats: preloaded,
         ),
       ),
     );

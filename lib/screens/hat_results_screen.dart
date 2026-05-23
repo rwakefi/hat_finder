@@ -71,13 +71,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
     _filterBrimWidths = List<String>.from(widget.brimWidths ?? []);
 
-    if (widget.preloadedHats != null) {
-      _rebuildSwatchCache(widget.preloadedHats!);
-      _hatsFuture = Future.value(widget.preloadedHats);
-    } else {
-      _hatsFuture = _fetchFilteredHats();
-    }
-    _loadFullCatalog();
+    // Always load the full catalog — lite preloads lack color variants for swatches.
+    _hatsFuture = _fetchFilteredHats();
   }
 
   bool get _showsFineTuningTray {
@@ -89,23 +84,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Future<List<dynamic>> _fetchFilteredHats() async {
     final all = await ShopifyService.fetchFullProducts();
+    if (!mounted) return [];
     _fullCatalog = all;
-    return _filterCatalog(all);
-  }
-
-  Future<void> _loadFullCatalog() async {
-    if (_fullCatalog != null) {
-      _applyFilters();
-      return;
-    }
-    try {
-      final all = await ShopifyService.fetchFullProducts();
-      if (!mounted) return;
-      _fullCatalog = all;
-      _applyFilters();
-    } catch (_) {
-      // Keep showing current results if catalog load fails.
-    }
+    final filtered = _filterCatalog(all);
+    _rebuildSwatchCache(filtered);
+    return filtered;
   }
 
   List<double> _crownHeightOptionsForFineTuning() {
@@ -976,6 +959,20 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     );
   }
 
+  bool _urlMatchesColorName(String url, String colorName) {
+    final normalized = colorName.toLowerCase().trim();
+    final slug = normalized.replaceAll(RegExp(r'[\s-]+'), '_');
+    final compact = normalized.replaceAll(RegExp(r'[\s_-]+'), '');
+    final haystack = url.toLowerCase();
+    final words =
+        normalized.split(RegExp(r'[\s_-]+')).where((w) => w.isNotEmpty);
+
+    if (haystack.contains(slug) || haystack.contains(compact)) {
+      return true;
+    }
+    return words.isNotEmpty && words.every((w) => haystack.contains(w));
+  }
+
   String? _findProductImageForColor(dynamic hat, String colorName) {
     final images = hat['images']?['edges'] as List<dynamic>? ?? [];
     final normalized = colorName.toLowerCase().trim();
@@ -1004,6 +1001,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         bestScore = matchedWords;
         bestMatch = node['url'] as String;
       }
+    }
+
+    final featured = hat['featuredImage']?['url'] as String?;
+    if (featured != null &&
+        featured.isNotEmpty &&
+        _urlMatchesColorName(featured, colorName)) {
+      return featured;
     }
 
     return bestMatch;
