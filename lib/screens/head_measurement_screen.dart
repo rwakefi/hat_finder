@@ -76,7 +76,7 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'SIZE MEASUREMENT',
+          'LEARN YOUR HEAD SHAPE',
           style: GoogleFonts.playfairDisplaySc(),
         ),
         centerTitle: true,

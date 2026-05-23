@@ -129,7 +129,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('HEAD SHAPE DIAGNOSTIC',
+        title: Text('LEARN YOUR HEAD SHAPE',
             style: GoogleFonts.playfairDisplaySc()),
         centerTitle: true,
         backgroundColor: const Color(0xFF2B1D14),
