@@ -576,7 +576,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildHatCard(dynamic hat) {
     final title = hat['title'] ?? 'Unknown Hat';
-    final imageUrl = hat['featuredImage']?['url'];
 
     // Metafield values
     final crownShape = _metaValue(hat['crownShape']);
@@ -590,6 +589,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         hatTypeLower.contains('flat cap');
 
     final swatchColors = _swatchColorsFor(hat);
+    final cardSwatches =
+        swatchColors.length > 1 ? swatchColors : <({String color, String variantGid, String? imageUrl})>[];
+    final imageUrl = _heroImageForHat(hat, swatchColors);
     final imageCacheWidth = (MediaQuery.sizeOf(context).width *
             0.5 *
             MediaQuery.devicePixelRatioOf(context))
@@ -680,13 +682,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                   size: 36),
                             ),
                     ),
-                    if (swatchColors.isNotEmpty)
+                    if (cardSwatches.isNotEmpty)
                       Positioned(
                         top: 10,
                         right: 10,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: swatchColors.map((entry) {
+                          children: cardSwatches.map((entry) {
                             return Tooltip(
                               message: entry.color,
                               preferBelow: false,
@@ -715,7 +717,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                     alignment: Alignment.center,
                                     child: _buildColorSwatchCircle(
                                       colorName: entry.color,
-                                      imageUrl: entry.imageUrl,
                                     ),
                                   ),
                                 ),
@@ -1013,12 +1014,24 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return bestMatch;
   }
 
+  String? _heroImageForHat(
+    dynamic hat,
+    List<({String color, String variantGid, String? imageUrl})> swatchColors,
+  ) {
+    final featured = hat['featuredImage']?['url'] as String?;
+    for (final entry in swatchColors) {
+      if (entry.imageUrl != null && entry.imageUrl!.isNotEmpty) {
+        return entry.imageUrl;
+      }
+    }
+    return featured;
+  }
+
   Widget _buildColorSwatchCircle({
     required String colorName,
-    String? imageUrl,
   }) {
-    final fallback = _mapColorNameToColor(colorName);
-    final borderColor = fallback.computeLuminance() > 0.8
+    final swatchColor = _mapColorNameToColor(colorName);
+    final borderColor = swatchColor.computeLuminance() > 0.8
         ? _espresso.withValues(alpha: 0.2)
         : Colors.white30;
 
@@ -1026,6 +1039,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       width: 18,
       height: 18,
       decoration: BoxDecoration(
+        color: swatchColor,
         shape: BoxShape.circle,
         border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
@@ -1036,16 +1050,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: imageUrl != null && imageUrl.isNotEmpty
-          ? Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              width: 18,
-              height: 18,
-              errorBuilder: (_, __, ___) => ColoredBox(color: fallback),
-            )
-          : ColoredBox(color: fallback),
     );
   }
 
@@ -1055,13 +1059,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     if (name.contains('mushroom')) return const Color(0xFFC4B5A5);
     if (name.contains('steel')) return const Color(0xFF8A939C);
     if (name.contains('light brown')) return const Color(0xFFB8956A);
+    if (name.contains('silverbelly')) return const Color(0xFFD4CFC4);
+    if (name.contains('sahara')) return const Color(0xFFC4A574);
+    if (name.contains('granite')) return const Color(0xFF9A9A96);
     if (name.contains('chocolate') || name.contains('dark brown')) {
       return const Color(0xFF4E3629);
     }
     if (name.contains('brown')) return const Color(0xFF6B4423);
     if (name.contains('silver grey') ||
         name.contains('silver gray') ||
-        name.contains('granite') ||
         name.contains('silver-grey') ||
         name.contains('silver-gray')) {
       return const Color(0xFFB0B3B5);
