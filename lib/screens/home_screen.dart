@@ -6,6 +6,7 @@ import 'hat_input_screen.dart';
 import 'head_shape_screen.dart';
 import 'shop_webview_screen.dart';
 import '../services/shopify_service.dart';
+import '../widgets/home_social_links.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -125,9 +126,17 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomeHeroSlide {
-  const _HomeHeroSlide(this.assetPath);
+  const _HomeHeroSlide(
+    this.assetPath, {
+    this.imageScale = 1.0,
+    this.alignment = Alignment.center,
+  });
 
   final String assetPath;
+
+  /// Values below 1.0 zoom out so the subject does not fill the frame as tightly.
+  final double imageScale;
+  final Alignment alignment;
 }
 
 class _HomeHeroCarousel extends StatefulWidget {
@@ -137,9 +146,17 @@ class _HomeHeroCarousel extends StatefulWidget {
 
   static const List<_HomeHeroSlide> _slides = [
     _HomeHeroSlide('assets/images/home_carousel_western.jpg'),
-    _HomeHeroSlide('assets/images/home_carousel_outdoor.jpg'),
+    _HomeHeroSlide(
+      'assets/images/home_carousel_outdoor.jpg',
+      imageScale: 0.86,
+      alignment: Alignment(0.0, -0.05),
+    ),
     _HomeHeroSlide('assets/images/home_carousel_city.jpg'),
-    _HomeHeroSlide('assets/images/red_rocks.webp'),
+    _HomeHeroSlide(
+      'assets/images/red_rocks.webp',
+      imageScale: 0.86,
+      alignment: Alignment(0.0, -0.05),
+    ),
     _HomeHeroSlide('assets/images/straw_hat.jpg'),
   ];
 
@@ -179,6 +196,31 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
     );
   }
 
+  Widget _buildSlideImage(_HomeHeroSlide slide, BoxConstraints constraints) {
+    if (slide.imageScale >= 1.0) {
+      return Image.asset(
+        slide.assetPath,
+        fit: BoxFit.cover,
+        alignment: slide.alignment,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    final overscale = 1 / slide.imageScale;
+    return ClipRect(
+      child: Align(
+        alignment: slide.alignment,
+        child: Image.asset(
+          slide.assetPath,
+          fit: BoxFit.cover,
+          width: constraints.maxWidth * overscale,
+          height: constraints.maxHeight * overscale,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -215,10 +257,10 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    slide.assetPath,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return _buildSlideImage(slide, constraints);
+                    },
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -228,9 +270,9 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
                         colors: [
                           _espresso.withValues(alpha: 0.18),
                           Colors.transparent,
-                          _espresso.withValues(alpha: 0.42),
+                          _espresso.withValues(alpha: 0.55),
                         ],
-                        stops: const [0.0, 0.22, 1.0],
+                        stops: const [0.0, 0.2, 1.0],
                       ),
                     ),
                   ),
@@ -241,7 +283,55 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset + 12,
+            bottom: 0,
+            height: 88 + bottomInset,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    _espresso.withValues(alpha: 0.35),
+                    _espresso.withValues(alpha: 0.62),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: bottomInset + 36,
+            width: 52,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    _espresso.withValues(alpha: 0.28),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 6,
+            top: 0,
+            bottom: bottomInset + 36,
+            child: Center(
+              child: const HomeSocialLinks(
+                layout: HomeSocialLinksLayout.carouselColumn,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottomInset + 14,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_HomeHeroCarousel._slides.length, (i) {

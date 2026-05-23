@@ -857,37 +857,164 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildExampleProductHeader(String? productTitle) {
-    if (productTitle == null || productTitle.isEmpty) {
-      return const SizedBox(height: 14);
-    }
+  Widget _buildExampleProductOverlay(String productTitle) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Example:',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[600],
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          productTitle,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF6B6058),
+            fontStyle: FontStyle.italic,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShapeCardFrontFooter({
+    required HatShapeInfo shape,
+    required VoidCallback onSelect,
+    required VoidCallback onFlip,
+    required String selectLabel,
+  }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Example:',
+            shape.name.toUpperCase(),
             textAlign: TextAlign.center,
             style: GoogleFonts.montserrat(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF2D2926),
               letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            productTitle,
+            shape.description,
             textAlign: TextAlign.center,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.cormorantGaramond(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B6058),
-              fontStyle: FontStyle.italic,
-              letterSpacing: 0.5,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onSelect,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF559C99),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                selectLabel,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: onFlip,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF559C99),
+              side: const BorderSide(color: Color(0xFF559C99), width: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            child: Text(
+              'FLIP FOR MORE INFO',
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShapeCardFrontFace({
+    required HatShapeInfo shape,
+    required String? imageUrl,
+    required String? productTitle,
+    required bool isSelected,
+    required VoidCallback onSelect,
+    required VoidCallback onFlip,
+    required String selectLabel,
+  }) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+          width: isSelected ? 3 : 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Flexible(
+            fit: FlexFit.loose,
+            child: Stack(
+              children: [
+                _buildShapeCardHatImage(imageUrl),
+                if (productTitle != null && productTitle.isNotEmpty)
+                  Positioned(
+                    top: 10,
+                    left: 12,
+                    right: 12,
+                    child: _buildExampleProductOverlay(productTitle),
+                  ),
+              ],
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(0, -35),
+            child: _buildShapeCardFrontFooter(
+              shape: shape,
+              onSelect: onSelect,
+              onFlip: onFlip,
+              selectLabel: selectLabel,
             ),
           ),
         ],
@@ -1104,18 +1231,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               'assets/images/Moon Ridge Header Logo.png',
               height: 55.0,
             ),
-            if (_wizardPhaseTitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                _wizardPhaseTitle!,
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  color: const Color(0xFF2D2926),
-                  letterSpacing: 2.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
           ],
         ),
         centerTitle: true,
@@ -1256,9 +1371,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
           Color(0xFF559C99)), // Turquoise accent
     );
   }
-
-  String? get _wizardPhaseTitle =>
-      _currentPageIndex == 0 ? 'TYPE' : null;
 
   String get _navButtonText {
     if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
@@ -1581,166 +1693,192 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 },
               ];
 
-              return GridView.builder(
-                padding: const EdgeInsets.only(
-                    left: 12, right: 12, top: 12, bottom: 40.0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: styles.length,
-                itemBuilder: (context, index) {
-                  final style = styles[index];
-                  final name = style['name'] as String;
-                  final isSelected = selectedWesternStyle == name;
-
-                  String? imageUrl;
-                  if (snapshot.hasData) {
-                    try {
-                      final List<dynamic> products = List.from(snapshot.data!);
-                      if (selectedHatType != null) {
-                        final target = selectedHatType!.name.toLowerCase();
-                        products.sort((a, b) {
-                          final aType =
-                              _metaValue(a['feltStrawOrBallcap']).toLowerCase();
-                          final bType =
-                              _metaValue(b['feltStrawOrBallcap']).toLowerCase();
-                          final aMatches = aType.contains(target) ? 1 : 0;
-                          final bMatches = bType.contains(target) ? 1 : 0;
-                          return bMatches.compareTo(aMatches);
-                        });
-                      }
-                      final Set<String> usedUrls = {};
-
-                      // Pre-process to find unique images for each style in the list
-                      for (int i = 0; i < styles.length; i++) {
-                        final styleName = styles[i]['name'];
-                        String? foundUrl;
-
-                        if (styleName == 'Western') {
-                          final westernProfiles = [
-                            '01',
-                            '1',
-                            '2',
-                            '11',
-                            '18',
-                            '33',
-                            '45',
-                            '48',
-                            '50',
-                            '72',
-                            '75',
-                            '77',
-                            '91',
-                            '94',
-                            '9G'
-                          ];
-                          foundUrl = products.firstWhere((p) {
-                            final profile = _metaValue(p['stetsonProfile']);
-                            final title =
-                                (p['title'] ?? '').toString().toLowerCase();
-                            final handle =
-                                (p['handle'] ?? '').toString().toLowerCase();
-                            final url = p['featuredImage']?['url'] as String?;
-
-                            // EXCLUDE OPEN ROADS from Western representative image
-                            final isOpenRoad = title.contains('open road') ||
-                                handle.contains('open-road');
-
-                            return westernProfiles.contains(profile) &&
-                                url != null &&
-                                !usedUrls.contains(url) &&
-                                !isOpenRoad;
-                          }, orElse: () => null)?['featuredImage']?['url'];
-                        } else if (styleName == 'City') {
-                          foundUrl = products.firstWhere((p) {
-                            final url = p['featuredImage']?['url'] as String?;
-                            return _metaValue(p['city']).toLowerCase() ==
-                                    'true' &&
-                                url != null &&
-                                !usedUrls.contains(url);
-                          }, orElse: () => null)?['featuredImage']?['url'];
-                        } else if (styleName == 'Outdoor') {
-                          foundUrl = products.firstWhere((p) {
-                            final url = p['featuredImage']?['url'] as String?;
-                            return _metaValue(p['outdoors']).toLowerCase() ==
-                                    'true' &&
-                                url != null &&
-                                !usedUrls.contains(url);
-                          }, orElse: () => null)?['featuredImage']?['url'];
-                        }
-
-                        if (foundUrl != null) {
-                          usedUrls.add(foundUrl);
-                          if (i == index) imageUrl = foundUrl;
-                        }
-                      }
-                    } catch (_) {}
+              final imageUrls = <String, String?>{};
+              if (snapshot.hasData) {
+                try {
+                  final List<dynamic> products = List.from(snapshot.data!);
+                  if (selectedHatType != null) {
+                    final target = selectedHatType!.name.toLowerCase();
+                    products.sort((a, b) {
+                      final aType =
+                          _metaValue(a['feltStrawOrBallcap']).toLowerCase();
+                      final bType =
+                          _metaValue(b['feltStrawOrBallcap']).toLowerCase();
+                      final aMatches = aType.contains(target) ? 1 : 0;
+                      final bMatches = bType.contains(target) ? 1 : 0;
+                      return bMatches.compareTo(aMatches);
+                    });
                   }
+                  final Set<String> usedUrls = {};
 
-                  return Card(
-                    elevation: 0,
-                    clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isSelected
-                            ? const Color(0xFF559C99)
-                            : Colors.grey.shade200,
-                        width: isSelected ? 3 : 1,
-                      ),
+                  for (int i = 0; i < styles.length; i++) {
+                    final styleName = styles[i]['name'] as String;
+                    String? foundUrl;
+
+                    if (styleName == 'Western') {
+                      final westernProfiles = [
+                        '01',
+                        '1',
+                        '2',
+                        '11',
+                        '18',
+                        '33',
+                        '45',
+                        '48',
+                        '50',
+                        '72',
+                        '75',
+                        '77',
+                        '91',
+                        '94',
+                        '9G'
+                      ];
+                      foundUrl = products.firstWhere((p) {
+                        final profile = _metaValue(p['stetsonProfile']);
+                        final title =
+                            (p['title'] ?? '').toString().toLowerCase();
+                        final handle =
+                            (p['handle'] ?? '').toString().toLowerCase();
+                        final url = p['featuredImage']?['url'] as String?;
+
+                        final isOpenRoad = title.contains('open road') ||
+                            handle.contains('open-road');
+
+                        return westernProfiles.contains(profile) &&
+                            url != null &&
+                            !usedUrls.contains(url) &&
+                            !isOpenRoad;
+                      }, orElse: () => null)?['featuredImage']?['url'];
+                    } else if (styleName == 'City') {
+                      foundUrl = products.firstWhere((p) {
+                        final url = p['featuredImage']?['url'] as String?;
+                        return _metaValue(p['city']).toLowerCase() == 'true' &&
+                            url != null &&
+                            !usedUrls.contains(url);
+                      }, orElse: () => null)?['featuredImage']?['url'];
+                    } else if (styleName == 'Outdoor') {
+                      foundUrl = products.firstWhere((p) {
+                        final url = p['featuredImage']?['url'] as String?;
+                        return _metaValue(p['outdoors']).toLowerCase() ==
+                                'true' &&
+                            url != null &&
+                            !usedUrls.contains(url);
+                      }, orElse: () => null)?['featuredImage']?['url'];
+                    }
+
+                    if (foundUrl != null) {
+                      usedUrls.add(foundUrl);
+                    }
+                    imageUrls[styleName] = foundUrl;
+                  }
+                } catch (_) {}
+              }
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  const horizontalPadding = 12.0;
+                  const crossAxisSpacing = 12.0;
+                  final itemWidth = (constraints.maxWidth -
+                          horizontalPadding * 2 -
+                          crossAxisSpacing) /
+                      2;
+                  final itemHeight = itemWidth / 0.85;
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      top: 12,
+                      bottom: 40,
                     ),
-                    child: InkWell(
-                      onTap: () {
-                        _onWesternStyleSelected(name);
-                        _nextPage();
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: imageUrl != null
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    alignment: const Alignment(0.0,
-                                        -0.35), // Keep hat crown beautifully in center allocation
-                                  )
-                                : (style['fallback'] != null
-                                    ? Image.asset(
-                                        style['fallback'] as String,
-                                        fit: BoxFit.cover,
-                                        alignment: const Alignment(0.0,
-                                            -0.35), // Keep hat crown beautifully in center allocation
-                                      )
-                                    : Container(
-                                        color: Colors.grey[50],
-                                        child: const Icon(Icons.style,
-                                            size: 48, color: Colors.grey),
-                                      )),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12.0, horizontal: 8.0),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: crossAxisSpacing,
+                      runSpacing: crossAxisSpacing,
+                      children: List.generate(styles.length, (index) {
+                        final style = styles[index];
+                        final name = style['name'] as String;
+                        final isSelected = selectedWesternStyle == name;
+
+                        final imageUrl = imageUrls[name];
+
+                        return SizedBox(
+                          width: itemWidth,
+                          height: itemHeight,
+                          child: Card(
+                            elevation: 0,
+                            clipBehavior: Clip.antiAlias,
                             color: Colors.white,
-                            child: Text(
-                              (style['title'] ?? name).toUpperCase(),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF2D2926),
-                                letterSpacing: 1.5,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? const Color(0xFF559C99)
+                                    : Colors.grey.shade200,
+                                width: isSelected ? 3 : 1,
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                _onWesternStyleSelected(name);
+                                _nextPage();
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: imageUrl != null
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            alignment: const Alignment(
+                                              0.0,
+                                              -0.35,
+                                            ),
+                                          )
+                                        : (style['fallback'] != null
+                                            ? Image.asset(
+                                                style['fallback'] as String,
+                                                fit: BoxFit.cover,
+                                                alignment: const Alignment(
+                                                  0.0,
+                                                  -0.35,
+                                                ),
+                                              )
+                                            : Container(
+                                                color: Colors.grey[50],
+                                                child: const Icon(
+                                                  Icons.style,
+                                                  size: 48,
+                                                  color: Colors.grey,
+                                                ),
+                                              )),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                      horizontal: 8.0,
+                                    ),
+                                    color: Colors.white,
+                                    child: Text(
+                                      (style['title'] ?? name).toUpperCase(),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF2D2926),
+                                        letterSpacing: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      }),
                     ),
                   );
                 },
@@ -2270,151 +2408,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         ),
                                       )
                                     // ── FRONT FACE (image) ──
-                                    : Card(
-                                        clipBehavior: Clip.antiAlias,
-                                        elevation: 0,
-                                        color: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          side: BorderSide(
-                                            color: isSelected
-                                                ? const Color(0xFF559C99)
-                                                : Colors.grey.shade200,
-                                            width: isSelected ? 3 : 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            _buildExampleProductHeader(
-                                                productTitle),
-                                            Flexible(
-                                              fit: FlexFit.loose,
-                                              child: _buildShapeCardHatImage(
-                                                  imageUrl),
-                                            ),
-                                            Transform.translate(
-                                              offset: const Offset(0, -28),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        14, 0, 14, 0),
-                                                child: Column(
-                                                  children: [
-                                                    Text(
-                                                      shape.name.toUpperCase(),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: GoogleFonts
-                                                          .montserrat(
-                                                        fontSize: 24,
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                        color: const Color(
-                                                            0xFF2D2926),
-                                                        letterSpacing: 1.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      shape.description,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                          fontSize: 14,
-                                                          color:
-                                                              Colors.grey[700],
-                                                          height: 1.3),
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    SizedBox(
-                                                      width: double.infinity,
-                                                      child: ElevatedButton(
-                                                        onPressed: () =>
-                                                            _selectCrownAndAdvance(
-                                                                shape, index),
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              const Color(
-                                                                  0xFF559C99),
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 12),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        30),
-                                                          ),
-                                                          elevation: 0,
-                                                        ),
-                                                        child: Text(
-                                                          'SELECT THIS CROWN',
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    OutlinedButton(
-                                                      onPressed: () {
-                                                        setState(() {
-                                                          _flippedCardIndex =
-                                                              index;
-                                                        });
-                                                      },
-                                                      style: OutlinedButton
-                                                          .styleFrom(
-                                                        foregroundColor:
-                                                            const Color(
-                                                                0xFF559C99),
-                                                        side: const BorderSide(
-                                                            color: Color(
-                                                                0xFF559C99),
-                                                            width: 1),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8),
-                                                        shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20)),
-                                                      ),
-                                                      child: Text(
-                                                        'FLIP FOR MORE INFO',
-                                                        style: GoogleFonts
-                                                            .montserrat(
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          letterSpacing: 1.0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    : _buildShapeCardFrontFace(
+                                        shape: shape,
+                                        imageUrl: imageUrl,
+                                        productTitle: productTitle,
+                                        isSelected: isSelected,
+                                        onSelect: () =>
+                                            _selectCrownAndAdvance(shape, index),
+                                        onFlip: () {
+                                          setState(() {
+                                            _flippedCardIndex = index;
+                                          });
+                                        },
+                                        selectLabel: 'SELECT THIS CROWN',
                                       ),
                               );
                             },
@@ -2923,151 +2929,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         ),
                                       )
                                     // ── FRONT FACE (image) ──
-                                    : Card(
-                                        clipBehavior: Clip.antiAlias,
-                                        elevation: 0,
-                                        color: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                          side: BorderSide(
-                                            color: isSelected
-                                                ? const Color(0xFF559C99)
-                                                : Colors.grey.shade200,
-                                            width: isSelected ? 3 : 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            _buildExampleProductHeader(
-                                                productTitle),
-                                            Flexible(
-                                              fit: FlexFit.loose,
-                                              child: _buildShapeCardHatImage(
-                                                  imageUrl),
-                                            ),
-                                            Transform.translate(
-                                              offset: const Offset(0, -28),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        14, 0, 14, 0),
-                                                child: Column(
-                                                  children: [
-                                                    Text(
-                                                      shape.name.toUpperCase(),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: GoogleFonts
-                                                          .montserrat(
-                                                        fontSize: 24,
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                        color: const Color(
-                                                            0xFF2D2926),
-                                                        letterSpacing: 1.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      shape.description,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                          fontSize: 14,
-                                                          color:
-                                                              Colors.grey[700],
-                                                          height: 1.3),
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    SizedBox(
-                                                      width: double.infinity,
-                                                      child: ElevatedButton(
-                                                        onPressed: () =>
-                                                            _selectBrimAndAdvance(
-                                                                shape, index),
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              const Color(
-                                                                  0xFF559C99),
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 12),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        30),
-                                                          ),
-                                                          elevation: 0,
-                                                        ),
-                                                        child: Text(
-                                                          'SELECT THIS BRIM',
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    OutlinedButton(
-                                                      onPressed: () {
-                                                        setState(() {
-                                                          _flippedBrimCardIndex =
-                                                              index;
-                                                        });
-                                                      },
-                                                      style: OutlinedButton
-                                                          .styleFrom(
-                                                        foregroundColor:
-                                                            const Color(
-                                                                0xFF559C99),
-                                                        side: const BorderSide(
-                                                            color: Color(
-                                                                0xFF559C99),
-                                                            width: 1),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8),
-                                                        shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20)),
-                                                      ),
-                                                      child: Text(
-                                                        'FLIP FOR MORE INFO',
-                                                        style: GoogleFonts
-                                                            .montserrat(
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          letterSpacing: 1.0,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    : _buildShapeCardFrontFace(
+                                        shape: shape,
+                                        imageUrl: imageUrl,
+                                        productTitle: productTitle,
+                                        isSelected: isSelected,
+                                        onSelect: () =>
+                                            _selectBrimAndAdvance(shape, index),
+                                        onFlip: () {
+                                          setState(() {
+                                            _flippedBrimCardIndex = index;
+                                          });
+                                        },
+                                        selectLabel: 'SELECT THIS BRIM',
                                       ),
                               );
                             },
