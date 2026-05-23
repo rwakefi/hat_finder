@@ -48,6 +48,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Map<String, List<({String color, String variantGid})>> _swatchCache = {};
   List<dynamic>? _fullCatalog;
   bool _fineTuningExpanded = false;
+  late String? _filterHatType;
   late String? _filterCrownShape;
   late String? _filterBrimShape;
   late List<double> _filterCrownHeights;
@@ -63,6 +64,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   @override
   void initState() {
     super.initState();
+    _filterHatType = widget.hatType;
     _filterCrownShape = widget.crownShape;
     _filterBrimShape = widget.brimShape;
     _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
@@ -78,7 +80,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   bool get _showsFineTuningTray {
-    final type = (widget.hatType ?? '').toLowerCase();
+    final type = (_filterHatType ?? widget.hatType ?? '').toLowerCase();
     return !type.contains('ballcap') &&
         !type.contains('beanie') &&
         !type.contains('flat cap');
@@ -108,7 +110,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   List<dynamic> _filterCatalog(List<dynamic> catalog) {
     return ShopifyService.filterProducts(
       catalog,
-      hatType: widget.hatType,
+      hatType: _filterHatType,
       westernStyle: widget.westernStyle,
       crownShape: _filterCrownShape,
       crownHeights:
@@ -131,6 +133,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   void _onFineTuningChanged(FineTuningValues values) {
     setState(() {
+      _filterHatType = values.hatType;
       _filterCrownShape = values.crownShape;
       _filterBrimShape = values.brimShape;
       _filterCrownHeights = List<double>.from(values.crownHeights);
@@ -850,7 +853,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               spacing: 20,
               runSpacing: 10,
               children: [
-                _buildSummaryChip('Type', widget.hatType ?? 'Any'),
+                _buildSummaryChip('Type', _filterHatType ?? widget.hatType ?? 'Any'),
                 if (widget.westernStyle != null)
                   _buildSummaryChip('Style', widget.westernStyle!),
                 if (_showsFineTuningTray) ...[
@@ -865,6 +868,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 expanded: _fineTuningExpanded,
                 onExpandedChanged: (open) =>
                     setState(() => _fineTuningExpanded = open),
+                hatType: _filterHatType,
                 crownShape: _filterCrownShape,
                 brimShape: _filterBrimShape,
                 crownHeights: _filterCrownHeights,

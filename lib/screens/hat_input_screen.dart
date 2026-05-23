@@ -22,6 +22,13 @@ class HatInputScreen extends StatefulWidget {
   State<HatInputScreen> createState() => _HatInputScreenState();
 }
 
+class _ShapeCardPhoto {
+  const _ShapeCardPhoto({this.imageUrl, this.productTitle});
+
+  final String? imageUrl;
+  final String? productTitle;
+}
+
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
   final PageController _crownCarouselController =
@@ -88,22 +95,32 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return title.contains('open road') || handle.contains('open-road');
   }
 
+  bool _isWizardCrownShape(HatShapeInfo shape) =>
+      !shape.name.toLowerCase().contains('flat cap');
+
+  List<HatShapeInfo> _wizardCrownShapes(Iterable<HatShapeInfo> shapes) =>
+      shapes.where(_isWizardCrownShape).toList();
+
   /// Returns the correct crown shape list based on the selected hat type.
   List<HatShapeInfo> get _currentCrownShapes {
     if (_isLoadingChoices || _rawCrownShapes.isEmpty) {
       final typeName = selectedHatType?.name;
-      if (typeName == 'Felt' || typeName == 'Straw') return crownShapes;
+      if (typeName == 'Felt' || typeName == 'Straw') {
+        return _wizardCrownShapes(crownShapes);
+      }
       final seen = <String>{};
-      return [...crownShapes].where((s) => seen.add(s.name)).toList();
+      return _wizardCrownShapes(
+        crownShapes.where((s) => seen.add(s.name)),
+      );
     }
 
     final typeName = selectedHatType?.name;
     if (typeName == 'Felt') {
-      return _rawCrownShapes;
+      return _wizardCrownShapes(_rawCrownShapes);
     }
     if (typeName == 'Straw') {
       // Map crown shapes to straw assets where appropriate
-      return _rawCrownShapes.map((shape) {
+      return _wizardCrownShapes(_rawCrownShapes.map((shape) {
         final normalized = shape.name.toLowerCase().trim();
         String path = shape.imagePath;
         if (normalized.contains('cattleman')) {
@@ -122,10 +139,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
           physicalDescription: shape.physicalDescription,
           galleryImages: shape.galleryImages,
         );
-      }).toList();
+      }));
     }
 
-    return _rawCrownShapes;
+    return _wizardCrownShapes(_rawCrownShapes);
   }
 
   HatShapeInfo _mapStringToHatType(String name) {
@@ -434,6 +451,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
       );
     });
     _sortedBrimShapes = sortedBrim;
+    if (selectedCrownShape != null &&
+        !_isWizardCrownShape(selectedCrownShape!)) {
+      selectedCrownShape = null;
+      _currentCrownCarouselIndex = 0;
+    }
     _updateCrownFilteredProducts();
     _rebuildAvailableBrimShapes();
     _syncBrimSelectionToAvailable();
@@ -628,9 +650,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   List<HatShapeInfo> _crownOptionsForResults() {
     return _uniqueShapeOptions([
-      if (selectedCrownShape != null) selectedCrownShape!,
-      ...(_sortedCrownShapes ?? _currentCrownShapes),
-      ...crownShapes,
+      if (selectedCrownShape != null && _isWizardCrownShape(selectedCrownShape!))
+        selectedCrownShape!,
+      ..._wizardCrownShapes(_sortedCrownShapes ?? _currentCrownShapes),
+      ..._wizardCrownShapes(crownShapes),
     ]);
   }
 
@@ -664,8 +687,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
             _isOpenRoadProduct(product)) {
           continue;
         }
+        final url = product['featuredImage']['url'] as String;
+        if (map[shape.name]!.any((entry) => entry['url'] == url)) continue;
         map[shape.name]!.add({
-          'url': product['featuredImage']['url'] as String,
+          'url': url,
           'title': (product['title'] ?? '') as String,
           'matchesMaterial': (materialTarget != null &&
                   _metaValue(product['feltStrawOrBallcap'])
@@ -687,6 +712,69 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
     }
     return map;
+  }
+
+  /// Generic hat product photo (background removed) when Shopify has no match.
+  static const _hatPhotoPlaceholderAsset = 'assets/images/placeholder.png';
+
+  /// Only uses catalog products already matched to this shape (see [_buildShapeProductMap]).
+  /// Otherwise shows the generic cutout placeholder — never a random unrelated hat.
+  _ShapeCardPhoto _pickShapeCardPhoto({
+    required String shapeName,
+    required List<Map<String, String>> shopifyProducts,
+    required int shapeCarouselIndex,
+  }) {
+    if (shopifyProducts.isEmpty) {
+      return const _ShapeCardPhoto();
+    }
+
+    final pickIndex = (shapeName.hashCode.abs() + shapeCarouselIndex) %
+        shopifyProducts.length;
+    final pick = shopifyProducts[pickIndex];
+    final url = pick['url'];
+    if (url == null || url.isEmpty) {
+      return const _ShapeCardPhoto();
+    }
+
+    return _ShapeCardPhoto(
+      imageUrl: url,
+      productTitle: pick['title'],
+    );
+  }
+
+  Widget _buildShapeCardHatImage(String? imageUrl) {
+    const padding = EdgeInsets.fromLTRB(12, 6, 12, 0);
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Padding(
+        padding: padding,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          alignment: Alignment.topCenter,
+          errorBuilder: (_, __, ___) => Padding(
+            padding: padding,
+            child: _buildHatPhotoPlaceholder(),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: padding,
+      child: _buildHatPhotoPlaceholder(),
+    );
+  }
+
+  Widget _buildHatPhotoPlaceholder() {
+    return Image.asset(
+      _hatPhotoPlaceholderAsset,
+      fit: BoxFit.contain,
+      alignment: Alignment.topCenter,
+      errorBuilder: (_, __, ___) => Icon(
+        Icons.checkroom_outlined,
+        size: 88,
+        color: Colors.grey.shade400,
+      ),
+    );
   }
 
   Map<String, String>? _getFallbackProduct(
@@ -1908,23 +1996,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       final isSelected = selectedCrownShape?.name == shape.name;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
-                      String? imageUrl = shopifyProducts.isNotEmpty
-                          ? shopifyProducts.first['url']
-                          : null;
-                      String? productTitle = shopifyProducts.isNotEmpty
-                          ? shopifyProducts.first['title']
-                          : null;
-
-                      if (imageUrl == null && snapshot.hasData) {
-                        final fallback = _getFallbackProduct(
-                            snapshot.data!, shape,
-                            isCrown: true);
-                        if (fallback != null) {
-                          imageUrl = fallback['url'];
-                          productTitle =
-                              '${fallback['title']} (Representative)';
-                        }
-                      }
+                      final photo = _pickShapeCardPhoto(
+                        shapeName: shape.name,
+                        shopifyProducts: shopifyProducts,
+                        shapeCarouselIndex: index,
+                      );
+                      final imageUrl = photo.imageUrl;
+                      final productTitle = photo.productTitle;
                       final bool isFlipped = _flippedCardIndex == index;
 
                       return Padding(
@@ -2214,22 +2292,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 productTitle),
                                             Flexible(
                                               fit: FlexFit.loose,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        12, 6, 12, 0),
-                                                child: imageUrl != null
-                                                    ? Image.network(
-                                                        imageUrl,
-                                                        fit: BoxFit.contain,
-                                                        alignment: Alignment
-                                                            .topCenter)
-                                                    : Image.asset(
-                                                        shape.imagePath,
-                                                        fit: BoxFit.contain,
-                                                        alignment: Alignment
-                                                            .topCenter),
-                                              ),
+                                              child: _buildShapeCardHatImage(
+                                                  imageUrl),
                                             ),
                                             Transform.translate(
                                               offset: const Offset(0, -28),
@@ -2595,23 +2659,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       final isSelected = selectedBrimShape?.name == shape.name;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
-                      String? imageUrl = shopifyProducts.isNotEmpty
-                          ? shopifyProducts.first['url']
-                          : null;
-                      String? productTitle = shopifyProducts.isNotEmpty
-                          ? shopifyProducts.first['title']
-                          : null;
-
-                      if (imageUrl == null && snapshot.hasData) {
-                        final fallback = _getFallbackProduct(
-                            snapshot.data!, shape,
-                            isCrown: false);
-                        if (fallback != null) {
-                          imageUrl = fallback['url'];
-                          productTitle =
-                              '${fallback['title']} (Representative)';
-                        }
-                      }
+                      final photo = _pickShapeCardPhoto(
+                        shapeName: shape.name,
+                        shopifyProducts: shopifyProducts,
+                        shapeCarouselIndex: index,
+                      );
+                      final imageUrl = photo.imageUrl;
+                      final productTitle = photo.productTitle;
                       final bool isFlipped = _flippedBrimCardIndex == index;
 
                       return Padding(
@@ -2891,26 +2945,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 productTitle),
                                             Flexible(
                                               fit: FlexFit.loose,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        12, 6, 12, 0),
-                                                child: imageUrl != null
-                                                    ? Image.network(
-                                                        imageUrl,
-                                                        fit: BoxFit.contain,
-                                                        alignment: Alignment
-                                                            .topCenter)
-                                                    : Container(
-                                                        color: Colors.white,
-                                                        child: Image.asset(
-                                                          shape.imagePath,
-                                                          fit: BoxFit.contain,
-                                                          alignment: Alignment
-                                                              .topCenter,
-                                                        ),
-                                                      ),
-                                              ),
+                                              child: _buildShapeCardHatImage(
+                                                  imageUrl),
                                             ),
                                             Transform.translate(
                                               offset: const Offset(0, -28),
