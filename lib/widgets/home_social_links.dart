@@ -21,7 +21,7 @@ class HomeSocialLinks extends StatelessWidget {
   static const Color _espresso = Color(0xFF2D2926);
   static const Color _surface = Color(0xFFFAF8F5);
 
-  static const List<({String label, IconData icon, String url})> _links = [
+  static const List<({String label, FaIconData icon, String url})> _links = [
     (
       label: 'Instagram',
       icon: FontAwesomeIcons.instagram,
@@ -115,7 +115,7 @@ class _SocialIconButton extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final FaIconData icon;
   final Color color;
   final VoidCallback onTap;
   final bool compact;

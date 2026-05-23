@@ -29,13 +29,15 @@ void main() {
     await tester.tap(find.text('ADD SIZE MEASUREMENT'));
     await tester.pumpAndSettle();
 
-    expect(find.text('SIZE MEASUREMENT'), findsOneWidget);
+    expect(find.text('What is your head size?'), findsOneWidget);
     expect(
-      find.textContaining('Camera measurement and image analysis are parked'),
+      find.textContaining('Enter a known hat size, or measure'),
       findsOneWidget,
     );
 
     await tester.enterText(find.byType(TextField).first, '58');
+    await tester.ensureVisible(find.text('SAVE MEASUREMENT'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('SAVE MEASUREMENT'));
     await tester.pumpAndSettle();
 

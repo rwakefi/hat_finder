@@ -650,7 +650,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   List<HatShapeInfo> _crownOptionsForResults() {
     return _uniqueShapeOptions([
-      if (selectedCrownShape != null && _isWizardCrownShape(selectedCrownShape!))
+      if (selectedCrownShape != null &&
+          _isWizardCrownShape(selectedCrownShape!))
         selectedCrownShape!,
       ..._wizardCrownShapes(_sortedCrownShapes ?? _currentCrownShapes),
       ..._wizardCrownShapes(crownShapes),
@@ -777,66 +778,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Map<String, String>? _getFallbackProduct(
-      List<dynamic> products, HatShapeInfo shape,
-      {required bool isCrown}) {
-    if (products.isEmpty) return null;
-
-    // 1. Try keyword matching
-    try {
-      final chosenName = shape.name.toLowerCase();
-      String? keyword;
-      if (isCrown) {
-        if (chosenName.contains('cattleman')) {
-          keyword = 'cattleman';
-        } else if (chosenName.contains('gus')) {
-          keyword = 'gus';
-        } else if (chosenName.contains('teardrop')) {
-          keyword = 'teardrop';
-        } else if (chosenName.contains('brick')) {
-          keyword = 'brick';
-        } else if (chosenName.contains('gambler')) {
-          keyword = 'gambler';
-        } else if (chosenName.contains('punch')) {
-          keyword = 'punch';
-        }
-      } else {
-        if (chosenName.contains('curved') || chosenName.contains('curve')) {
-          keyword = 'curved';
-        } else if (chosenName.contains('flat')) {
-          keyword = 'flat';
-        } else if (chosenName.contains('curl')) {
-          keyword = 'curl';
-        } else if (chosenName.contains('downturned') ||
-            chosenName.contains('pulled')) {
-          keyword = 'downturned';
-        }
-      }
-
-      if (keyword != null) {
-        final matched = products.firstWhere((p) {
-          final val = _metaValue(isCrown ? p['crownShape'] : p['brimShape'])
-              .toLowerCase();
-          final isMatch =
-              val.contains(keyword!) && p['featuredImage']?['url'] != null;
-          if (isMatch && isCrown && keyword == 'cattleman') {
-            return !_isOpenRoadProduct(p);
-          }
-          return isMatch;
-        });
-        return {
-          'url': matched['featuredImage']['url'] as String,
-          'title': matched['title'] as String,
-        };
-      }
-    } catch (_) {}
-
-    // 2. Try material-matched fallback (Disabled to prevent unrelated matches like Flat Cap showing Stetson Kings Row)
-    return null;
-  }
-
-  static const _wizardStepTitlePadding =
-      EdgeInsets.fromLTRB(16, 16, 16, 8);
+  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 16, 16, 8);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 12, bottom: 20);
 
@@ -1519,95 +1461,99 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   Expanded(
                     child: GridView.count(
-                crossAxisCount: 2,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
-                children: _availableHatTypes.map((typeInfo) {
-                  final isSelected = selectedHatType == typeInfo;
-                  final imageUrl = _materialExampleUrls[typeInfo.name];
+                      crossAxisCount: 2,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.85,
+                      children: _availableHatTypes.map((typeInfo) {
+                        final isSelected = selectedHatType == typeInfo;
+                        final imageUrl = _materialExampleUrls[typeInfo.name];
 
-                  return Card(
-                    elevation: 0,
-                    clipBehavior: Clip.antiAlias,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isSelected
-                            ? const Color(0xFF559C99)
-                            : Colors.grey.shade200,
-                        width: isSelected ? 3 : 1,
-                      ),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          selectedHatType = typeInfo;
-                          selectedWesternStyle = null;
-                          selectedCrownShape = null;
-                          selectedBrimShape = null;
-                          _refreshShapeProductMaps();
-                        });
-                        if (_skipsShapeWizard(typeInfo.name)) {
-                          _submitSearch();
-                        } else {
-                          _nextPage();
-                        }
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: imageUrl != null
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    alignment: const Alignment(0.0, -0.35),
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Image.asset(
-                                      typeInfo.imagePath,
-                                      fit: BoxFit.cover,
-                                      alignment: const Alignment(0.0, -0.35),
-                                    ),
-                                  )
-                                : (typeInfo.imagePath !=
-                                        'assets/images/placeholder.png'
-                                    ? Image.asset(
-                                        typeInfo.imagePath,
-                                        fit: BoxFit.cover,
-                                        alignment: const Alignment(0.0, -0.35),
-                                      )
-                                    : Container(
-                                        color: Colors.grey[50],
-                                        child: const Icon(Icons.category,
-                                            size: 48, color: Colors.grey),
-                                      )),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            color: Colors.white,
-                            child: Text(
-                              typeInfo.name.toUpperCase(),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF2D2926),
-                                letterSpacing: 2.0,
-                              ),
+                        return Card(
+                          elevation: 0,
+                          clipBehavior: Clip.antiAlias,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? const Color(0xFF559C99)
+                                  : Colors.grey.shade200,
+                              width: isSelected ? 3 : 1,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                selectedHatType = typeInfo;
+                                selectedWesternStyle = null;
+                                selectedCrownShape = null;
+                                selectedBrimShape = null;
+                                _refreshShapeProductMaps();
+                              });
+                              if (_skipsShapeWizard(typeInfo.name)) {
+                                _submitSearch();
+                              } else {
+                                _nextPage();
+                              }
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: imageUrl != null
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          alignment:
+                                              const Alignment(0.0, -0.35),
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Image.asset(
+                                            typeInfo.imagePath,
+                                            fit: BoxFit.cover,
+                                            alignment:
+                                                const Alignment(0.0, -0.35),
+                                          ),
+                                        )
+                                      : (typeInfo.imagePath !=
+                                              'assets/images/placeholder.png'
+                                          ? Image.asset(
+                                              typeInfo.imagePath,
+                                              fit: BoxFit.cover,
+                                              alignment:
+                                                  const Alignment(0.0, -0.35),
+                                            )
+                                          : Container(
+                                              color: Colors.grey[50],
+                                              child: const Icon(Icons.category,
+                                                  size: 48, color: Colors.grey),
+                                            )),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0),
+                                  color: Colors.white,
+                                  child: Text(
+                                    typeInfo.name.toUpperCase(),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2926),
+                                      letterSpacing: 2.0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
@@ -2402,8 +2348,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         imageUrl: imageUrl,
                                         productTitle: productTitle,
                                         isSelected: isSelected,
-                                        onSelect: () =>
-                                            _selectCrownAndAdvance(shape, index),
+                                        onSelect: () => _selectCrownAndAdvance(
+                                            shape, index),
                                         onFlip: () {
                                           setState(() {
                                             _flippedCardIndex = index;

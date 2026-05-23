@@ -176,7 +176,8 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
   @override
   void initState() {
     super.initState();
-    _autoAdvance = Timer.periodic(const Duration(seconds: 5), (_) => _advance());
+    _autoAdvance =
+        Timer.periodic(const Duration(seconds: 5), (_) => _advance());
   }
 
   @override
@@ -249,108 +250,108 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
           fit: StackFit.expand,
           children: [
             PageView.builder(
-            controller: _pageController,
-            onPageChanged: (i) => setState(() => _index = i),
-            itemCount: _HomeHeroCarousel._slides.length,
-            itemBuilder: (context, index) {
-              final slide = _HomeHeroCarousel._slides[index];
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return _buildSlideImage(slide, constraints);
-                    },
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          _espresso.withValues(alpha: 0.18),
-                          Colors.transparent,
-                          _espresso.withValues(alpha: 0.55),
-                        ],
-                        stops: const [0.0, 0.2, 1.0],
+              controller: _pageController,
+              onPageChanged: (i) => setState(() => _index = i),
+              itemCount: _HomeHeroCarousel._slides.length,
+              itemBuilder: (context, index) {
+                final slide = _HomeHeroCarousel._slides[index];
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return _buildSlideImage(slide, constraints);
+                      },
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            _espresso.withValues(alpha: 0.18),
+                            Colors.transparent,
+                            _espresso.withValues(alpha: 0.55),
+                          ],
+                          stops: const [0.0, 0.2, 1.0],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 88 + bottomInset,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    _espresso.withValues(alpha: 0.35),
-                    _espresso.withValues(alpha: 0.62),
                   ],
-                  stops: const [0.0, 0.45, 1.0],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: bottomInset + 36,
-            width: 52,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Colors.transparent,
-                    _espresso.withValues(alpha: 0.28),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 6,
-            top: 0,
-            bottom: bottomInset + 36,
-            child: Center(
-              child: const HomeSocialLinks(
-                layout: HomeSocialLinksLayout.carouselColumn,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: bottomInset + 14,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_HomeHeroCarousel._slides.length, (i) {
-                final active = i == _index;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 18 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? _turquoise
-                        : Colors.white.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
                 );
-              }),
+              },
             ),
-          ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 88 + bottomInset,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      _espresso.withValues(alpha: 0.35),
+                      _espresso.withValues(alpha: 0.62),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: bottomInset + 36,
+              width: 52,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.transparent,
+                      _espresso.withValues(alpha: 0.28),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 6,
+              top: 0,
+              bottom: bottomInset + 36,
+              child: const Center(
+                child: HomeSocialLinks(
+                  layout: HomeSocialLinksLayout.carouselColumn,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: bottomInset + 14,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_HomeHeroCarousel._slides.length, (i) {
+                  final active = i == _index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? _turquoise
+                          : Colors.white.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ],
         ),
       ),
