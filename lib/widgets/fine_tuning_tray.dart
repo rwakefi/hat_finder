@@ -33,7 +33,13 @@ class FineTuningTray extends StatefulWidget {
     this.hatTypeOptions = hatTypes,
     this.crownShapeOptions = crownShapes,
     this.brimShapeOptions = brimShapes,
+    this.crownHeightOptions,
   });
+
+  final List<double>? crownHeightOptions;
+
+  List<double> get _resolvedCrownHeightOptions =>
+      crownHeightOptions ?? defaultCrownHeightOptions();
 
   final bool expanded;
   final ValueChanged<bool> onExpandedChanged;
@@ -309,7 +315,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
                   label: 'Height',
                   anySelected: widget.crownHeights.isEmpty,
                   onAny: () => _emit(heights: []),
-                  options: _crownHeightOptions(),
+                  options: widget._resolvedCrownHeightOptions,
                   isSelected: (v) => widget.crownHeights.contains(v),
                   labelFor: formatMeasurement,
                   onToggle: (v) {
@@ -439,16 +445,6 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         ),
       ],
     );
-  }
-
-  List<double> _crownHeightOptions() {
-    const min = 4.25;
-    const max = 5.0;
-    final values = <double>[];
-    for (var i = min; i <= max + 0.01; i += 0.25) {
-      values.add(i);
-    }
-    return values;
   }
 
   Widget _sectionLabel(String title, IconData icon) {

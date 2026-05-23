@@ -58,6 +58,34 @@ class ShopifyService {
     }
   }
 
+  /// All crown height values on a product metafield (often a JSON list).
+  static List<double> parseCrownHeightValues(dynamic entry) {
+    if (entry == null || entry['value'] == null) return [];
+    try {
+      final parsed = jsonDecode(entry['value'] as String);
+      if (parsed is List) {
+        return parsed
+            .map((e) => double.tryParse(e.toString()))
+            .whereType<double>()
+            .toList();
+      }
+      final single = double.tryParse(parsed.toString());
+      return single != null ? [single] : [];
+    } catch (_) {
+      final single = double.tryParse(entry['value'].toString());
+      return single != null ? [single] : [];
+    }
+  }
+
+  static List<double> uniqueCrownHeights(Iterable<dynamic> products) {
+    final heights = <double>{};
+    for (final product in products) {
+      heights.addAll(parseCrownHeightValues(product['crownHeight']));
+    }
+    final list = heights.toList()..sort();
+    return list;
+  }
+
   static bool _isCacheValid(DateTime? cachedAt) {
     if (cachedAt == null) return false;
     return DateTime.now().difference(cachedAt) < _cacheTtl;

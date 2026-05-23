@@ -125,10 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomeHeroSlide {
-  const _HomeHeroSlide(this.assetPath, this.label);
+  const _HomeHeroSlide(this.assetPath);
 
   final String assetPath;
-  final String label;
 }
 
 class _HomeHeroCarousel extends StatefulWidget {
@@ -137,11 +136,11 @@ class _HomeHeroCarousel extends StatefulWidget {
   final double height;
 
   static const List<_HomeHeroSlide> _slides = [
-    _HomeHeroSlide('assets/images/home_carousel_western.jpg', 'Western'),
-    _HomeHeroSlide('assets/images/outdoor.png', 'Outdoor'),
-    _HomeHeroSlide('assets/images/city.png', 'City'),
-    _HomeHeroSlide('assets/images/red_rocks.webp', 'Red rocks'),
-    _HomeHeroSlide('assets/images/straw_hat.jpg', 'Straw'),
+    _HomeHeroSlide('assets/images/home_carousel_western.jpg'),
+    _HomeHeroSlide('assets/images/home_carousel_outdoor.jpg'),
+    _HomeHeroSlide('assets/images/home_carousel_city.jpg'),
+    _HomeHeroSlide('assets/images/red_rocks.webp'),
+    _HomeHeroSlide('assets/images/straw_hat.jpg'),
   ];
 
   @override
@@ -232,19 +231,6 @@ class _HomeHeroCarouselState extends State<_HomeHeroCarousel> {
                           _espresso.withValues(alpha: 0.42),
                         ],
                         stops: const [0.0, 0.22, 1.0],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 16,
-                    bottom: bottomInset + 28,
-                    child: Text(
-                      slide.label.toUpperCase(),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2,
-                        color: Colors.white.withValues(alpha: 0.92),
                       ),
                     ),
                   ),

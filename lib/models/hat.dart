@@ -471,6 +471,17 @@ const List<String> brimWidths = [
   '5 Inches',
 ];
 
+/// Standard crown heights in 1/4" steps (matches Shopify metafield increments).
+List<double> defaultCrownHeightOptions() {
+  const min = 3.75;
+  const max = 5.5;
+  final values = <double>[];
+  for (var step = 0; step <= ((max - min) / 0.25).round(); step++) {
+    values.add(min + step * 0.25);
+  }
+  return values;
+}
+
 String formatMeasurement(double val) {
   int whole = val.truncate();
   double fraction = val - whole;

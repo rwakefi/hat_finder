@@ -1176,7 +1176,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           const Icon(
             Icons.face_retouching_natural_outlined,
             color: Color(0xFF559C99),
-            size: 22,
+            size: 24,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1186,7 +1186,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 Text(
                   '${profile.shortLabel} fit profile',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF2D2926),
                     letterSpacing: 1.1,
@@ -1198,9 +1198,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF2D2926).withValues(alpha: 0.72),
-                    height: 1.35,
+                    fontSize: 15,
+                    color: const Color(0xFF2D2926).withValues(alpha: 0.82),
+                    height: 1.45,
                   ),
                 ),
               ],
@@ -1227,7 +1227,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           const Icon(
             Icons.straighten_outlined,
             color: Color(0xFF559C99),
-            size: 21,
+            size: 24,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1236,9 +1236,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 12,
-                color: const Color(0xFF2D2926).withValues(alpha: 0.72),
-                height: 1.35,
+                fontSize: 15,
+                color: const Color(0xFF2D2926).withValues(alpha: 0.82),
+                height: 1.45,
                 fontWeight: FontWeight.w600,
               ),
             ),

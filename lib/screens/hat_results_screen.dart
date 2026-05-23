@@ -107,6 +107,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     }
   }
 
+  List<double> _crownHeightOptionsForFineTuning() {
+    final baseline = defaultCrownHeightOptions();
+    final catalog = _fullCatalog;
+    if (catalog == null) return baseline;
+    final fromCatalog = ShopifyService.uniqueCrownHeights(catalog);
+    if (fromCatalog.isEmpty) return baseline;
+    return {...baseline, ...fromCatalog}.toList()..sort();
+  }
+
   List<dynamic> _filterCatalog(List<dynamic> catalog) {
     return ShopifyService.filterProducts(
       catalog,
@@ -161,6 +170,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   String _metaValue(dynamic entry) {
     final value = ShopifyService.parseMetafieldValue(entry);
     return value.isEmpty ? '—' : value;
+  }
+
+  String _formatInchesDisplay(dynamic entry) {
+    final raw = _metaValue(entry);
+    if (raw == '—') return raw;
+    if (raw.toLowerCase().contains('inch')) return raw;
+    final parsed = double.tryParse(raw);
+    if (parsed != null) return formatMeasurement(parsed);
+    return raw;
   }
 
   void _rebuildSwatchCache(List<dynamic> hats) {
@@ -515,7 +533,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.45,
+                                childAspectRatio: 0.42,
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
@@ -541,8 +559,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     // Metafield values
     final crownShape = _metaValue(hat['crownShape']);
+    final crownHeight = _formatInchesDisplay(hat['crownHeight']);
     final material = _metaValue(hat['material']);
     final brimShape = _metaValue(hat['brimShape']);
+    final brimWidth = _formatInchesDisplay(hat['brimWidth']);
     final hatTypeLower = (widget.hatType ?? '').toLowerCase();
     final isBallcap = hatTypeLower.contains('ballcap') ||
         hatTypeLower.contains('beanie') ||
@@ -745,7 +765,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     // Compact attributes
                     if (!isBallcap) ...[
                       _buildAttribute('Crown', crownShape),
+                      _buildAttribute('Crown Height', crownHeight),
                       _buildAttribute('Brim', brimShape),
+                      _buildAttribute('Brim Width', brimWidth),
                     ] else ...[
                       _buildAttribute('Material', material),
                     ],
@@ -802,7 +824,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildAttribute(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           Text(
@@ -873,6 +895,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 brimShape: _filterBrimShape,
                 crownHeights: _filterCrownHeights,
                 brimWidths: _filterBrimWidths,
+                crownHeightOptions: _crownHeightOptionsForFineTuning(),
                 crownShapeOptions:
                     widget.crownShapeOptions ?? crownShapes,
                 brimShapeOptions: widget.brimShapeOptions ?? brimShapes,

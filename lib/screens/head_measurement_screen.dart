@@ -19,9 +19,22 @@ class HeadMeasurementScreen extends StatefulWidget {
 }
 
 class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
+  static const Color _espresso = Color(0xFF2D2926);
+  static const Color _surface = Color(0xFFFAF8F5);
+  static const Color _accent = Color(0xFF559C99);
+  static const Color _bannerBg = Color(0xFFF4F1EA);
+  static const Color _border = Color(0xFFE4DED1);
+
   final TextEditingController _centimetersController = TextEditingController();
   final TextEditingController _inchesController = TextEditingController();
   final TextEditingController _hatSizeController = TextEditingController();
+
+  TextStyle get _stepTitleStyle => GoogleFonts.playfairDisplay(
+        fontSize: 26,
+        fontWeight: FontWeight.bold,
+        color: _espresso,
+        height: 1.2,
+      );
 
   @override
   void initState() {
@@ -61,8 +74,12 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
 
     if (!measurement.hasMeasurement) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add a circumference or known hat size to save.'),
+        SnackBar(
+          backgroundColor: _espresso,
+          content: Text(
+            'Add a circumference or known hat size to save.',
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+          ),
         ),
       );
       return;
@@ -71,153 +88,143 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
     Navigator.of(context).pop(measurement);
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      foregroundColor: _espresso,
+      toolbarHeight: 88,
+      centerTitle: true,
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/Moon Ridge Header Logo.png',
+            height: 48,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'LEARN YOUR HEAD SHAPE',
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2,
+              color: _espresso,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'LEARN YOUR HEAD SHAPE',
-          style: GoogleFonts.playfairDisplaySc(),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF2B1D14),
-        foregroundColor: const Color(0xFFCBB593),
-        elevation: 0,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A3525),
-              Color(0xFF1E140E),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(28, 28, 28, 36),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildGuidanceCard(),
-                const SizedBox(height: 26),
-                _buildTextField(
-                  controller: _centimetersController,
-                  label: 'Circumference in centimeters',
-                  hint: 'Example: 58',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _inchesController,
-                  label: 'Circumference in inches',
-                  hint: 'Example: 22.8',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _hatSizeController,
-                  label: 'Known hat size',
-                  hint: 'Example: 7 1/4',
-                  keyboardType: TextInputType.text,
-                ),
-                const SizedBox(height: 28),
-                FilledButton(
-                  onPressed: _saveMeasurement,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFCBB593),
-                    foregroundColor: const Color(0xFF2B1D14),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  child: const Text(
-                    'SAVE MEASUREMENT',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFCBB593),
-                    side: const BorderSide(color: Color(0xFFCBB593), width: 1),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  child: const Text(
-                    'SKIP FOR NOW',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              ],
+      backgroundColor: _surface,
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'OPTIONAL',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.6,
+                color: _espresso.withValues(alpha: 0.55),
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            _buildGuidanceNote(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                'What is your head size?',
+                textAlign: TextAlign.center,
+                style: _stepTitleStyle,
+              ),
+            ),
+            _buildTextField(
+              controller: _centimetersController,
+              label: 'Circumference (cm)',
+              hint: '58',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _inchesController,
+              label: 'Circumference (inches)',
+              hint: '22.8',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _hatSizeController,
+              label: 'Known hat size',
+              hint: '7 1/4',
+              keyboardType: TextInputType.text,
+            ),
+            const SizedBox(height: 32),
+            _buildPrimaryButton('SAVE MEASUREMENT', _saveMeasurement),
+            const SizedBox(height: 12),
+            _buildSecondaryButton(
+              'SKIP FOR NOW',
+              () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGuidanceCard() {
+  Widget _buildGuidanceNote() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F0E8).withValues(alpha: 0.08),
-        border: Border.all(
-          color: const Color(0xFFCBB593).withValues(alpha: 0.5),
-        ),
-        borderRadius: BorderRadius.circular(4),
+        color: _bannerBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${widget.headShapeProfile.shortLabel} fit profile',
-            style: GoogleFonts.tenorSans(
-              textStyle: const TextStyle(
-                color: Color(0xFFCBB593),
-                fontSize: 13,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          const Icon(
+            Icons.face_retouching_natural_outlined,
+            color: _accent,
+            size: 24,
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Optional for this version: enter a known hat size or use a flexible tape around the spot where a hat normally sits.',
-            style: GoogleFonts.tenorSans(
-              textStyle: const TextStyle(
-                color: Color(0xFFF5F0E8),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Camera measurement and image analysis are parked for now.',
-            style: GoogleFonts.tenorSans(
-              textStyle: TextStyle(
-                color: const Color(0xFFF5F0E8).withValues(alpha: 0.72),
-                fontSize: 13,
-                height: 1.45,
-                fontStyle: FontStyle.italic,
-              ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.headShapeProfile.shortLabel} fit profile',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: _espresso,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Enter a known hat size, or measure with a flexible tape '
+                  'where a hat normally sits.',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: _espresso.withValues(alpha: 0.82),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -231,25 +238,102 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
     required String hint,
     required TextInputType keyboardType,
   }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      cursorColor: const Color(0xFFCBB593),
-      style: const TextStyle(color: Color(0xFFF5F0E8)),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: Color(0xFFCBB593)),
-        hintStyle: TextStyle(
-          color: const Color(0xFFF5F0E8).withValues(alpha: 0.42),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: _espresso.withValues(alpha: 0.72),
+          ),
         ),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFFCBB593)),
-          borderRadius: BorderRadius.all(Radius.circular(2)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          cursorColor: _accent,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: _espresso,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: Colors.white,
+            hintStyle: GoogleFonts.montserrat(
+              color: _espresso.withValues(alpha: 0.35),
+              fontSize: 15,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: _espresso.withValues(alpha: 0.22),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _accent, width: 1.5),
+            ),
+          ),
         ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFFF5F0E8), width: 1.4),
-          borderRadius: BorderRadius.all(Radius.circular(2)),
+      ],
+    );
+  }
+
+  Widget _buildPrimaryButton(String label, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _espresso,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryButton(String label, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _espresso,
+          side: const BorderSide(color: _espresso, width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+          ),
         ),
       ),
     );
