@@ -17,11 +17,12 @@ class MoonRidgeBottomNav extends StatelessWidget {
   static const _inactive = Color(0xFF9E9890);
 
   /// Fixed slot so single-line and stacked labels share the same height.
-  static const _labelSlotHeight = 26.0;
-  static const _indicatorSlotHeight = 10.0;
-  static const _labelIndicatorGap = 6.0;
+  static const _labelSlotHeight = 34.0;
+  static const _indicatorSlotHeight = 14.0;
+  static const _labelIndicatorGap = 8.0;
   static const _tabColumnHeight =
       _labelSlotHeight + _labelIndicatorGap + _indicatorSlotHeight;
+  static const _labelFontSize = 13.0;
 
   static const _tabs = <_NavTab>[
     _NavTab.label('Home'),
@@ -38,7 +39,7 @@ class MoonRidgeBottomNav extends StatelessWidget {
     return ColoredBox(
       color: _barColor,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 10, 16, bottomInset > 0 ? 6 : 12),
+        padding: EdgeInsets.fromLTRB(16, 14, 16, bottomInset > 0 ? 10 : 16),
         child: SizedBox(
           height: _tabColumnHeight,
           child: Row(
@@ -88,11 +89,11 @@ class _NavTabItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = GoogleFonts.montserrat(
-      fontSize: 11,
+      fontSize: MoonRidgeBottomNav._labelFontSize,
       fontWeight: active ? FontWeight.w600 : FontWeight.w500,
       letterSpacing: 0.2,
       color: active ? activeColor : inactiveColor,
-      height: 1.1,
+      height: 1.15,
     );
 
     return Semantics(
@@ -176,7 +177,7 @@ class _NavActiveMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: const Size(10, 10),
+      size: const Size(12, 12),
       painter: _FourPointMarkPainter(color: Colors.white),
     );
   }

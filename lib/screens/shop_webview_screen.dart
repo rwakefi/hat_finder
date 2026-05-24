@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../widgets/shell_tab_bar_footer.dart';
+
 class ShopWebViewScreen extends StatefulWidget {
   final String url;
   final String title;
@@ -114,6 +116,8 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final showShellNav = Navigator.of(context).canPop();
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -153,6 +157,9 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
             ),
         ],
       ),
+      bottomNavigationBar: showShellNav
+          ? const ShellTabBarFooter(selectedIndex: 3)
+          : null,
     );
   }
 }

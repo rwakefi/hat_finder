@@ -2,37 +2,199 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
 
+const _sheetEspresso = Color(0xFF2D2926);
+const _sheetTurquoise = Color(0xFF559C99);
+const _sheetBorder = Color(0xFFE8E5E1);
+
+TextStyle _filterSheetTitleStyle() => GoogleFonts.playfairDisplay(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: _sheetEspresso,
+    );
+
+Widget _filterSheetTile({
+  required String label,
+  required bool selected,
+  required VoidCallback onTap,
+}) {
+  return ListTile(
+    onTap: onTap,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    tileColor: selected ? _sheetTurquoise.withValues(alpha: 0.08) : null,
+    leading: Icon(
+      selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+      color: selected ? _sheetTurquoise : Colors.grey.shade400,
+    ),
+    title: Text(
+      label,
+      style: GoogleFonts.montserrat(
+        fontSize: 15,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        color: _sheetEspresso,
+      ),
+    ),
+  );
+}
+
+Future<String?> showShapeFilterSheet(
+  BuildContext context, {
+  required String title,
+  required String? current,
+  required List<HatShapeInfo> options,
+}) {
+  return showModalBottomSheet<String?>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.85,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: _filterSheetTitleStyle(),
+                  ),
+                ),
+                const Divider(height: 1, color: _sheetBorder),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
+                    children: [
+                      _filterSheetTile(
+                        label: 'Any',
+                        selected: current == null,
+                        onTap: () => Navigator.pop(context, null),
+                      ),
+                      ...options.map(
+                        (shape) => _filterSheetTile(
+                          label: shape.name,
+                          selected: current == shape.name,
+                          onTap: () => Navigator.pop(context, shape.name),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<String?> showStringFilterSheet(
+  BuildContext context, {
+  required String title,
+  required String? current,
+  required List<String> options,
+}) {
+  return showModalBottomSheet<String?>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        minChildSize: 0.3,
+        maxChildSize: 0.7,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: _filterSheetTitleStyle(),
+                  ),
+                ),
+                const Divider(height: 1, color: _sheetBorder),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
+                    children: [
+                      _filterSheetTile(
+                        label: 'Any',
+                        selected: current == null,
+                        onTap: () => Navigator.pop(context, null),
+                      ),
+                      ...options.map(
+                        (option) => _filterSheetTile(
+                          label: option,
+                          selected: current == option,
+                          onTap: () => Navigator.pop(context, option),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
 class FineTuningValues {
   const FineTuningValues({
-    this.hatType,
-    this.crownShape,
-    this.brimShape,
     this.crownHeights = const [],
     this.brimWidths = const [],
   });
 
-  final String? hatType;
-  final String? crownShape;
-  final String? brimShape;
   final List<double> crownHeights;
   final List<String> brimWidths;
 }
 
-/// Expandable tray for hat type, crown/brim shape, and measurement filters.
+/// Expandable tray for crown height and brim width filters.
 class FineTuningTray extends StatefulWidget {
   const FineTuningTray({
     super.key,
     required this.expanded,
     required this.onExpandedChanged,
-    required this.hatType,
-    required this.crownShape,
-    required this.brimShape,
     required this.crownHeights,
     required this.brimWidths,
     required this.onChanged,
-    this.hatTypeOptions = hatTypes,
-    this.crownShapeOptions = crownShapes,
-    this.brimShapeOptions = brimShapes,
     this.crownHeightOptions,
   });
 
@@ -43,15 +205,9 @@ class FineTuningTray extends StatefulWidget {
 
   final bool expanded;
   final ValueChanged<bool> onExpandedChanged;
-  final String? hatType;
-  final String? crownShape;
-  final String? brimShape;
   final List<double> crownHeights;
   final List<String> brimWidths;
   final ValueChanged<FineTuningValues> onChanged;
-  final List<HatShapeInfo> hatTypeOptions;
-  final List<HatShapeInfo> crownShapeOptions;
-  final List<HatShapeInfo> brimShapeOptions;
 
   @override
   State<FineTuningTray> createState() => _FineTuningTrayState();
@@ -62,16 +218,10 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   static const Color _turquoise = Color(0xFF559C99);
   static const Color _surface = Color(0xFFF8F7F5);
   static const Color _border = Color(0xFFE8E5E1);
-  static const double _panelMaxHeight = 300;
+  static const double _panelMaxHeight = 200;
 
   final ScrollController _scrollController = ScrollController();
   bool _showScrollHint = false;
-
-  TextStyle get _sheetTitleStyle => GoogleFonts.playfairDisplay(
-        fontSize: 26,
-        fontWeight: FontWeight.bold,
-        color: _espresso,
-      );
 
   @override
   void initState() {
@@ -105,116 +255,13 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   }
 
   void _emit({
-    String? type,
-    String? crown,
-    String? brim,
     List<double>? heights,
     List<String>? widths,
   }) {
     widget.onChanged(
       FineTuningValues(
-        hatType: type ?? widget.hatType,
-        crownShape: crown ?? widget.crownShape,
-        brimShape: brim ?? widget.brimShape,
         crownHeights: heights ?? widget.crownHeights,
         brimWidths: widths ?? widget.brimWidths,
-      ),
-    );
-  }
-
-  Future<void> _pickOption(
-    BuildContext context, {
-    required String title,
-    required String? current,
-    required List<HatShapeInfo> options,
-    required ValueChanged<String?> onSelect,
-  }) async {
-    final picked = await showModalBottomSheet<String?>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.35,
-          maxChildSize: 0.85,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: _sheetTitleStyle,
-                    ),
-                  ),
-                  const Divider(height: 1, color: _border),
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
-                      children: [
-                        _sheetTile(
-                          label: 'Any',
-                          selected: current == null,
-                          onTap: () => Navigator.pop(context, null),
-                        ),
-                        ...options.map(
-                          (shape) => _sheetTile(
-                            label: shape.name,
-                            selected: current == shape.name,
-                            onTap: () =>
-                                Navigator.pop(context, shape.name),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-    if (picked != current) onSelect(picked);
-  }
-
-  Widget _sheetTile({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: selected ? _turquoise.withValues(alpha: 0.08) : null,
-      leading: Icon(
-        selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-        color: selected ? _turquoise : Colors.grey.shade400,
-      ),
-      title: Text(
-        label,
-        style: GoogleFonts.montserrat(
-          fontSize: 15,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: _espresso,
-        ),
       ),
     );
   }
@@ -274,45 +321,13 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         children: [
           SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sectionLabel('Type', Icons.category_outlined),
-                const SizedBox(height: 10),
-                _shapeSelectorRow(
-                  context,
-                  label: 'Hat type',
-                  value: widget.hatType ?? 'Any',
-                  onTap: () => _pickOption(
-                    context,
-                    title: 'Hat type',
-                    current: widget.hatType,
-                    options: widget.hatTypeOptions,
-                    onSelect: (v) => _emit(type: v),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  child: Divider(height: 1, color: _border),
-                ),
-                _sectionLabel('Crown', Icons.architecture_outlined),
-                const SizedBox(height: 10),
-                _shapeSelectorRow(
-                  context,
-                  label: 'Shape',
-                  value: widget.crownShape ?? 'Any',
-                  onTap: () => _pickOption(
-                    context,
-                    title: 'Crown shape',
-                    current: widget.crownShape,
-                    options: widget.crownShapeOptions,
-                    onSelect: (v) => _emit(crown: v),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                _sectionLabel('Crown Height:', Icons.architecture_outlined),
+                const SizedBox(height: 6),
                 _multiCheckboxSection<double>(
-                  label: 'Height',
                   anySelected: widget.crownHeights.isEmpty,
                   onAny: () => _emit(heights: []),
                   options: widget._resolvedCrownHeightOptions,
@@ -329,31 +344,17 @@ class _FineTuningTrayState extends State<FineTuningTray> {
                   },
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
+                  padding: EdgeInsets.symmetric(vertical: 10),
                   child: Divider(height: 1, color: _border),
                 ),
-                _sectionLabel('Brim', Icons.waves_outlined),
-                const SizedBox(height: 10),
-                _shapeSelectorRow(
-                  context,
-                  label: 'Shape',
-                  value: widget.brimShape ?? 'Any',
-                  onTap: () => _pickOption(
-                    context,
-                    title: 'Brim shape',
-                    current: widget.brimShape,
-                    options: widget.brimShapeOptions,
-                    onSelect: (v) => _emit(brim: v),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                _sectionLabel('Brim Width:', Icons.waves_outlined),
+                const SizedBox(height: 6),
                 _multiCheckboxSection<String>(
-                  label: 'Width',
                   anySelected: widget.brimWidths.isEmpty,
                   onAny: () => _emit(widths: []),
                   options: brimWidths,
                   isSelected: (v) => widget.brimWidths.contains(v),
-                  labelFor: (v) => v,
+                  labelFor: abbreviateInchesLabel,
                   onToggle: (v) {
                     final next = List<String>.from(widget.brimWidths);
                     if (next.contains(v)) {
@@ -382,14 +383,14 @@ class _FineTuningTrayState extends State<FineTuningTray> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => widget.onExpandedChanged(!widget.expanded),
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 color: widget.expanded
                     ? _turquoise.withValues(alpha: 0.1)
                     : _surface,
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: widget.expanded ? _turquoise : _border,
                   width: widget.expanded ? 1.5 : 1,
@@ -400,27 +401,28 @@ class _FineTuningTrayState extends State<FineTuningTray> {
                 children: [
                   Icon(
                     Icons.tune_rounded,
-                    size: 18,
+                    size: 15,
                     color: widget.expanded
                         ? _turquoise
                         : _espresso.withValues(alpha: 0.7),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     'FINE TUNING',
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 2,
+                      letterSpacing: 1.5,
                       color: widget.expanded ? _turquoise : _espresso,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   AnimatedRotation(
                     turns: widget.expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 220),
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
+                      size: 18,
                       color: widget.expanded
                           ? _turquoise
                           : _espresso.withValues(alpha: 0.5),
@@ -434,7 +436,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
-            padding: const EdgeInsets.only(top: 14),
+            padding: const EdgeInsets.only(top: 8),
             child: _expandedPanel(context),
           ),
           crossFadeState: widget.expanded
@@ -450,14 +452,14 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   Widget _sectionLabel(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: _turquoise),
-        const SizedBox(width: 8),
+        Icon(icon, size: 15, color: _turquoise),
+        const SizedBox(width: 6),
         Text(
           title.toUpperCase(),
           style: GoogleFonts.montserrat(
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
-            letterSpacing: 2,
+            letterSpacing: 1.5,
             color: _turquoise,
           ),
         ),
@@ -465,59 +467,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
     );
   }
 
-  Widget _shapeSelectorRow(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: _surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: _espresso.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _espresso,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 20,
-                color: _espresso.withValues(alpha: 0.35),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _multiCheckboxSection<T>({
-    required String label,
     required bool anySelected,
     required VoidCallback onAny,
     required List<T> options,
@@ -525,35 +475,21 @@ class _FineTuningTrayState extends State<FineTuningTray> {
     required String Function(T) labelFor,
     required ValueChanged<T> onToggle,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      spacing: 5,
+      runSpacing: 3,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.montserrat(
-            fontSize: 12,
-            color: _espresso.withValues(alpha: 0.5),
-            fontWeight: FontWeight.w600,
-          ),
+        _chipToggle(
+          label: 'Any',
+          selected: anySelected,
+          onTap: onAny,
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          children: [
-            _chipToggle(
-              label: 'Any',
-              selected: anySelected,
-              onTap: onAny,
-            ),
-            ...options.map(
-              (opt) => _chipToggle(
-                label: labelFor(opt),
-                selected: isSelected(opt),
-                onTap: () => onToggle(opt),
-              ),
-            ),
-          ],
+        ...options.map(
+          (opt) => _chipToggle(
+            label: labelFor(opt),
+            selected: isSelected(opt),
+            onTap: () => onToggle(opt),
+          ),
         ),
       ],
     );
@@ -568,7 +504,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
       label: Text(
         label,
         style: GoogleFonts.montserrat(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           color: selected ? Colors.white : _espresso,
         ),
@@ -581,7 +517,8 @@ class _FineTuningTrayState extends State<FineTuningTray> {
       side: BorderSide(
         color: selected ? _turquoise : _border,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
     );
   }

@@ -1,4 +1,4 @@
-package com.example.hat_finder
+package com.moonridgecompany.hatfinder
 
 import io.flutter.embedding.android.FlutterActivity
 

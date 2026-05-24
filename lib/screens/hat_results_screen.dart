@@ -7,8 +7,7 @@ import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import '../widgets/fine_tuning_tray.dart';
-import '../widgets/moon_ridge_bottom_nav.dart';
-import 'app_shell.dart';
+import '../widgets/shell_tab_bar_footer.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final HeadShapeProfile? headShapeProfile;
@@ -47,15 +46,19 @@ class HatResultsScreen extends StatefulWidget {
 class _HatResultsScreenState extends State<HatResultsScreen> {
   late Future<List<dynamic>> _hatsFuture;
   String? _selectedColor;
+  String? _selectedVariantSize;
   Map<String, List<({String color, String variantGid, String? imageUrl})>>
       _swatchCache = {};
   List<dynamic>? _fullCatalog;
   bool _fineTuningExpanded = false;
   late String? _filterHatType;
+  late String? _filterWesternStyle;
   late String? _filterCrownShape;
   late String? _filterBrimShape;
   late List<double> _filterCrownHeights;
   late List<String> _filterBrimWidths;
+
+  static const _westernStyleOptions = ['Western', 'City', 'Outdoor'];
 
   // Brand colors — consistent with the rest of the app & moonridgecompany.com
   static const Color _espresso = Color(0xFF2D2926);
@@ -68,6 +71,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   void initState() {
     super.initState();
     _filterHatType = widget.hatType;
+    _filterWesternStyle = widget.westernStyle;
     _filterCrownShape = widget.crownShape;
     _filterBrimShape = widget.brimShape;
     _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
@@ -75,6 +79,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     // Always load the full catalog — lite preloads lack color variants for swatches.
     _hatsFuture = _fetchFilteredHats();
+  }
+
+  bool get _showsWesternStyleFilter {
+    final type = (_filterHatType ?? widget.hatType ?? '').toLowerCase();
+    return type.contains('felt');
   }
 
   bool get _showsFineTuningTray {
@@ -106,7 +115,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return ShopifyService.filterProducts(
       catalog,
       hatType: _filterHatType,
-      westernStyle: widget.westernStyle,
+      westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
       crownShape: _filterCrownShape,
       crownHeights:
           _filterCrownHeights.isEmpty ? null : _filterCrownHeights,
@@ -121,6 +130,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final filtered = _filterCatalog(source);
     setState(() {
       _selectedColor = null;
+      _selectedVariantSize = null;
       _rebuildSwatchCache(filtered);
       _hatsFuture = Future.value(filtered);
     });
@@ -128,29 +138,69 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   void _onFineTuningChanged(FineTuningValues values) {
     setState(() {
-      _filterHatType = values.hatType;
-      _filterCrownShape = values.crownShape;
-      _filterBrimShape = values.brimShape;
       _filterCrownHeights = List<double>.from(values.crownHeights);
       _filterBrimWidths = List<String>.from(values.brimWidths);
     });
     _applyFilters();
   }
 
+  Future<void> _pickHatType() async {
+    final picked = await showShapeFilterSheet(
+      context,
+      title: 'Hat type',
+      current: _filterHatType,
+      options: hatTypes,
+    );
+    if (!mounted || picked == _filterHatType) return;
+    setState(() {
+      _filterHatType = picked;
+      if (!_showsWesternStyleFilter) _filterWesternStyle = null;
+    });
+    _applyFilters();
+  }
+
+  Future<void> _pickWesternStyle() async {
+    final picked = await showStringFilterSheet(
+      context,
+      title: 'Hat Style',
+      current: _filterWesternStyle,
+      options: _westernStyleOptions,
+    );
+    if (!mounted || picked == _filterWesternStyle) return;
+    setState(() => _filterWesternStyle = picked);
+    _applyFilters();
+  }
+
+  Future<void> _pickCrownShape() async {
+    final picked = await showShapeFilterSheet(
+      context,
+      title: 'Crown shape',
+      current: _filterCrownShape,
+      options: widget.crownShapeOptions ?? crownShapes,
+    );
+    if (!mounted || picked == _filterCrownShape) return;
+    setState(() => _filterCrownShape = picked);
+    _applyFilters();
+  }
+
+  Future<void> _pickBrimShape() async {
+    final picked = await showShapeFilterSheet(
+      context,
+      title: 'Brim shape',
+      current: _filterBrimShape,
+      options: widget.brimShapeOptions ?? brimShapes,
+    );
+    if (!mounted || picked == _filterBrimShape) return;
+    setState(() => _filterBrimShape = picked);
+    _applyFilters();
+  }
+
   String _crownSummaryLabel() {
-    final shape = _filterCrownShape ?? 'Any';
-    final heights = _filterCrownHeights.isEmpty
-        ? 'Any'
-        : _filterCrownHeights.map(formatMeasurement).join(', ');
-    return '$shape ($heights)';
+    return _filterCrownShape ?? 'Any';
   }
 
   String _brimSummaryLabel() {
-    final shape = _filterBrimShape ?? 'Any';
-    final widths = _filterBrimWidths.isEmpty
-        ? 'Any'
-        : _filterBrimWidths.join(', ');
-    return '$shape ($widths)';
+    return _filterBrimShape ?? 'Any';
   }
 
   String _metaValue(dynamic entry) {
@@ -165,6 +215,136 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final parsed = double.tryParse(raw);
     if (parsed != null) return formatMeasurement(parsed);
     return raw;
+  }
+
+  String? _variantOptionValue(
+    dynamic node, {
+    required String optionName,
+  }) {
+    for (final opt in (node['selectedOptions'] as List<dynamic>? ?? [])) {
+      if (opt['name'].toString().toLowerCase() == optionName.toLowerCase()) {
+        final value = opt['value'].toString().trim();
+        return value.isEmpty ? null : value;
+      }
+    }
+    return null;
+  }
+
+  List<String> _availableSizesForHat(dynamic hat) {
+    final sizes = <String>{};
+    for (final edge in (hat['variants']?['edges'] as List<dynamic>? ?? [])) {
+      final node = edge['node'];
+      if (node == null || !_variantIsAvailable(node)) continue;
+      final size = _variantOptionValue(node, optionName: 'size');
+      if (size != null) sizes.add(size);
+    }
+    return sizes.toList();
+  }
+
+  bool _hatMatchesSelectedSize(dynamic hat, String selectedSize) {
+    for (final edge in (hat['variants']?['edges'] as List<dynamic>? ?? [])) {
+      final node = edge['node'];
+      if (node == null || !_variantIsAvailable(node)) continue;
+      final size = _variantOptionValue(node, optionName: 'size');
+      if (size != null &&
+          size.toLowerCase() == selectedSize.toLowerCase()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Widget _buildChipFilterBar<T>({
+    required IconData icon,
+    required String label,
+    required List<T> options,
+    required T? selected,
+    required String Function(T) labelFor,
+    required ValueChanged<T?> onSelected,
+  }) {
+    return Container(
+      color: _white,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: _espresso.withValues(alpha: 0.4)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.montserrat(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: _turquoise,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SizedBox(
+              height: 32,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: GestureDetector(
+                      onTap: () => onSelected(null),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: selected == null ? _turquoise : _white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: selected == null ? _turquoise : _borderGrey,
+                          ),
+                        ),
+                        child: Text(
+                          'All',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: selected == null ? _white : _espresso,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...options.map((option) {
+                    final isSelected = selected == option;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: () => onSelected(option),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected ? _turquoise : _white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected ? _turquoise : _borderGrey,
+                            ),
+                          ),
+                          child: Text(
+                            labelFor(option),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? _white : _espresso,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _rebuildSwatchCache(List<dynamic> hats) {
@@ -293,9 +473,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     ).toString();
   }
 
-  void _onShellTabSelected(int index) {
-    AppShell.navigateToTab(index);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -411,6 +588,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   _rebuildSwatchCache(hats);
                 }
 
+                // Extract unique in-stock sizes from returned products
+                final Set<String> availableSizes = {};
+                for (final hat in hats) {
+                  availableSizes.addAll(_availableSizesForHat(hat));
+                }
+                final sortedSizes = availableSizes.toList()..sort();
+
                 // Extract unique in-stock colors from returned products
                 final Set<String> availableColors = {};
                 for (final hat in hats) {
@@ -420,10 +604,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 }
                 final sortedColors = availableColors.toList()..sort();
 
-                // Filter by selected color
-                final filteredHats = _selectedColor == null
+                // Filter by selected size, then color
+                final sizeFilteredHats = _selectedVariantSize == null
                     ? hats
-                    : hats.where((hat) {
+                    : hats
+                        .where((hat) =>
+                            _hatMatchesSelectedSize(hat, _selectedVariantSize!))
+                        .toList();
+
+                final filteredHats = _selectedColor == null
+                    ? sizeFilteredHats
+                    : sizeFilteredHats.where((hat) {
                         return _swatchColorsFor(hat).any(
                           (entry) =>
                               entry.color.toLowerCase() ==
@@ -433,112 +624,27 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
                 return Column(
                   children: [
-                    // Color filter bar
+                    if (sortedSizes.isNotEmpty)
+                      _buildChipFilterBar<String>(
+                        icon: Icons.straighten_outlined,
+                        label: 'SIZE',
+                        options: sortedSizes,
+                        selected: _selectedVariantSize,
+                        labelFor: (size) => size,
+                        onSelected: (size) =>
+                            setState(() => _selectedVariantSize = size),
+                      ),
+                    if (sortedSizes.isNotEmpty)
+                      const Divider(height: 1, color: _borderGrey),
                     if (sortedColors.isNotEmpty)
-                      Container(
-                        color: _white,
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                        child: Row(
-                          children: [
-                            Icon(Icons.palette_outlined,
-                                size: 16,
-                                color: _espresso.withValues(alpha: 0.4)),
-                            const SizedBox(width: 8),
-                            Text(
-                              'COLOR',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: _turquoise,
-                                letterSpacing: 2.0,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: SizedBox(
-                                height: 32,
-                                child: ListView(
-                                  scrollDirection: Axis.horizontal,
-                                  children: [
-                                    // "All" chip
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 6),
-                                      child: GestureDetector(
-                                        onTap: () => setState(
-                                            () => _selectedColor = null),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 14, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: _selectedColor == null
-                                                ? _turquoise
-                                                : _white,
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                            border: Border.all(
-                                              color: _selectedColor == null
-                                                  ? _turquoise
-                                                  : _borderGrey,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'All',
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: _selectedColor == null
-                                                  ? _white
-                                                  : _espresso,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Color chips
-                                    ...sortedColors.map((color) {
-                                      final isSelected =
-                                          _selectedColor == color;
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 6),
-                                        child: GestureDetector(
-                                          onTap: () => setState(
-                                              () => _selectedColor = color),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 14, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? _turquoise
-                                                  : _white,
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? _turquoise
-                                                    : _borderGrey,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              color,
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: isSelected
-                                                    ? _white
-                                                    : _espresso,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      _buildChipFilterBar<String>(
+                        icon: Icons.palette_outlined,
+                        label: 'COLOR',
+                        options: sortedColors,
+                        selected: _selectedColor,
+                        labelFor: (color) => color,
+                        onSelected: (color) =>
+                            setState(() => _selectedColor = color),
                       ),
                     if (sortedColors.isNotEmpty)
                       const Divider(height: 1, color: _borderGrey),
@@ -547,7 +653,12 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                       child: filteredHats.isEmpty
                           ? Center(
                               child: Text(
-                                'No hats in this color.',
+                                _selectedVariantSize != null
+                                    ? 'No hats in this size.'
+                                    : sortedColors.isNotEmpty &&
+                                            _selectedColor != null
+                                        ? 'No hats in this color.'
+                                        : 'No hats match these filters.',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   color: _espresso.withValues(alpha: 0.4),
@@ -581,10 +692,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: MoonRidgeBottomNav(
-        selectedIndex: 1,
-        onSelected: _onShellTabSelected,
-      ),
+      bottomNavigationBar: const ShellTabBarFooter(selectedIndex: 1),
     );
   }
 
@@ -795,7 +903,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               name: title,
                               price: priceStr,
                               url: productUrl,
-                              brand: widget.westernStyle,
+                              brand: _filterWesternStyle,
                             );
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -871,48 +979,29 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Widget _buildSearchSummary() {
     return Container(
       color: _offWhite,
-      constraints: const BoxConstraints(maxHeight: 340),
+      constraints: const BoxConstraints(maxHeight: 300),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
         child: Column(
           children: [
             if (widget.headShapeProfile != null) ...[
               _buildFitProfileSummary(widget.headShapeProfile!),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
             if (widget.headMeasurementProfile != null) ...[
               _buildMeasurementSummary(widget.headMeasurementProfile!),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
-            Wrap(
-              alignment: WrapAlignment.spaceEvenly,
-              spacing: 20,
-              runSpacing: 10,
-              children: [
-                _buildSummaryChip('Type', _filterHatType ?? widget.hatType ?? 'Any'),
-                if (widget.westernStyle != null)
-                  _buildSummaryChip('Style', widget.westernStyle!),
-                if (_showsFineTuningTray) ...[
-                  _buildSummaryChip('Crown', _crownSummaryLabel()),
-                  _buildSummaryChip('Brim', _brimSummaryLabel()),
-                ],
-              ],
-            ),
+            _buildSummaryDropdowns(),
             if (_showsFineTuningTray) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: 6),
               FineTuningTray(
                 expanded: _fineTuningExpanded,
                 onExpandedChanged: (open) =>
                     setState(() => _fineTuningExpanded = open),
-                hatType: _filterHatType,
-                crownShape: _filterCrownShape,
-                brimShape: _filterBrimShape,
                 crownHeights: _filterCrownHeights,
                 brimWidths: _filterBrimWidths,
                 crownHeightOptions: _crownHeightOptionsForFineTuning(),
-                crownShapeOptions:
-                    widget.crownShapeOptions ?? crownShapes,
-                brimShapeOptions: widget.brimShapeOptions ?? brimShapes,
                 onChanged: _onFineTuningChanged,
               ),
             ],
@@ -1132,28 +1221,120 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return Colors.grey.shade400;
   }
 
-  Widget _buildSummaryChip(String label, String value) {
+  Widget _buildSummaryDropdowns() {
     return Column(
       children: [
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.montserrat(
-            fontSize: 10,
-            color: _turquoise,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2.0,
-          ),
+        Row(
+          children: [
+            _buildSummaryDropdown(
+              label: 'Type',
+              value: _filterHatType ?? 'Any',
+              onTap: _pickHatType,
+            ),
+            if (_showsWesternStyleFilter)
+              _buildSummaryDropdown(
+                label: 'Style',
+                value: _filterWesternStyle ?? 'Any',
+                onTap: _pickWesternStyle,
+              ),
+          ],
         ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: GoogleFonts.montserrat(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _espresso,
+        if (_showsFineTuningTray) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _buildSummaryDropdown(
+                label: 'Crown',
+                value: _crownSummaryLabel(),
+                onTap: _pickCrownShape,
+              ),
+              _buildSummaryDropdown(
+                label: 'Brim',
+                value: _brimSummaryLabel(),
+                onTap: _pickBrimShape,
+              ),
+            ],
           ),
-        ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildSummaryDropdown({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: _buildSummaryDropdownField(
+          label: label,
+          value: value,
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryDropdownField({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 9,
+                color: _turquoise,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.6,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _borderGrey),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _espresso,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: _espresso.withValues(alpha: 0.45),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

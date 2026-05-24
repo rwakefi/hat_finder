@@ -485,8 +485,12 @@ List<double> defaultCrownHeightOptions() {
 String formatMeasurement(double val) {
   int whole = val.truncate();
   double fraction = val - whole;
-  if ((fraction - 0.25).abs() < 0.01) return '$whole 1/4 Inches';
-  if ((fraction - 0.50).abs() < 0.01) return '$whole 1/2 Inches';
-  if ((fraction - 0.75).abs() < 0.01) return '$whole 3/4 Inches';
-  return '$whole Inches';
+  if ((fraction - 0.25).abs() < 0.01) return '$whole 1/4 In.';
+  if ((fraction - 0.50).abs() < 0.01) return '$whole 1/2 In.';
+  if ((fraction - 0.75).abs() < 0.01) return '$whole 3/4 In.';
+  return '$whole In.';
+}
+
+String abbreviateInchesLabel(String label) {
+  return label.replaceAll(' Inches', ' In.');
 }

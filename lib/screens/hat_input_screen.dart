@@ -7,6 +7,7 @@ import 'hat_results_screen.dart';
 import 'dart:async';
 import 'dart:math' show pi, Random;
 import '../services/shopify_service.dart';
+import '../widgets/shell_tab_bar_footer.dart';
 
 class HatInputScreen extends StatefulWidget {
   const HatInputScreen({
@@ -1225,6 +1226,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
   bool get _allowRoutePop =>
       _currentPageIndex == 0 && Navigator.of(context).canPop();
 
+  bool get _isOverlayRoute => Navigator.of(context).canPop();
+
+  /// Pro Max: wizard BACK/NEXT live in the body column so the hat grid scrolls
+  /// cleanly above them. iPhone 17 keeps the original bottomNavigationBar layout.
+  bool _useInlineWizardFooter(BuildContext context) =>
+      _isProMaxLayout(context);
+
+  Widget? _buildScaffoldFooter(BuildContext context) {
+    if (_useInlineWizardFooter(context)) {
+      return _isOverlayRoute
+          ? const ShellTabBarFooter(selectedIndex: 1)
+          : null;
+    }
+    if (_isOverlayRoute) {
+      return ShellTabBarWithFooter(
+        selectedIndex: 1,
+        footer: _buildBottomNav(includeBottomSafeArea: false),
+      );
+    }
+    return _buildBottomNav();
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -1254,6 +1277,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           color: Colors.white, // Clean, airy background
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               _buildProgressBar(),
@@ -1279,19 +1303,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   children: _pages,
                 ),
               ),
+              if (_useInlineWizardFooter(context))
+                _buildBottomNav(includeBottomSafeArea: false),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildScaffoldFooter(context),
       ),
     );
   }
 
   Widget _buildHeadShapeProfileBanner(HeadShapeProfile profile) {
+    final compact = _isProMaxLayout(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+      padding: EdgeInsets.fromLTRB(18, compact ? 8 : 10, 18, compact ? 8 : 12),
       decoration: const BoxDecoration(
         color: Color(0xFFF4F1EA),
         border: Border(
@@ -1323,7 +1350,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 const SizedBox(height: 3),
                 Text(
                   profile.fitGuidance,
-                  maxLines: 3,
+                  maxLines: compact ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontSize: 15,
@@ -1398,7 +1425,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return 'Find Hats';
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav({bool includeBottomSafeArea = true}) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       decoration: BoxDecoration(
@@ -1412,6 +1439,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ],
       ),
       child: SafeArea(
+        bottom: includeBottomSafeArea,
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Row(
@@ -1544,11 +1572,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 2,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                      padding: EdgeInsets.fromLTRB(
+                        12,
+                        12,
+                        12,
+                        _isProMaxLayout(context) ? 4 : 12,
+                      ),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.85,
+                      childAspectRatio: _isProMaxLayout(context) ? 0.92 : 0.85,
                       children: _availableHatTypes.map((typeInfo) {
                         final isSelected = selectedHatType == typeInfo;
                         final imageUrl = _materialExampleUrls[typeInfo.name];

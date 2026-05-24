@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../widgets/shell_tab_bar_footer.dart';
 
 class HeadMeasurementScreen extends StatefulWidget {
   const HeadMeasurementScreen({
@@ -196,6 +197,7 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
             ],
           ),
         ),
+        bottomNavigationBar: const ShellTabBarFooter(selectedIndex: 2),
       ),
     );
   }
