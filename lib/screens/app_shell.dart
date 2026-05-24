@@ -17,8 +17,33 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+  final Set<int> _visitedTabs = {0};
 
-  void _selectTab(int index) => setState(() => _selectedIndex = index);
+  void _selectTab(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _visitedTabs.add(index);
+    });
+  }
+
+  Widget _buildTab(int index) {
+    if (!_visitedTabs.contains(index)) {
+      return const SizedBox.shrink();
+    }
+
+    return switch (index) {
+      0 => HomeScreen(
+          onFindHat: () => _selectTab(1),
+          onFitGuide: () => _selectTab(2),
+          onShop: () => _selectTab(3),
+        ),
+      1 => const HatInputScreen(),
+      2 => const HeadShapeScreen(),
+      3 => ShopWebViewScreen(onBack: () => _selectTab(0)),
+      4 => const ConnectScreen(),
+      _ => const SizedBox.shrink(),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +54,7 @@ class _AppShellState extends State<AppShell> {
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,
-              children: [
-                HomeScreen(
-                  onFindHat: () => _selectTab(1),
-                  onFitGuide: () => _selectTab(2),
-                  onShop: () => _selectTab(3),
-                ),
-                const HatInputScreen(),
-                const HeadShapeScreen(),
-                ShopWebViewScreen(onBack: () => _selectTab(0)),
-                const ConnectScreen(),
-              ],
+              children: List.generate(5, _buildTab),
             ),
           ),
           MoonRidgeBottomNav(
