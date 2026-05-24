@@ -7,11 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 class ShopWebViewScreen extends StatefulWidget {
   final String url;
   final String title;
+  final VoidCallback? onBack;
 
   const ShopWebViewScreen({
     super.key,
     this.url = 'https://moonridgecompany.com',
     this.title = 'Moon Ridge Shop',
+    this.onBack,
   });
 
   @override
@@ -119,7 +121,7 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2D2926)),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.title,
