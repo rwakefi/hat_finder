@@ -677,7 +677,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.42,
+                                childAspectRatio: 0.38,
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
@@ -857,7 +857,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             Expanded(
               flex: 4,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -948,13 +948,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildAttribute(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
         children: [
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: 12,
               color: _espresso.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
             ),
@@ -965,7 +965,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               value,
               textAlign: TextAlign.right,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: _espresso,
               ),
