@@ -29,7 +29,7 @@ class MoonRidgeBottomNav extends StatelessWidget {
     _NavTab.label('Find Hats'),
     _NavTab.stacked(topLine: 'Head', bottomLine: 'Shape'),
     _NavTab.label('Shop'),
-    _NavTab.label('Connect'),
+    _NavTab.stacked(topLine: 'Events /', bottomLine: 'Connect'),
   ];
 
   @override

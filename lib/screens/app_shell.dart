@@ -57,7 +57,13 @@ class _AppShellState extends State<AppShell> {
       1 => HatInputScreen(onExit: () => _selectTab(0)),
       2 => const HeadShapeScreen(),
       3 => ShopWebViewScreen(onBack: () => _selectTab(0)),
-      4 => const ConnectScreen(),
+      4 => ShopWebViewScreen(
+          url: 'https://moonridgecompany.com/pages/book-moonridge',
+          title: 'Events / Connect',
+          onBack: () => _selectTab(0),
+          hideHeaderFooter: true,
+          selectedIndex: 4,
+        ),
       _ => const SizedBox.shrink(),
     };
   }

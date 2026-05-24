@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/shell_tab_bar_footer.dart';
@@ -10,12 +11,16 @@ class ShopWebViewScreen extends StatefulWidget {
   final String url;
   final String title;
   final VoidCallback? onBack;
+  final bool hideHeaderFooter;
+  final int selectedIndex;
 
   const ShopWebViewScreen({
     super.key,
     this.url = 'https://moonridgecompany.com',
     this.title = 'Moon Ridge Shop',
     this.onBack,
+    this.hideHeaderFooter = false,
+    this.selectedIndex = 3,
   });
 
   @override
@@ -80,10 +85,80 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
 })();
 ''';
 
+  static const String _hideHeaderFooterScript = r'''
+(() => {
+  const styleId = 'hat-finder-hide-header-footer';
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement('style');
+    style.id = styleId;
+    document.head.appendChild(style);
+  }
+  style.textContent = `
+    .shopify-section-group-header-group,
+    #shopify-section-announcement-bar,
+    .announcement-bar,
+    div[class*="announcement-bar"],
+    header,
+    .header-wrapper,
+    #shopify-section-header,
+    
+    .rm-brand-promo-btn,
+    .rm-brand-switcher,
+    div[class*="brand-switcher"],
+    div[class*="brand-promo"],
+    .header__mobile-cta,
+    
+    .shopify-section-group-footer-group,
+    footer,
+    .footer,
+    #shopify-section-footer,
+    div[class*="footer"],
+    
+    #dummy-chat-button-iframe,
+    iframe#dummy-chat-button-iframe,
+    iframe[src*="shopify-chat"],
+    .shopify-chat,
+    #shopify-chat,
+    #chat-button,
+    #shopify-inbox {
+      display: none !important;
+    }
+    
+    body, #MainContent, main {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+    
+    /* Fix iOS z-index rendering bug for video overlays */
+    .events-video-banner__bg video {
+      filter: brightness(0.5) !important;
+      -webkit-filter: brightness(0.5) !important;
+    }
+    .events-video-banner__overlay {
+      z-index: 2 !important;
+      transform: translateZ(0) !important;
+      -webkit-transform: translate3d(0,0,0) !important;
+    }
+  `;
+})();
+''';
+
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
+
+    late final PlatformWebViewControllerCreationParams params;
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
+    }
+
+    _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -108,6 +183,9 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
   Future<void> _lockWebViewToVerticalScrolling() async {
     try {
       await _controller.runJavaScript(_storefrontViewportScript);
+      if (widget.hideHeaderFooter) {
+        await _controller.runJavaScript(_hideHeaderFooterScript);
+      }
     } catch (error) {
       debugPrint(
           'Unable to lock storefront web view to vertical scroll: $error');
@@ -158,7 +236,7 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
         ],
       ),
       bottomNavigationBar: showShellNav
-          ? const ShellTabBarFooter(selectedIndex: 3)
+          ? ShellTabBarFooter(selectedIndex: widget.selectedIndex)
           : null,
     );
   }

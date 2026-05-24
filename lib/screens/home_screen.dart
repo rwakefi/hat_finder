@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../services/shopify_service.dart';
 
@@ -89,7 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   _OptionBlock(
                     icon: Icons.style_outlined,
                     label: 'SEARCH BY HAT TYPE',
-                    caption: 'For those who know what style they want',
                     emphasized: true,
                     onTap: widget.onFindHat,
                     compact: compact,
@@ -98,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   _OptionBlock(
                     icon: Icons.face_outlined,
                     label: 'LEARN YOUR HEAD SHAPE',
-                    caption: 'For those who want a personalized fit',
                     onTap: widget.onFitGuide,
                     compact: compact,
                   ),
@@ -106,12 +106,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   _OptionBlock(
                     icon: Icons.shopping_bag_outlined,
                     label: 'JUST TAKE ME TO THE HATS!',
-                    caption: 'Browse the full Moon Ridge collection',
                     onTap: widget.onShop,
                     compact: compact,
                   ),
+                  SizedBox(height: buttonGap),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallBubble(
+                          icon: Icons.play_circle_outline_rounded,
+                          label: 'How to Measure\nfor Hat Size',
+                          onTap: () => _showVideoModal(context),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _SmallBubble(
+                          icon: Icons.straighten_rounded,
+                          label: 'Virtual Head\nMeasurement',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Coming soon!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                   Padding(
-                    padding: EdgeInsets.only(top: compact ? 20 : 28),
+                    padding: EdgeInsets.only(top: compact ? 16 : 22),
                     child: Center(
                       child: Image.asset(
                         'assets/images/Moon Ridge Header Logo.png',
@@ -128,6 +154,103 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+void _showVideoModal(BuildContext context) {
+  const videoId = 'URwlW5-5CV8';
+  final htmlString = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <style>
+        body { margin: 0; padding: 0; background-color: #1C1917; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; }
+        #player { width: 100%; height: 56.25vw; max-height: 100vh; }
+      </style>
+    </head>
+    <body>
+      <div id="player"></div>
+      <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+          player = new YT.Player('player', {
+            videoId: '$videoId',
+            playerVars: {
+              'playsinline': 1,
+              'rel': 0,
+              'enablejsapi': 1,
+              'origin': 'https://moonridgecompany.com'
+            }
+          });
+        }
+      </script>
+    </body>
+    </html>
+  ''';
+
+  late final PlatformWebViewControllerCreationParams params;
+  if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+    params = WebKitWebViewControllerCreationParams(
+      allowsInlineMediaPlayback: true,
+      mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+    );
+  } else {
+    params = const PlatformWebViewControllerCreationParams();
+  }
+
+  final controller = WebViewController.fromPlatformCreationParams(params)
+    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    ..loadHtmlString(htmlString, baseUrl: 'https://moonridgecompany.com');
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      height: MediaQuery.sizeOf(context).height * 0.55,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1917),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 8, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'HOW TO MEASURE FOR HAT SIZE',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white60),
+                  onPressed: () => Navigator.pop(_),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              child: WebViewWidget(controller: controller),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 abstract final class _HomePalette {
@@ -340,7 +463,6 @@ class _OptionBlock extends StatelessWidget {
   const _OptionBlock({
     required this.icon,
     required this.label,
-    required this.caption,
     required this.onTap,
     this.emphasized = false,
     this.compact = false,
@@ -348,7 +470,6 @@ class _OptionBlock extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final String caption;
   final VoidCallback onTap;
   final bool emphasized;
   final bool compact;
@@ -361,76 +482,116 @@ class _OptionBlock extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: emphasized ? _HomePalette.beige : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: emphasized
-                      ? _HomePalette.turquoise.withValues(alpha: 0.45)
-                      : _HomePalette.espresso.withValues(alpha: 0.22),
-                  width: emphasized ? 1.5 : 1,
-                ),
-                boxShadow: [
-                  if (emphasized)
-                    BoxShadow(
-                      color: _HomePalette.espresso.withValues(alpha: 0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: compact ? 14 : 16,
-                  horizontal: 18,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      icon,
-                      size: compact ? 22 : 24,
-                      color: _HomePalette.espresso.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: GoogleFonts.montserrat(
-                          fontSize: compact ? 14 : 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: _HomePalette.espresso,
-                          height: 1.25,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: _HomePalette.espresso.withValues(alpha: 0.35),
-                    ),
-                  ],
-                ),
-              ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: emphasized ? _HomePalette.beige : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: emphasized
+                  ? _HomePalette.turquoise.withValues(alpha: 0.45)
+                  : _HomePalette.espresso.withValues(alpha: 0.22),
+              width: emphasized ? 1.5 : 1,
             ),
-            SizedBox(height: compact ? 6 : 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                caption,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: compact ? 12 : 13,
-                  color: _HomePalette.espresso.withValues(alpha: 0.5),
-                  height: 1.35,
+            boxShadow: [
+              if (emphasized)
+                BoxShadow(
+                  color: _HomePalette.espresso.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: compact ? 14 : 16,
+              horizontal: 18,
             ),
-          ],
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: compact ? 22 : 24,
+                  color: _HomePalette.espresso.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.montserrat(
+                      fontSize: compact ? 14 : 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: _HomePalette.espresso,
+                      height: 1.25,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: _HomePalette.espresso.withValues(alpha: 0.35),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmallBubble extends StatelessWidget {
+  const _SmallBubble({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _HomePalette.espresso.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: _HomePalette.turquoise,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      color: _HomePalette.espresso,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
