@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/moon_ridge_bottom_nav.dart';
 import 'connect_screen.dart';
 import 'hat_input_screen.dart';
+import 'hat_results_screen.dart';
 import 'head_shape_screen.dart';
 import 'home_screen.dart';
 import 'shop_webview_screen.dart';
@@ -75,7 +76,18 @@ class _AppShellState extends State<AppShell> {
           ),
           MoonRidgeBottomNav(
             selectedIndex: _selectedIndex,
-            onSelected: _selectTab,
+            onSelected: (index) {
+              if (index == 1) {
+                // "Find Hat" footer → go straight to results (all filters = Any)
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const HatResultsScreen(),
+                  ),
+                );
+              } else {
+                _selectTab(index);
+              }
+            },
           ),
         ],
       ),

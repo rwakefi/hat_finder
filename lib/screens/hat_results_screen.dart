@@ -23,6 +23,7 @@ class HatResultsScreen extends StatefulWidget {
   final List<dynamic>? preloadedHats;
   final List<HatShapeInfo>? crownShapeOptions;
   final List<HatShapeInfo>? brimShapeOptions;
+  final bool hideFooter;
 
   const HatResultsScreen({
     super.key,
@@ -37,6 +38,7 @@ class HatResultsScreen extends StatefulWidget {
     this.preloadedHats,
     this.crownShapeOptions,
     this.brimShapeOptions,
+    this.hideFooter = false,
   });
 
   @override
@@ -692,7 +694,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const ShellTabBarFooter(selectedIndex: 1),
+      bottomNavigationBar: widget.hideFooter ? null : const ShellTabBarFooter(selectedIndex: 1),
     );
   }
 
@@ -1121,6 +1123,16 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     dynamic hat,
     List<({String color, String variantGid, String? imageUrl})> swatchColors,
   ) {
+    if (_selectedColor != null) {
+      for (final entry in swatchColors) {
+        if (entry.color.toLowerCase() == _selectedColor!.toLowerCase()) {
+          if (entry.imageUrl != null && entry.imageUrl!.isNotEmpty) {
+            return entry.imageUrl;
+          }
+        }
+      }
+    }
+
     final featured = hat['featuredImage']?['url'] as String?;
     for (final entry in swatchColors) {
       if (entry.imageUrl != null && entry.imageUrl!.isNotEmpty) {
