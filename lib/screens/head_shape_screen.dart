@@ -230,7 +230,6 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildFitGuidanceNote(),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Text(
@@ -250,6 +249,10 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             );
           }).toList(),
         ),
+        if (_currentQuestion == 0) ...[
+          const SizedBox(height: 4),
+          _buildFitGuidanceNote(),
+        ],
       ],
     );
   }
