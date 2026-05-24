@@ -130,6 +130,11 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
       margin-top: 0 !important;
     }
     
+    /* Fix white border/gap by making the base page and section backgrounds match the app's dark theme */
+    body, html, main, #MainContent, .events-directory, .shopify-section {
+      background-color: #1C1917 !important;
+    }
+    
     /* Fix iOS z-index rendering bug for video overlays */
     .events-video-banner__bg video {
       filter: brightness(0.5) !important;
