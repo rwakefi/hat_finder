@@ -679,6 +679,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final map = <String, List<Map<String, String>>>{
       for (final shape in shapes) shape.name: <Map<String, String>>[],
     };
+    final seenUrls = <String, Set<String>>{
+      for (final shape in shapes) shape.name: <String>{},
+    };
     final materialTarget = selectedHatType?.name.toLowerCase();
 
     for (final product in _allProducts!) {
@@ -694,7 +697,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           continue;
         }
         final url = product['featuredImage']['url'] as String;
-        if (map[shape.name]!.any((entry) => entry['url'] == url)) continue;
+        if (!seenUrls[shape.name]!.add(url)) continue;
         map[shape.name]!.add({
           'url': url,
           'title': (product['title'] ?? '') as String,

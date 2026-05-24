@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 void _showVideoModal(BuildContext context) {
   const videoId = 'URwlW5-5CV8';
-  final htmlString = '''
+  const htmlString = '''
     <!DOCTYPE html>
     <html>
     <head>
@@ -236,7 +236,7 @@ void _showVideoModal(BuildContext context) {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white60),
-                  onPressed: () => Navigator.pop(_),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),

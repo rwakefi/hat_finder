@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/moon_ridge_bottom_nav.dart';
-import 'connect_screen.dart';
 import 'hat_input_screen.dart';
 import 'hat_results_screen.dart';
 import 'head_shape_screen.dart';
