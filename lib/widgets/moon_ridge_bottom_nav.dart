@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Bottom bar with text tabs and active mark.
-class MoonRidgeBottomNav extends StatelessWidget {
+class MoonRidgeBottomNav extends StatefulWidget {
   const MoonRidgeBottomNav({
     super.key,
     required this.selectedIndex,
@@ -11,6 +11,13 @@ class MoonRidgeBottomNav extends StatelessWidget {
 
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+
+  @override
+  State<MoonRidgeBottomNav> createState() => _MoonRidgeBottomNavState();
+}
+
+class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
+  late int _visualSelectedIndex = widget.selectedIndex;
 
   static const _barColor = Color(0xFF1C1917);
   static const _active = Colors.white;
@@ -33,6 +40,20 @@ class MoonRidgeBottomNav extends StatelessWidget {
   ];
 
   @override
+  void didUpdateWidget(covariant MoonRidgeBottomNav oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedIndex != oldWidget.selectedIndex ||
+        widget.selectedIndex != _visualSelectedIndex) {
+      _visualSelectedIndex = widget.selectedIndex;
+    }
+  }
+
+  void _handleTap(int index) {
+    setState(() => _visualSelectedIndex = index);
+    widget.onSelected(index);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
@@ -48,8 +69,8 @@ class MoonRidgeBottomNav extends StatelessWidget {
               return Expanded(
                 child: _NavTabItem(
                   tab: _tabs[index],
-                  active: index == selectedIndex,
-                  onTap: () => onSelected(index),
+                  active: index == _visualSelectedIndex,
+                  onTap: () => _handleTap(index),
                   labelSlotHeight: _labelSlotHeight,
                   indicatorSlotHeight: _indicatorSlotHeight,
                   labelIndicatorGap: _labelIndicatorGap,
@@ -89,7 +110,7 @@ class _NavTabItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = GoogleFonts.montserrat(
-      fontSize: MoonRidgeBottomNav._labelFontSize,
+      fontSize: _MoonRidgeBottomNavState._labelFontSize,
       fontWeight: active ? FontWeight.w600 : FontWeight.w500,
       letterSpacing: 0.2,
       color: active ? activeColor : inactiveColor,
@@ -167,8 +188,7 @@ class _NavTab {
 
   bool get isStacked => topLine != null && bottomLine != null;
 
-  String get semanticsLabel =>
-      isStacked ? '$topLine $bottomLine' : label!;
+  String get semanticsLabel => isStacked ? '$topLine $bottomLine' : label!;
 }
 
 class _NavActiveMark extends StatelessWidget {

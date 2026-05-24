@@ -28,6 +28,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
   final Set<int> _visitedTabs = {0};
+  final Set<int> _deferredTabs = {};
+
+  static const Set<int> _webViewTabs = {3, 4};
 
   void selectTab(int index) => _selectTab(index);
 
@@ -36,15 +39,34 @@ class _AppShellState extends State<AppShell> {
     if (navigator.canPop()) {
       navigator.popUntil((route) => route.isFirst);
     }
+
+    final shouldDeferTabBuild =
+        !_visitedTabs.contains(index) && _webViewTabs.contains(index);
     setState(() {
       _selectedIndex = index;
-      _visitedTabs.add(index);
+      if (shouldDeferTabBuild) {
+        _deferredTabs.add(index);
+      } else {
+        _visitedTabs.add(index);
+      }
     });
+
+    if (shouldDeferTabBuild) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _deferredTabs.remove(index);
+          _visitedTabs.add(index);
+        });
+      });
+    }
   }
 
   Widget _buildTab(int index) {
     if (!_visitedTabs.contains(index)) {
-      return const SizedBox.shrink();
+      return _deferredTabs.contains(index)
+          ? const _DeferredTabLoadingView()
+          : const SizedBox.shrink();
     }
 
     return switch (index) {
@@ -95,6 +117,22 @@ class _AppShellState extends State<AppShell> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DeferredTabLoadingView extends StatelessWidget {
+  const _DeferredTabLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Color(0xFFFAF8F5),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF559C99),
+        ),
       ),
     );
   }
