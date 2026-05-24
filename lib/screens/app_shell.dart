@@ -9,7 +9,17 @@ import 'shop_webview_screen.dart';
 
 /// Root shell with persistent bottom navigation (Hero Top home + tab sections).
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  AppShell({Key? key}) : super(key: key ?? _navKey);
+
+  static final GlobalKey _navKey = GlobalKey();
+
+  /// Pops overlay routes and switches the shell tab (e.g. from results).
+  static void navigateToTab(int index) {
+    final state = _navKey.currentState;
+    if (state is _AppShellState) {
+      state.selectTab(index);
+    }
+  }
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -19,7 +29,13 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
   final Set<int> _visitedTabs = {0};
 
+  void selectTab(int index) => _selectTab(index);
+
   void _selectTab(int index) {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.popUntil((route) => route.isFirst);
+    }
     setState(() {
       _selectedIndex = index;
       _visitedTabs.add(index);
@@ -37,7 +53,7 @@ class _AppShellState extends State<AppShell> {
           onFitGuide: () => _selectTab(2),
           onShop: () => _selectTab(3),
         ),
-      1 => const HatInputScreen(),
+      1 => HatInputScreen(onExit: () => _selectTab(0)),
       2 => const HeadShapeScreen(),
       3 => ShopWebViewScreen(onBack: () => _selectTab(0)),
       4 => const ConnectScreen(),

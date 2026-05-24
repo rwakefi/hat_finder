@@ -112,7 +112,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
     final profile = _profile;
     if (profile == null) return;
 
-    Navigator.of(context).pushReplacement(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => HatInputScreen(
           headShapeProfile: profile,

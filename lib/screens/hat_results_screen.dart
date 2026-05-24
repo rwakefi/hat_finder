@@ -7,6 +7,8 @@ import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import '../widgets/fine_tuning_tray.dart';
+import '../widgets/moon_ridge_bottom_nav.dart';
+import 'app_shell.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final HeadShapeProfile? headShapeProfile;
@@ -291,6 +293,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     ).toString();
   }
 
+  void _onShellTabSelected(int index) {
+    AppShell.navigateToTab(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,7 +309,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         leading: IconButton(
           icon:
               const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: Column(
           mainAxisSize: MainAxisSize.min,
@@ -570,6 +580,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: MoonRidgeBottomNav(
+        selectedIndex: 1,
+        onSelected: _onShellTabSelected,
       ),
     );
   }

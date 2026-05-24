@@ -85,7 +85,17 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
       return;
     }
 
-    Navigator.of(context).pop(measurement);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop(measurement);
+    }
+  }
+
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -96,6 +106,10 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
       foregroundColor: _espresso,
       toolbarHeight: 88,
       centerTitle: true,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _goBack,
+      ),
       title: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -120,14 +134,16 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _surface,
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      child: Scaffold(
+        backgroundColor: _surface,
+        appBar: _buildAppBar(),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
               'OPTIONAL',
               textAlign: TextAlign.center,
@@ -175,9 +191,10 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
             const SizedBox(height: 12),
             _buildSecondaryButton(
               'SKIP FOR NOW',
-              () => Navigator.of(context).pop(),
+              _goBack,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

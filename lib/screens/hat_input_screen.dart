@@ -13,10 +13,14 @@ class HatInputScreen extends StatefulWidget {
     super.key,
     this.headShapeProfile,
     this.headMeasurementProfile,
+    this.onExit,
   });
 
   final HeadShapeProfile? headShapeProfile;
   final HeadMeasurementProfile? headMeasurementProfile;
+  /// Called when BACK is tapped on the first wizard step and there is no route
+  /// to pop (e.g. Hat Finder tab inside [AppShell]).
+  final VoidCallback? onExit;
 
   @override
   State<HatInputScreen> createState() => _HatInputScreenState();
@@ -778,9 +782,61 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 16, 16, 8);
+  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 8, 16, 4);
   static const _shapeCardPagePadding =
-      EdgeInsets.only(left: 4, right: 4, top: 12, bottom: 20);
+      EdgeInsets.only(left: 4, right: 4, top: 0, bottom: 0);
+
+  /// Pro Max class (~932pt logical height). Adjustments below this threshold
+  /// are left alone so iPhone 17 / Air layouts stay unchanged.
+  bool _isProMaxLayout(BuildContext context) =>
+      MediaQuery.sizeOf(context).height >= 920;
+
+  double _shapeCarouselCardHeight(
+    BuildContext context, {
+    required double maxExpandedHeight,
+  }) {
+    final screenH = MediaQuery.sizeOf(context).height;
+    final hasFitBanner = widget.headShapeProfile != null ||
+        widget.headMeasurementProfile != null;
+
+    double preferred;
+    if (screenH >= 920) {
+      // Pro Max only — trim when fit banners eat vertical space.
+      preferred = hasFitBanner ? 465 : 490;
+    } else if (screenH >= 780) {
+      preferred = 460;
+    } else {
+      preferred = (screenH * 0.52).clamp(360.0, 480.0);
+    }
+
+    return preferred.clamp(360.0, maxExpandedHeight);
+  }
+
+  Widget _buildShapeCarouselArea({required Widget stack}) {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (!_isProMaxLayout(context)) {
+            return stack;
+          }
+
+          final cardHeight = _shapeCarouselCardHeight(
+            context,
+            maxExpandedHeight: constraints.maxHeight,
+          );
+          return Column(
+            children: [
+              if (cardHeight < constraints.maxHeight) const Spacer(),
+              SizedBox(
+                height: cardHeight,
+                child: stack,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   TextStyle get _wizardStepTitleStyle => GoogleFonts.playfairDisplay(
         fontSize: 26,
@@ -838,7 +894,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String selectLabel,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       child: Column(
         children: [
           Text(
@@ -1130,6 +1186,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  void _exitWizard() {
+    FocusScope.of(context).unfocus();
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    widget.onExit?.call();
+  }
+
   void _submitSearch() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -1147,9 +1213,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  void _handleSystemBack(bool didPop) {
+    if (didPop) return;
+    if (_currentPageIndex > 0) {
+      _previousPage();
+      return;
+    }
+    _exitWizard();
+  }
+
+  bool get _allowRoutePop =>
+      _currentPageIndex == 0 && Navigator.of(context).canPop();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: _allowRoutePop,
+      onPopInvokedWithResult: (didPop, _) => _handleSystemBack(didPop),
+      child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -1203,6 +1284,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
+      ),
     );
   }
 
@@ -1318,7 +1400,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
@@ -1338,7 +1420,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               OutlinedButton(
                 onPressed: _currentPageIndex > 0
                     ? _previousPage
-                    : () => Navigator.of(context).pop(),
+                    : _exitWizard,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.5),
@@ -2046,8 +2128,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
-            Expanded(
-              child: Stack(
+            _buildShapeCarouselArea(
+              stack: Stack(
                 children: [
                   PageView.builder(
                     controller: _crownCarouselController,
@@ -2443,7 +2525,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots — hugging the bottom of the card
             Padding(
-              padding: const EdgeInsets.only(top: 2.0, bottom: 0),
+              padding: EdgeInsets.only(
+                top: _isProMaxLayout(context) ? 4.0 : 2.0,
+                bottom: 0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -2464,7 +2549,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Next Up + Skip — centered layout
             Padding(
-              padding: const EdgeInsets.only(top: 6.0, bottom: 10.0),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
@@ -2580,8 +2665,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
             // Carousel with swipe arrows
-            Expanded(
-              child: Stack(
+            _buildShapeCarouselArea(
+              stack: Stack(
                 children: [
                   PageView.builder(
                     controller: _brimCarouselController,
@@ -2950,7 +3035,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots
             Padding(
-              padding: const EdgeInsets.only(top: 2.0, bottom: 0),
+              padding: EdgeInsets.only(
+                top: _isProMaxLayout(context) ? 4.0 : 2.0,
+                bottom: 0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -2971,7 +3059,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Next Up + Skip — centered layout
             Padding(
-              padding: const EdgeInsets.only(top: 6.0, bottom: 10.0),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(

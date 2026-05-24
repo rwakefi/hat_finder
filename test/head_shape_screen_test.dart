@@ -43,5 +43,16 @@ void main() {
 
     expect(find.text('SIZE STARTING POINT'), findsOneWidget);
     expect(find.textContaining('58.0 cm'), findsOneWidget);
+
+    await tester.tap(find.text('CONTINUE TO STYLES'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select a Hat Type:'), findsOneWidget);
+
+    await tester.tap(find.text('BACK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LONG OVAL'), findsOneWidget);
+    expect(find.text('SIZE STARTING POINT'), findsOneWidget);
   });
 }
