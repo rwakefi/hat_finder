@@ -860,9 +860,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           'Example:',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
+            color: const Color(0xFF5A5551),
             letterSpacing: 1.5,
           ),
         ),
@@ -873,9 +873,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.cormorantGaramond(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B6058),
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF3C3530),
             fontStyle: FontStyle.italic,
             letterSpacing: 0.5,
           ),
@@ -910,10 +910,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[700],
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4A4541),
               height: 1.3,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 10),
@@ -933,7 +934,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 selectLabel,
                 style: GoogleFonts.montserrat(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5,
                 ),
@@ -945,7 +946,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             onPressed: onFlip,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF559C99),
-              side: const BorderSide(color: Color(0xFF559C99), width: 1),
+              side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -954,7 +955,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             child: Text(
               'FLIP FOR MORE INFO',
               style: GoogleFonts.montserrat(
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
               ),
