@@ -759,7 +759,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Image.network(
           imageUrl,
           fit: BoxFit.contain,
-          alignment: Alignment.topCenter,
+          alignment: Alignment.center,
           errorBuilder: (_, __, ___) => Padding(
             padding: padding,
             child: _buildHatPhotoPlaceholder(),
@@ -777,7 +777,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Image.asset(
       _hatPhotoPlaceholderAsset,
       fit: BoxFit.contain,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.center,
       errorBuilder: (_, __, ___) => Icon(
         Icons.checkroom_outlined,
         size: 88,
@@ -806,11 +806,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
     double preferred;
     if (screenH >= 920) {
       // Pro Max only — trim when fit banners eat vertical space.
-      preferred = hasFitBanner ? 465 : 490;
+      preferred = hasFitBanner ? 530 : 570;
     } else if (screenH >= 780) {
-      preferred = 460;
+      preferred = hasFitBanner ? 500 : 530;
     } else {
-      preferred = (screenH * 0.52).clamp(360.0, 480.0);
+      preferred = (screenH * 0.60).clamp(380.0, 500.0);
     }
 
     return preferred.clamp(360.0, maxExpandedHeight);
@@ -820,22 +820,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (!_isProMaxLayout(context)) {
-            return stack;
-          }
-
           final cardHeight = _shapeCarouselCardHeight(
             context,
             maxExpandedHeight: constraints.maxHeight,
           );
-          return Column(
-            children: [
-              if (cardHeight < constraints.maxHeight) const Spacer(),
-              SizedBox(
-                height: cardHeight,
-                child: stack,
-              ),
-            ],
+          return Center(
+            child: SizedBox(
+              height: cardHeight,
+              child: stack,
+            ),
           );
         },
       ),
@@ -867,7 +860,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           'Example:',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w600,
             color: Colors.grey[600],
             letterSpacing: 1.5,
@@ -880,7 +873,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.cormorantGaramond(
-            fontSize: 20,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF6B6058),
             fontStyle: FontStyle.italic,
@@ -898,32 +891,32 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String selectLabel,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
       child: Column(
         children: [
           Text(
             shape.name.toUpperCase(),
             textAlign: TextAlign.center,
             style: GoogleFonts.montserrat(
-              fontSize: 24,
+              fontSize: 21,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF2D2926),
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             shape.description,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               color: Colors.grey[700],
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -931,7 +924,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF559C99),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -940,20 +933,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 selectLabel,
                 style: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           OutlinedButton(
             onPressed: onFlip,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF559C99),
               side: const BorderSide(color: Color(0xFF559C99), width: 1),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -961,7 +954,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             child: Text(
               'FLIP FOR MORE INFO',
               style: GoogleFonts.montserrat(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
               ),
@@ -981,45 +974,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required VoidCallback onFlip,
     required String selectLabel,
   }) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
           color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
-          width: isSelected ? 3 : 1,
+          width: isSelected ? 2.5 : 1.0,
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Flexible(
-            fit: FlexFit.loose,
-            child: Stack(
-              children: [
-                _buildShapeCardHatImage(imageUrl),
-                if (productTitle != null && productTitle.isNotEmpty)
-                  Positioned(
-                    top: 10,
-                    left: 12,
-                    right: 12,
-                    child: _buildExampleProductOverlay(productTitle),
-                  ),
-              ],
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.03),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
-          Transform.translate(
-            offset: const Offset(0, -35),
-            child: _buildShapeCardFrontFooter(
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            if (productTitle != null && productTitle.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 14, left: 16, right: 16),
+                child: _buildExampleProductOverlay(productTitle),
+              ),
+            Expanded(
+              child: _buildShapeCardHatImage(imageUrl),
+            ),
+            _buildShapeCardFrontFooter(
               shape: shape,
               onSelect: onSelect,
               onFlip: onFlip,
               selectLabel: selectLabel,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2168,6 +2160,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 children: [
                   PageView.builder(
                     controller: _crownCarouselController,
+                    clipBehavior: Clip.none,
                     onPageChanged: (index) {
                       setState(() {
                         _currentCrownCarouselIndex = index;
@@ -2560,10 +2553,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots — hugging the bottom of the card
             Padding(
-              padding: EdgeInsets.only(
-                top: _isProMaxLayout(context) ? 4.0 : 2.0,
-                bottom: 0,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -2584,7 +2574,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Next Up + Skip — centered layout
             Padding(
-              padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
@@ -2705,6 +2695,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 children: [
                   PageView.builder(
                     controller: _brimCarouselController,
+                    clipBehavior: Clip.none,
                     onPageChanged: (index) {
                       setState(() {
                         _currentBrimCarouselIndex = index;
@@ -3070,10 +3061,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots
             Padding(
-              padding: EdgeInsets.only(
-                top: _isProMaxLayout(context) ? 4.0 : 2.0,
-                bottom: 0,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -3094,7 +3082,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Next Up + Skip — centered layout
             Padding(
-              padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
+              padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
