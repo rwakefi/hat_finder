@@ -686,6 +686,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     for (final product in _allProducts!) {
       if (product['featuredImage']?['url'] == null) continue;
+
+      // Filter out products that don't match the selected hat type (Felt or Straw)
+      if (materialTarget != null) {
+        final prodMaterial =
+            _metaValue(product['feltStrawOrBallcap']).toLowerCase();
+        if (!prodMaterial.contains(materialTarget)) {
+          continue;
+        }
+      }
+
       final meta =
           _metaValue(isCrown ? product['crownShape'] : product['brimShape']);
 
@@ -701,12 +711,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         map[shape.name]!.add({
           'url': url,
           'title': (product['title'] ?? '') as String,
-          'matchesMaterial': (materialTarget != null &&
-                  _metaValue(product['feltStrawOrBallcap'])
-                      .toLowerCase()
-                      .contains(materialTarget))
-              ? 'true'
-              : 'false',
+          'matchesMaterial': 'true',
         });
       }
     }
@@ -751,8 +756,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildShapeCardHatImage(String? imageUrl) {
-    const padding = EdgeInsets.fromLTRB(12, 6, 12, 0);
+  Widget _buildShapeCardHatImage(String? imageUrl, {String? fallbackAsset}) {
+    const padding = EdgeInsets.fromLTRB(2, 0, 2, 0);
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return Padding(
         padding: padding,
@@ -762,20 +767,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
           alignment: Alignment.center,
           errorBuilder: (_, __, ___) => Padding(
             padding: padding,
-            child: _buildHatPhotoPlaceholder(),
+            child: _buildHatPhotoPlaceholder(fallbackAsset: fallbackAsset),
           ),
         ),
       );
     }
     return Padding(
       padding: padding,
-      child: _buildHatPhotoPlaceholder(),
+      child: _buildHatPhotoPlaceholder(fallbackAsset: fallbackAsset),
     );
   }
 
-  Widget _buildHatPhotoPlaceholder() {
+  Widget _buildHatPhotoPlaceholder({String? fallbackAsset}) {
+    final asset = fallbackAsset ?? _hatPhotoPlaceholderAsset;
     return Image.asset(
-      _hatPhotoPlaceholderAsset,
+      asset,
       fit: BoxFit.contain,
       alignment: Alignment.center,
       errorBuilder: (_, __, ___) => Icon(
@@ -867,17 +873,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          productTitle,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.cormorantGaramond(
-            fontSize: 19,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF3C3530),
-            fontStyle: FontStyle.italic,
-            letterSpacing: 0.5,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            productTitle,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 23,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF3C3530),
+              fontStyle: FontStyle.italic,
+              letterSpacing: 0.0,
+            ),
           ),
         ),
       ],
@@ -980,7 +988,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? const Color(0xFF559C99) : Colors.grey.shade200,
+          color: isSelected
+              ? const Color(0xFF559C99)
+              : const Color(0xFF559C99).withValues(alpha: 0.35),
           width: isSelected ? 2.5 : 1.0,
         ),
         boxShadow: [
@@ -997,19 +1007,35 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            if (productTitle != null && productTitle.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 14, left: 16, right: 16),
-                child: _buildExampleProductOverlay(productTitle),
+            Flexible(
+              fit: FlexFit.loose,
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 52),
+                    child: Transform.scale(
+                      scale: 1.23,
+                      child: _buildShapeCardHatImage(imageUrl, fallbackAsset: shape.imagePath),
+                    ),
+                  ),
+                  if (productTitle != null && productTitle.isNotEmpty)
+                    Positioned(
+                      top: 10,
+                      left: 12,
+                      right: 12,
+                      child: _buildExampleProductOverlay(productTitle),
+                    ),
+                ],
               ),
-            Expanded(
-              child: _buildShapeCardHatImage(imageUrl),
             ),
-            _buildShapeCardFrontFooter(
-              shape: shape,
-              onSelect: onSelect,
-              onFlip: onFlip,
-              selectLabel: selectLabel,
+            Transform.translate(
+              offset: const Offset(0, 0),
+              child: _buildShapeCardFrontFooter(
+                shape: shape,
+                onSelect: onSelect,
+                onFlip: onFlip,
+                selectLabel: selectLabel,
+              ),
             ),
           ],
         ),
@@ -1590,7 +1616,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             side: BorderSide(
                               color: isSelected
                                   ? const Color(0xFF559C99)
-                                  : Colors.grey.shade200,
+                                  : const Color(0xFF559C99).withValues(alpha: 0.35),
                               width: isSelected ? 3 : 1,
                             ),
                           ),
@@ -1741,18 +1767,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
               final imageUrls = <String, String?>{};
               if (snapshot.hasData) {
                 try {
-                  final List<dynamic> products = List.from(snapshot.data!);
+                  var products = List<dynamic>.from(snapshot.data!);
                   if (selectedHatType != null) {
                     final target = selectedHatType!.name.toLowerCase();
-                    products.sort((a, b) {
-                      final aType =
-                          _metaValue(a['feltStrawOrBallcap']).toLowerCase();
-                      final bType =
-                          _metaValue(b['feltStrawOrBallcap']).toLowerCase();
-                      final aMatches = aType.contains(target) ? 1 : 0;
-                      final bMatches = bType.contains(target) ? 1 : 0;
-                      return bMatches.compareTo(aMatches);
-                    });
+                    products = products.where((p) {
+                      final type =
+                          _metaValue(p['feltStrawOrBallcap']).toLowerCase();
+                      return type.contains(target);
+                    }).toList();
                   }
                   final Set<String> usedUrls = {};
 
@@ -1859,7 +1881,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                               side: BorderSide(
                                 color: isSelected
                                     ? const Color(0xFF559C99)
-                                    : Colors.grey.shade200,
+                                    : const Color(0xFF559C99).withValues(alpha: 0.35),
                                 width: isSelected ? 3 : 1,
                               ),
                             ),

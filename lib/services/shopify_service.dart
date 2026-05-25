@@ -237,23 +237,6 @@ class ShopifyService {
     String? brimShape,
     List<String>? brimWidths,
   }) {
-    const westernProfiles = [
-      '01',
-      '1',
-      '2',
-      '11',
-      '18',
-      '33',
-      '45',
-      '48',
-      '50',
-      '72',
-      '75',
-      '77',
-      '91',
-      '94',
-      '9G',
-    ];
 
     if (hatType == null &&
         westernStyle == null &&
@@ -274,17 +257,26 @@ class ShopifyService {
       }
 
       if (westernStyle != null && westernStyle.isNotEmpty) {
+        final lowerHatType = meta.hatType.toLowerCase();
+        final isClassicHat = lowerHatType.contains('felt') || lowerHatType.contains('straw');
+
         var matchesStyle = false;
-        if (westernStyle == 'Western' &&
-            westernProfiles.contains(meta.stetsonProfile)) {
-          matchesStyle = true;
-        } else if (westernStyle == 'City') {
-          if (meta.city.toLowerCase() == 'true') {
-            matchesStyle = true;
-          }
-        } else if (westernStyle == 'Outdoor') {
-          if (meta.outdoors.toLowerCase() == 'true') {
-            matchesStyle = true;
+        if (isClassicHat) {
+          final isCity = meta.city.toLowerCase() == 'true';
+          final isOutdoor = meta.outdoors.toLowerCase() == 'true';
+
+          if (westernStyle == 'Western') {
+            if (!isCity && !isOutdoor) {
+              matchesStyle = true;
+            }
+          } else if (westernStyle == 'City') {
+            if (isCity) {
+              matchesStyle = true;
+            }
+          } else if (westernStyle == 'Outdoor') {
+            if (isOutdoor) {
+              matchesStyle = true;
+            }
           }
         }
         if (!matchesStyle) return false;

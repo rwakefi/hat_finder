@@ -519,9 +519,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _white,
+      backgroundColor: _offWhite,
       appBar: AppBar(
-        backgroundColor: _white,
+        backgroundColor: _offWhite,
         elevation: 0,
         scrolledUnderElevation: 0,
         toolbarHeight: 90,
@@ -717,7 +717,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.38,
+                                childAspectRatio: 0.46,
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
@@ -808,7 +808,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       decoration: BoxDecoration(
         color: _white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderGrey, width: 1),
+        border: Border.all(color: _turquoise, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -825,17 +825,18 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           children: [
             // Hero image
             Expanded(
-              flex: 5,
+              flex: 3,
               child: Container(
-                color: _offWhite,
+                color: _white,
                 child: Stack(
+                  clipBehavior: Clip.antiAlias,
                   children: [
                     Positioned.fill(
                       child: imageUrl != null
                           ? Image.network(
                               imageUrl,
                               fit: BoxFit.contain,
-                              alignment: const Alignment(0.0, -0.1),
+                              alignment: const Alignment(0.0, -0.2),
                               cacheWidth: imageCacheWidth,
                               filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => Center(
@@ -852,7 +853,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ),
                     if (cardSwatches.isNotEmpty)
                       Positioned(
-                        top: 10,
+                        top: 6,
                         right: 10,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -939,7 +940,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ] else ...[
                       _buildAttribute('Material', material),
                     ],
-                    const Spacer(),
+                    const SizedBox(height: 8),
                     // CTA row
                     Row(
                       children: [
@@ -992,13 +993,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildAttribute(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(vertical: 0.5),
       child: Row(
         children: [
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: 11,
               color: _espresso.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
             ),
@@ -1009,7 +1010,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               value,
               textAlign: TextAlign.right,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: _espresso,
               ),
