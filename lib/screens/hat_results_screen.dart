@@ -85,7 +85,12 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   bool get _showsWesternStyleFilter {
     final type = (_filterHatType ?? widget.hatType ?? '').toLowerCase();
-    return type.contains('felt');
+    if (type.contains('ballcap') ||
+        type.contains('beanie') ||
+        type.contains('flat cap')) {
+      return false;
+    }
+    return true;
   }
 
   bool get _showsFineTuningTray {
@@ -114,7 +119,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   List<dynamic> _filterCatalog(List<dynamic> catalog) {
-    return ShopifyService.filterProducts(
+    final filtered = ShopifyService.filterProducts(
       catalog,
       hatType: _filterHatType,
       westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
@@ -124,6 +129,41 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       brimShape: _filterBrimShape,
       brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
     );
+
+    // If showing all hat types (i.e. hatType is null, empty, or Any),
+    // ensure at least one of the top 4 results is a Ball Cap for testing/preview.
+    final hasNoHatTypeFilter = _filterHatType == null ||
+        _filterHatType!.isEmpty ||
+        _filterHatType!.toLowerCase() == 'any' ||
+        _filterHatType!.toLowerCase() == 'any type';
+
+    if (hasNoHatTypeFilter && filtered.length >= 4) {
+      bool hasBallCapInTop4 = false;
+      for (int i = 0; i < 4 && i < filtered.length; i++) {
+        final prodType = _metaValue(filtered[i]['feltStrawOrBallcap']).toLowerCase();
+        if (prodType.contains('ballcap')) {
+          hasBallCapInTop4 = true;
+          break;
+        }
+      }
+
+      if (!hasBallCapInTop4) {
+        int ballCapIndex = -1;
+        for (int i = 4; i < filtered.length; i++) {
+          final prodType = _metaValue(filtered[i]['feltStrawOrBallcap']).toLowerCase();
+          if (prodType.contains('ballcap')) {
+            ballCapIndex = i;
+            break;
+          }
+        }
+        if (ballCapIndex != -1) {
+          final ballCap = filtered.removeAt(ballCapIndex);
+          filtered.insert(2, ballCap); // Insert at 3rd position (index 2)
+        }
+      }
+    }
+
+    return filtered;
   }
 
   void _applyFilters() {
@@ -707,10 +747,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final material = _metaValue(hat['material']);
     final brimShape = _metaValue(hat['brimShape']);
     final brimWidth = _formatInchesDisplay(hat['brimWidth']);
-    final hatTypeLower = (widget.hatType ?? '').toLowerCase();
+    final hatTypeLower = (widget.hatType ?? _filterHatType ?? '').toLowerCase();
+    final prodType = _metaValue(hat['feltStrawOrBallcap']).toLowerCase();
     final isBallcap = hatTypeLower.contains('ballcap') ||
         hatTypeLower.contains('beanie') ||
-        hatTypeLower.contains('flat cap');
+        hatTypeLower.contains('flat cap') ||
+        prodType.contains('ballcap') ||
+        prodType.contains('beanie') ||
+        prodType.contains('flat cap');
 
     final swatchColors = _swatchColorsFor(hat);
     final cardSwatches =
