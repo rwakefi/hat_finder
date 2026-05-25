@@ -110,31 +110,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     compact: compact,
                   ),
                   SizedBox(height: buttonGap),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SmallBubble(
-                          icon: Icons.play_circle_outline_rounded,
-                          label: 'How to Measure\nfor Hat Size',
-                          onTap: () => _showVideoModal(context),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _SmallBubble(
+                            icon: Icons.play_circle_outline_rounded,
+                            label: 'How to Measure\nfor Hat Size',
+                            onTap: () => _showVideoModal(context),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _SmallBubble(
-                          icon: Icons.straighten_rounded,
-                          label: 'Virtual Head\nMeasurement',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Coming soon!'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _SmallBubble(
+                            icon: Icons.straighten_rounded,
+                            label: 'Virtual Head\nMeasurement',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Coming soon!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Padding(
                     padding: EdgeInsets.only(top: compact ? 16 : 22),
