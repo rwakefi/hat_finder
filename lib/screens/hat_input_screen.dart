@@ -2199,7 +2199,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     itemCount: sortedShapes.length,
                     itemBuilder: (context, index) {
                       final shape = sortedShapes[index];
-                      final isSelected = selectedCrownShape?.name == shape.name;
+                      final isSelected = selectedCrownShape != null
+                          ? selectedCrownShape!.name == shape.name
+                          : index == _currentCrownCarouselIndex;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
                       final photo = _pickShapeCardPhoto(
@@ -2595,15 +2597,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            // Next Up + Skip — centered layout
+            // Next Up + Skip
             Padding(
               padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
                   children: [
-                    // Left spacer — matches SKIP width for centering
-                    const SizedBox(width: 50),
                     // Center: Next Up label + hat name
                     Expanded(
                       child: (_currentCrownCarouselIndex + 1 <
@@ -2622,36 +2622,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     letterSpacing: 1.8,
                                   ),
                                 ),
-                                Text(
-                                  sortedShapes[_currentCrownCarouselIndex + 1]
-                                      .name,
-                                  style: GoogleFonts.cormorantGaramond(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF2D2926),
-                                    fontStyle: FontStyle.italic,
+                                Flexible(
+                                  child: Text(
+                                    sortedShapes[_currentCrownCarouselIndex + 1]
+                                        .name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.cormorantGaramond(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2926),
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                   ),
                                 ),
                               ],
                             )
                           : const SizedBox(),
                     ),
-                    // Right: Skip
+                    // Right: Skip / Any Crown
                     SizedBox(
-                      width: 50,
+                      width: 80,
                       child: GestureDetector(
                         onTap: () {
                           setState(() => selectedCrownShape = null);
                           _nextPage(overrideValidation: true);
                         },
                         child: Text(
-                          'SKIP',
+                          'SKIP / ANY CROWN',
                           textAlign: TextAlign.right,
                           style: GoogleFonts.montserrat(
-                            fontSize: 14,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF559C99),
-                            letterSpacing: 1.8,
+                            letterSpacing: 1.2,
                             decoration: TextDecoration.underline,
                             decorationColor: const Color(0xFF559C99),
                           ),
@@ -2731,7 +2734,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     itemCount: sortedShapes.length,
                     itemBuilder: (context, index) {
                       final shape = sortedShapes[index];
-                      final isSelected = selectedBrimShape?.name == shape.name;
+                      final isSelected = selectedBrimShape != null
+                          ? selectedBrimShape!.name == shape.name
+                          : index == _currentBrimCarouselIndex;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
                       final photo = _pickShapeCardPhoto(
@@ -3103,14 +3108,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            // Next Up + Skip — centered layout
+            // Next Up + Skip
             Padding(
               padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
                   children: [
-                    const SizedBox(width: 50),
                     Expanded(
                       child: (_currentBrimCarouselIndex + 1 <
                               sortedShapes.length)
@@ -3128,14 +3132,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     letterSpacing: 1.8,
                                   ),
                                 ),
-                                Text(
-                                  sortedShapes[_currentBrimCarouselIndex + 1]
-                                      .name,
-                                  style: GoogleFonts.cormorantGaramond(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF2D2926),
-                                    fontStyle: FontStyle.italic,
+                                Flexible(
+                                  child: Text(
+                                    sortedShapes[_currentBrimCarouselIndex + 1]
+                                        .name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.cormorantGaramond(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2926),
+                                      fontStyle: FontStyle.italic,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -3143,20 +3150,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           : const SizedBox(),
                     ),
                     SizedBox(
-                      width: 50,
+                      width: 80,
                       child: GestureDetector(
                         onTap: () {
                           setState(() => selectedBrimShape = null);
                           _submitSearch();
                         },
                         child: Text(
-                          'SKIP',
+                          'SKIP / ANY BRIM',
                           textAlign: TextAlign.right,
                           style: GoogleFonts.montserrat(
-                            fontSize: 14,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF559C99),
-                            letterSpacing: 1.8,
+                            letterSpacing: 1.2,
                             decoration: TextDecoration.underline,
                             decorationColor: const Color(0xFF559C99),
                           ),

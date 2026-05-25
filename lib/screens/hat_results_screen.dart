@@ -817,9 +817,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: openProduct,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: openProduct,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -988,6 +989,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ],
         ),
       ),
+      ), // ClipRRect
     );
   }
 

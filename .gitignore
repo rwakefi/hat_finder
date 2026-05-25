@@ -52,3 +52,13 @@ app.*.map.json
 /android/app/release
 # Environment variables
 .env
+
+# Android keystore credentials
+android/key.propertie
+android/key.propertie.save
+android/key.properties*.save
+android/key.properties
+
+# Temporary files
+tmp/
+flutter_01.png
