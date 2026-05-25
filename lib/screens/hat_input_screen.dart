@@ -1155,39 +1155,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
       bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
       int westernIndex = hasWestern ? 1 : -1;
-      int crownIndex = hasWestern ? 2 : 1;
-      int brimIndex = hasWestern ? 3 : 2;
 
       if (_currentPageIndex == westernIndex && selectedWesternStyle == null) {
         setState(() {
           selectedWesternStyle = 'Western';
         });
       }
-      if (_currentPageIndex == crownIndex && selectedCrownShape == null) {
-        setState(() {
-          final sorted = _sortedCrownShapes ?? _currentCrownShapes;
-          if (sorted.isNotEmpty) {
-            if (_currentCrownCarouselIndex < sorted.length) {
-              selectedCrownShape = sorted[_currentCrownCarouselIndex];
-            } else {
-              selectedCrownShape = sorted.first;
-            }
-            _onCrownSelectionChanged();
-          }
-        });
-      }
-      if (_currentPageIndex == brimIndex && selectedBrimShape == null) {
-        setState(() {
-          final sorted = _availableBrimShapes;
-          if (sorted.isNotEmpty) {
-            if (_currentBrimCarouselIndex < sorted.length) {
-              selectedBrimShape = sorted[_currentBrimCarouselIndex];
-            } else {
-              selectedBrimShape = sorted.first;
-            }
-          }
-        });
-      }
+      // Crown and brim pages: null selection = Any — just advance without forcing a pick
     }
 
     if (_currentPageIndex >= _pages.length - 1) {
@@ -1443,7 +1417,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
     if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
-    if (_currentPageIndex == crownIndex) return 'Next: Brim Shape';
+    if (_currentPageIndex == crownIndex) {
+      return selectedCrownShape != null ? '✓ Next: Brim Shape' : 'Any Crown · Next';
+    }
+    // Brim page
+    final hasWestern2 = hasWestern;
+    final brimIndex = hasWestern2 ? 3 : 2;
+    if (_currentPageIndex == brimIndex) {
+      return selectedBrimShape != null ? '✓ Next' : 'Any Brim · Next';
+    }
     return 'Find Hats';
   }
 
@@ -1511,31 +1493,59 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ),
                   elevation: 0,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _navButtonText.toUpperCase(),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      _currentPageIndex < _pages.length - 1
-                          ? Icons.arrow_forward
-                          : Icons.check,
-                      size: 18,
-                    ),
-                  ],
-                ),
+                child: _buildNextButtonContent(),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Builds the inner Row for the Next/Find button, with a teal checkmark
+  /// when the current wizard step has an active selection.
+  Widget _buildNextButtonContent() {
+    bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
+    int crownIndex = hasWestern ? 2 : 1;
+    int brimIndex = hasWestern ? 3 : 2;
+
+    bool showTealCheck = false;
+    if (_currentPageIndex == crownIndex && selectedCrownShape != null) {
+      showTealCheck = true;
+    } else if (_currentPageIndex == brimIndex && selectedBrimShape != null) {
+      showTealCheck = true;
+    }
+
+    final isLastPage = _currentPageIndex >= _pages.length - 1;
+    final label = _navButtonText;
+    // Strip the leading '✓ ' from label — we render it as an icon
+    final displayLabel = label.startsWith('✓ ')
+        ? label.substring(2).toUpperCase()
+        : label.toUpperCase();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showTealCheck) ...[
+          const Icon(Icons.check_circle_rounded,
+              size: 18, color: Color(0xFF559C99)),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          displayLabel,
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(
+          isLastPage ? Icons.check : Icons.arrow_forward,
+          size: 18,
+          color: Colors.white,
+        ),
+      ],
     );
   }
 
@@ -2597,74 +2607,41 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            // Next Up + Skip
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            // Next Up row (centred)
+            if (_currentCrownCarouselIndex + 1 < sortedShapes.length)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    // Center: Next Up label + hat name
-                    Expanded(
-                      child: (_currentCrownCarouselIndex + 1 <
-                              sortedShapes.length)
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  'NEXT UP: ',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[500],
-                                    letterSpacing: 1.8,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    sortedShapes[_currentCrownCarouselIndex + 1]
-                                        .name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.cormorantGaramond(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF2D2926),
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const SizedBox(),
+                    Text(
+                      'NEXT UP: ',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[500],
+                        letterSpacing: 1.8,
+                      ),
                     ),
-                    // Right: Skip / Any Crown
-                    SizedBox(
-                      width: 80,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => selectedCrownShape = null);
-                          _nextPage(overrideValidation: true);
-                        },
-                        child: Text(
-                          'SKIP / ANY CROWN',
-                          textAlign: TextAlign.right,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF559C99),
-                            letterSpacing: 1.2,
-                            decoration: TextDecoration.underline,
-                            decorationColor: const Color(0xFF559C99),
-                          ),
+                    Flexible(
+                      child: Text(
+                        sortedShapes[_currentCrownCarouselIndex + 1].name,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2D2926),
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(height: 20),
           ],
         );
       },
@@ -3108,72 +3085,41 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            // Next Up + Skip
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            // Next Up row (centred)
+            if (_currentBrimCarouselIndex + 1 < sortedShapes.length)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Expanded(
-                      child: (_currentBrimCarouselIndex + 1 <
-                              sortedShapes.length)
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  'NEXT UP: ',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[500],
-                                    letterSpacing: 1.8,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    sortedShapes[_currentBrimCarouselIndex + 1]
-                                        .name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.cormorantGaramond(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF2D2926),
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const SizedBox(),
+                    Text(
+                      'NEXT UP: ',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[500],
+                        letterSpacing: 1.8,
+                      ),
                     ),
-                    SizedBox(
-                      width: 80,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => selectedBrimShape = null);
-                          _submitSearch();
-                        },
-                        child: Text(
-                          'SKIP / ANY BRIM',
-                          textAlign: TextAlign.right,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF559C99),
-                            letterSpacing: 1.2,
-                            decoration: TextDecoration.underline,
-                            decorationColor: const Color(0xFF559C99),
-                          ),
+                    Flexible(
+                      child: Text(
+                        sortedShapes[_currentBrimCarouselIndex + 1].name,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2D2926),
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(height: 20),
           ],
         );
       },
