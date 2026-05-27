@@ -53,6 +53,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       _swatchCache = {};
   List<dynamic>? _fullCatalog;
   bool _fineTuningExpanded = false;
+  bool _summaryFiltersExpanded = true;
   late String? _filterHatType;
   late String? _filterWesternStyle;
   late String? _filterCrownShape;
@@ -98,6 +99,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return !type.contains('ballcap') &&
         !type.contains('beanie') &&
         !type.contains('flat cap');
+  }
+
+  /// Shorter cards than before — trims empty space below the CTA without changing width.
+  double _resultsCardAspectRatio(BuildContext context) {
+    final height = MediaQuery.sizeOf(context).height;
+    if (height < 700) return 0.49;
+    if (height < 820) return 0.51;
+    return 0.52;
   }
 
   Future<List<dynamic>> _fetchFilteredHats() async {
@@ -278,7 +287,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       final node = edge['node'];
       if (node == null || !_variantIsAvailable(node)) continue;
       final size = _variantOptionValue(node, optionName: 'size');
-      if (size != null) sizes.add(size);
+      if (size != null && ShopifyService.isHatHeadSize(size)) {
+        sizes.add(size);
+      }
     }
     return sizes.toList();
   }
@@ -635,7 +646,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 for (final hat in hats) {
                   availableSizes.addAll(_availableSizesForHat(hat));
                 }
-                final sortedSizes = availableSizes.toList()..sort();
+                final sortedSizes = availableSizes.toList()
+                  ..sort(ShopifyService.compareHatSizes);
 
                 // Extract unique in-stock colors from returned products
                 final Set<String> availableColors = {};
@@ -713,11 +725,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
                               gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                  SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.46,
+                                childAspectRatio: _resultsCardAspectRatio(context),
                               ),
                               itemCount: filteredHats.length,
                               itemBuilder: (context, index) {
@@ -901,9 +913,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ),
             // Title + Price + CTA
             Expanded(
-              flex: 4,
+              flex: 3,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -941,7 +953,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ] else ...[
                       _buildAttribute('Material', material),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     // CTA row
                     Row(
                       children: [
@@ -1041,7 +1053,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               _buildMeasurementSummary(widget.headMeasurementProfile!),
               const SizedBox(height: 8),
             ],
-            _buildSummaryDropdowns(),
+            _buildCollapsibleSummaryFilters(),
             if (_showsFineTuningTray) ...[
               const SizedBox(height: 6),
               FineTuningTray(
@@ -1193,9 +1205,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required String colorName,
   }) {
     final swatchColor = _mapColorNameToColor(colorName);
-    final borderColor = swatchColor.computeLuminance() > 0.8
-        ? _espresso.withValues(alpha: 0.2)
-        : Colors.white30;
 
     return Container(
       width: 18,
@@ -1203,10 +1212,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       decoration: BoxDecoration(
         color: swatchColor,
         shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 1.0),
+        border: Border.all(
+          color: _espresso.withValues(alpha: 0.22),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -1278,6 +1290,83 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       return const Color(0xFF1B4F72);
     }
     return Colors.grey.shade400;
+  }
+
+  Widget _buildCollapsibleSummaryFilters() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => setState(
+              () => _summaryFiltersExpanded = !_summaryFiltersExpanded,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: _summaryFiltersExpanded
+                    ? _turquoise.withValues(alpha: 0.1)
+                    : _offWhite,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _summaryFiltersExpanded ? _turquoise : _borderGrey,
+                  width: _summaryFiltersExpanded ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.filter_list_rounded,
+                    size: 15,
+                    color: _summaryFiltersExpanded
+                        ? _turquoise
+                        : _espresso.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'FILTERS',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                      color:
+                          _summaryFiltersExpanded ? _turquoise : _espresso,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _summaryFiltersExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: _summaryFiltersExpanded
+                          ? _turquoise
+                          : _espresso.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _buildSummaryDropdowns(),
+          ),
+          crossFadeState: _summaryFiltersExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 220),
+          sizeCurve: Curves.easeInOut,
+        ),
+      ],
+    );
   }
 
   Widget _buildSummaryDropdowns() {

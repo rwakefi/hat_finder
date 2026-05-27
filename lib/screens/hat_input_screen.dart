@@ -1409,22 +1409,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   String get _navButtonText {
-    if (_currentPageIndex >= _pages.length - 1) return 'Find Hats';
     bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
     if (_currentPageIndex == 0) {
       return hasWestern ? 'Next: Style' : 'Next: Crown Shape';
     }
     int westernIndex = hasWestern ? 1 : -1;
     int crownIndex = hasWestern ? 2 : 1;
+    int brimIndex = hasWestern ? 3 : 2;
     if (_currentPageIndex == westernIndex) return 'Next: Crown Shape';
     if (_currentPageIndex == crownIndex) {
-      return selectedCrownShape != null ? '✓ Next: Brim Shape' : 'Any Crown · Next';
+      return selectedCrownShape != null
+          ? '✓ Next: Brim Shape'
+          : 'Any Crown · Next';
     }
-    // Brim page
-    final hasWestern2 = hasWestern;
-    final brimIndex = hasWestern2 ? 3 : 2;
     if (_currentPageIndex == brimIndex) {
-      return selectedBrimShape != null ? '✓ Next' : 'Any Brim · Next';
+      return selectedBrimShape != null
+          ? '✓ Find Hats'
+          : 'Any Brim · Find Hats';
     }
     return 'Find Hats';
   }
@@ -1516,7 +1517,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
       showTealCheck = true;
     }
 
-    final isLastPage = _currentPageIndex >= _pages.length - 1;
     final label = _navButtonText;
     // Strip the leading '✓ ' from label — we render it as an icon
     final displayLabel = label.startsWith('✓ ')
@@ -1540,8 +1540,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Icon(
-          isLastPage ? Icons.check : Icons.arrow_forward,
+        const Icon(
+          Icons.arrow_forward,
           size: 18,
           color: Colors.white,
         ),

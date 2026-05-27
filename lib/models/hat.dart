@@ -494,3 +494,37 @@ String formatMeasurement(double val) {
 String abbreviateInchesLabel(String label) {
   return label.replaceAll(' Inches', ' In.');
 }
+
+/// Parses numeric or fractional inch strings like `4.25`, `4 1/4 Inches`, `4 1/4 In.`
+double? parseInchesFromText(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return null;
+
+  final direct = double.tryParse(trimmed);
+  if (direct != null) return direct;
+
+  final normalized = trimmed
+      .toLowerCase()
+      .replaceAll('inches', '')
+      .replaceAll('inch', '')
+      .replaceAll('in.', '')
+      .trim();
+
+  final parts = normalized.split(RegExp(r'\s+'));
+  if (parts.isEmpty) return null;
+
+  final whole = double.tryParse(parts.first);
+  if (whole == null) return null;
+  if (parts.length == 1) return whole;
+
+  switch (parts[1]) {
+    case '1/4':
+      return whole + 0.25;
+    case '1/2':
+      return whole + 0.5;
+    case '3/4':
+      return whole + 0.75;
+    default:
+      return whole;
+  }
+}

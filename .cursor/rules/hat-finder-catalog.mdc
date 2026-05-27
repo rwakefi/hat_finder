@@ -1,0 +1,22 @@
+---
+description: Hat Finder product catalog eligibility — require felt_straw_or_ballcap metafield
+alwaysApply: true
+---
+
+# Hat Finder catalog eligibility
+
+Only show Shopify products that qualify as **hats** for this app.
+
+## Rules
+
+1. **`custom.felt_straw_or_ballcap`** must match a known hat category: Felt, Straw, Ballcap, or Beanie/Flat Cap (see `hatTypes` in `lib/models/hat.dart`).
+2. **Size variants** (if present) must include at least one **hat head size** (e.g. `6 3/4`, `7`) — exclude apparel sizes (`0-3 Month`, etc.) via `ShopifyService.isHatHeadSize`.
+3. **Titles** that are clearly non-hat apparel (romper, onesie, dress, etc.) are excluded even if mis-tagged.
+4. Apply centrally in `ShopifyService` (`isHatFinderCatalogProduct`, `_eligibleCatalogProducts`) — not per screen.
+5. Cached lite/full catalogs must already be filtered. After rule changes, users need a **full app restart** (`R`) to clear in-memory cache.
+
+## Implementation reference
+
+- `lib/services/shopify_service.dart` — `isHatFinderCatalogProduct`, `isHatHeadSize`
+- `lib/screens/hat_results_screen.dart` — SIZE chip bar uses `isHatHeadSize`
+- `test/shopify_service_test.dart` — eligibility tests

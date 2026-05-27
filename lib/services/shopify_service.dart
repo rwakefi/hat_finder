@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
+import '../models/hat.dart';
 
 /// Parsed Shopify metafields for one product (computed once per catalog load).
 class _ProductMeta {
@@ -58,23 +59,161 @@ class ShopifyService {
     }
   }
 
+  /// Whether a Shopify product belongs in Hat Finder (and future catalog UIs).
+  ///
+  /// Requires `custom.felt_straw_or_ballcap` to match a known hat category
+  /// (Felt, Straw, Ballcap, Beanie/Flat Cap). If the product has Size variants,
+  /// at least one must be a hat head size (excludes baby apparel like 0-3 Month).
+  static bool isHatFinderCatalogProduct(dynamic product) {
+    final category = parseMetafieldValue(product['feltStrawOrBallcap']).trim();
+    if (category.isEmpty) return false;
+
+    final matchesKnownType = hatTypes.any(
+      (t) => _matchesHatType(category, t.name),
+    );
+    if (!matchesKnownType) return false;
+
+    if (_looksLikeNonHatTitle(product['title'])) return false;
+
+    final variantSizes = _variantOptionValues(product, 'size');
+    if (variantSizes.isNotEmpty) {
+      // Exclude baby apparel (0-3 Month, etc.) but keep hats with S/M/L or numeric sizes.
+      return !variantSizes.every(_isBabyApparelSize);
+    }
+    return true;
+  }
+
+  static bool _isBabyApparelSize(String size) {
+    final s = size.trim().toLowerCase();
+    return RegExp(
+      r'month|months|newborn|toddler|infant|\byear\b|\d+\s*-\s*\d+\s*month',
+    ).hasMatch(s);
+  }
+
+  /// Hat sizing for the results SIZE chip bar (not catalog eligibility).
+  static bool isHatHeadSize(String size) {
+    final s = size.trim().toLowerCase();
+    if (s.isEmpty) return false;
+    if (_isBabyApparelSize(s)) return false;
+    if (RegExp(r'^\d').hasMatch(s)) return true;
+    if (RegExp(
+      r'^(xxs|xs|s|m|l|xl|xxl|2xl|3xl|sm|md|lg|one\s*size|osfa|osfm|o/s|standard|adjustable)$',
+    ).hasMatch(s)) {
+      return true;
+    }
+    if (RegExp(
+      r'^(x-?small|small|medium|med|large|x-?large|xx-?large|xxx-?large|extra\s*small|extra\s*large)$',
+    ).hasMatch(s)) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Sort hat sizes for the results chip bar (numeric head sizes, then letter sizes).
+  static int compareHatSizes(String a, String b) {
+    final order = {
+      'xxs': 10,
+      'xs': 20,
+      'x-small': 25,
+      'extra small': 25,
+      'small': 30,
+      's': 35,
+      'sm': 36,
+      'medium': 40,
+      'med': 41,
+      'm': 42,
+      'large': 50,
+      'l': 51,
+      'lg': 52,
+      'xl': 60,
+      'x-large': 61,
+      'extra large': 62,
+      'xxl': 70,
+      'xx-large': 71,
+      '2xl': 72,
+      'xxxl': 80,
+      '3xl': 81,
+      'one size': 90,
+      'standard': 91,
+      'adjustable': 92,
+    };
+    final aKey = a.trim().toLowerCase();
+    final bKey = b.trim().toLowerCase();
+    final aRank = order[aKey];
+    final bRank = order[bKey];
+    if (aRank != null && bRank != null) return aRank.compareTo(bRank);
+    if (aRank != null) return -1;
+    if (bRank != null) return 1;
+
+    final aNum = parseInchesFromText(a) ?? double.tryParse(aKey.split(RegExp(r'\s')).first);
+    final bNum = parseInchesFromText(b) ?? double.tryParse(bKey.split(RegExp(r'\s')).first);
+    if (aNum != null && bNum != null) return aNum.compareTo(bNum);
+    if (aNum != null) return -1;
+    if (bNum != null) return 1;
+    return aKey.compareTo(bKey);
+  }
+
+  static bool _looksLikeNonHatTitle(dynamic title) {
+    final t = title?.toString().toLowerCase() ?? '';
+    if (t.isEmpty) return false;
+    return RegExp(
+      r'\b(romper|onesie|bodysuit|dress|shirt|jacket|pants|shorts|skirt|blouse)\b',
+    ).hasMatch(t);
+  }
+
+  static List<String> _variantOptionValues(dynamic product, String optionName) {
+    final values = <String>{};
+    final optLower = optionName.toLowerCase();
+    for (final edge in (product['variants']?['edges'] as List<dynamic>? ?? [])) {
+      final node = edge['node'];
+      if (node == null) continue;
+      for (final opt in (node['selectedOptions'] as List<dynamic>? ?? [])) {
+        if (opt['name'].toString().toLowerCase() == optLower) {
+          final v = opt['value'].toString().trim();
+          if (v.isNotEmpty) values.add(v);
+        }
+      }
+    }
+    return values.toList();
+  }
+
+  static List<dynamic> _eligibleCatalogProducts(Iterable<dynamic> products) =>
+      products.where(isHatFinderCatalogProduct).toList();
+
   /// All crown height values on a product metafield (often a JSON list).
   static List<double> parseCrownHeightValues(dynamic entry) {
+    return _parseInchesListFromMetafield(entry);
+  }
+
+  /// All brim width values on a product metafield (often a JSON list).
+  static List<double> parseBrimWidthValues(dynamic entry) {
+    return _parseInchesListFromMetafield(entry);
+  }
+
+  static List<double> _parseInchesListFromMetafield(dynamic entry) {
     if (entry == null || entry['value'] == null) return [];
     try {
       final parsed = jsonDecode(entry['value'] as String);
       if (parsed is List) {
         return parsed
-            .map((e) => double.tryParse(e.toString()))
+            .map((e) => parseInchesFromText(e.toString()))
             .whereType<double>()
             .toList();
       }
-      final single = double.tryParse(parsed.toString());
+      final single = parseInchesFromText(parsed.toString());
       return single != null ? [single] : [];
     } catch (_) {
-      final single = double.tryParse(entry['value'].toString());
+      final single = parseInchesFromText(entry['value'].toString());
       return single != null ? [single] : [];
     }
+  }
+
+  static bool _inchesMatchList(List<double> productValues, List<double> selected) {
+    if (selected.isEmpty) return true;
+    if (productValues.isEmpty) return false;
+    return selected.any(
+      (target) => productValues.any((v) => (v - target).abs() < 0.01),
+    );
   }
 
   static List<double> uniqueCrownHeights(Iterable<dynamic> products) {
@@ -185,9 +324,10 @@ class ShopifyService {
     if (data['errors'] != null) {
       throw Exception('GraphQL Error: ${data['errors']}');
     }
-    return (data['data']['products']['edges'] as List<dynamic>)
-        .map((p) => p['node'])
-        .toList();
+    return _eligibleCatalogProducts(
+      (data['data']['products']['edges'] as List<dynamic>)
+          .map((p) => p['node']),
+    );
   }
 
   static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
@@ -237,6 +377,7 @@ class ShopifyService {
     String? brimShape,
     List<String>? brimWidths,
   }) {
+    final catalog = _eligibleCatalogProducts(allProducts);
 
     if (hatType == null &&
         westernStyle == null &&
@@ -244,10 +385,10 @@ class ShopifyService {
         brimShape == null &&
         crownHeights == null &&
         brimWidths == null) {
-      return List<dynamic>.from(allProducts);
+      return catalog;
     }
 
-    return allProducts.where((product) {
+    return catalog.where((product) {
       final meta = _productMeta(product);
 
       if (hatType != null && hatType != 'Any Type') {
@@ -298,14 +439,18 @@ class ShopifyService {
         if (!_matchShape(meta.brimShape, brimShape)) matches = false;
       }
       if (crownHeights != null && crownHeights.isNotEmpty) {
-        if (!crownHeights.any(
-          (ch) => ch > 0 && meta.crownHeight.contains(ch.toString()),
-        )) {
+        final productHeights = parseCrownHeightValues(product['crownHeight']);
+        if (!_inchesMatchList(productHeights, crownHeights)) {
           matches = false;
         }
       }
       if (brimWidths != null && brimWidths.isNotEmpty) {
-        if (!brimWidths.any((bw) => meta.brimWidth.contains(bw))) {
+        final productWidths = parseBrimWidthValues(product['brimWidth']);
+        final selectedWidths = brimWidths
+            .map(parseInchesFromText)
+            .whereType<double>()
+            .toList();
+        if (!_inchesMatchList(productWidths, selectedWidths)) {
           matches = false;
         }
       }

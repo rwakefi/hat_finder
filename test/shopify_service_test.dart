@@ -108,6 +108,126 @@ void main() {
     expect(outdoor.first['id'], '3');
   });
 
+  test('filterProducts excludes products without felt_straw_or_ballcap', () {
+    final products = [
+      {
+        'id': 'eligible',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+      },
+      {'id': 'missing'},
+      {
+        'id': 'empty',
+        'feltStrawOrBallcap': {'value': '[]'},
+      },
+      {
+        'id': 'blank',
+        'feltStrawOrBallcap': {'value': '""'},
+      },
+      {
+        'id': 'wrong-category',
+        'feltStrawOrBallcap': {'value': '["Romper"]'},
+      },
+    ];
+
+    expect(ShopifyService.isHatFinderCatalogProduct(products[0]), isTrue);
+    expect(ShopifyService.isHatFinderCatalogProduct(products[1]), isFalse);
+    expect(ShopifyService.isHatFinderCatalogProduct(products[2]), isFalse);
+    expect(ShopifyService.isHatFinderCatalogProduct(products[3]), isFalse);
+    expect(ShopifyService.isHatFinderCatalogProduct(products[4]), isFalse);
+
+    final eligible = ShopifyService.filterProducts(products);
+    expect(eligible, hasLength(1));
+    expect(eligible.first['id'], 'eligible');
+  });
+
+  test('filterProducts excludes baby apparel sizes and non-hat titles', () {
+    final romper = {
+      'id': 'romper',
+      'title': 'Soft Cotton Baby Romper',
+      'feltStrawOrBallcap': {'value': '["Beanie/Flat Cap"]'},
+      'variants': {
+        'edges': [
+          {
+            'node': {
+              'availableForSale': true,
+              'selectedOptions': [
+                {'name': 'Size', 'value': '0-3 Month'},
+                {'name': 'Color', 'value': 'Blue'},
+              ],
+            },
+          },
+        ],
+      },
+    };
+    final hat = {
+      'id': 'hat',
+      'title': 'Stetson Open Road',
+      'feltStrawOrBallcap': {'value': '["Felt"]'},
+      'variants': {
+        'edges': [
+          {
+            'node': {
+              'availableForSale': true,
+              'selectedOptions': [
+                {'name': 'Size', 'value': '7'},
+                {'name': 'Color', 'value': 'Silver'},
+              ],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(ShopifyService.isHatFinderCatalogProduct(romper), isFalse);
+    expect(ShopifyService.isHatFinderCatalogProduct(hat), isTrue);
+    expect(ShopifyService.isHatHeadSize('0-3 Month'), isFalse);
+    expect(ShopifyService.isHatHeadSize('7'), isTrue);
+    expect(ShopifyService.isHatHeadSize('Small'), isTrue);
+    expect(ShopifyService.isHatHeadSize('Medium'), isTrue);
+    expect(ShopifyService.isHatHeadSize('Large'), isTrue);
+    expect(ShopifyService.isHatHeadSize('XL'), isTrue);
+    expect(ShopifyService.isHatHeadSize('XXL'), isTrue);
+
+    final results = ShopifyService.filterProducts([romper, hat]);
+    expect(results, hasLength(1));
+    expect(results.first['id'], 'hat');
+  });
+
+  test('filterProducts matches crown height and brim width in fractional inches', () {
+    final products = [
+      {
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownHeight': {'value': '["4 1/4 Inches"]'},
+        'brimWidth': {'value': '["4 1/2 Inches"]'},
+      },
+      {
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownHeight': {'value': '["4.0"]'},
+        'brimWidth': {'value': '["3.5"]'},
+      },
+    ];
+
+    final byCrown = ShopifyService.filterProducts(
+      products,
+      crownHeights: [4.25],
+    );
+    expect(byCrown, hasLength(1));
+    expect(
+      ShopifyService.parseCrownHeightValues(byCrown.first['crownHeight']),
+      [4.25],
+    );
+
+    final byBrim = ShopifyService.filterProducts(
+      products,
+      brimWidths: ['4 1/2 Inches'],
+    );
+    expect(byBrim, hasLength(1));
+    expect(
+      ShopifyService.parseBrimWidthValues(byBrim.first['brimWidth']),
+      [4.5],
+    );
+  });
+
   test('fetch caches reuse in-flight request', () async {
     ShopifyService.clearCache();
     // Cache layer is exercised indirectly; ensure clearCache resets state.

@@ -33,7 +33,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
 
   static const _tabs = <_NavTab>[
     _NavTab.label('Home'),
-    _NavTab.label('Find Hats'),
+    _NavTab.stacked(topLine: 'Find', bottomLine: 'Hats'),
     _NavTab.stacked(topLine: 'Head', bottomLine: 'Shape'),
     _NavTab.label('Shop'),
     _NavTab.stacked(topLine: 'Events /', bottomLine: 'Connect'),
