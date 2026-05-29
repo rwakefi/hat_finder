@@ -21,9 +21,7 @@ class ShellTabBarFooter extends StatelessWidget {
         if (index == 1) {
           // "Find Hat" in footer → go directly to results with all filters set to Any
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const HatResultsScreen(),
-            ),
+            _instantRoute(const HatResultsScreen()),
           );
         } else {
           AppShell.navigateToTab(index);
@@ -31,6 +29,14 @@ class ShellTabBarFooter extends StatelessWidget {
       },
     );
   }
+}
+
+PageRouteBuilder<void> _instantRoute(Widget child) {
+  return PageRouteBuilder<void>(
+    pageBuilder: (_, __, ___) => child,
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+  );
 }
 
 /// Page-specific footer controls stacked above the shell tab bar.

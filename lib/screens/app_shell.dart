@@ -107,9 +107,7 @@ class _AppShellState extends State<AppShell> {
               if (index == 1) {
                 // "Find Hat" footer → go straight to results (all filters = Any)
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const HatResultsScreen(),
-                  ),
+                  _instantRoute(const HatResultsScreen()),
                 );
               } else {
                 _selectTab(index);
@@ -120,6 +118,14 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
+}
+
+PageRouteBuilder<void> _instantRoute(Widget child) {
+  return PageRouteBuilder<void>(
+    pageBuilder: (_, __, ___) => child,
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+  );
 }
 
 class _DeferredTabLoadingView extends StatelessWidget {
