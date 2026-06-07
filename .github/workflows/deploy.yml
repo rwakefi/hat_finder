@@ -24,6 +24,4 @@ jobs:
         
       - name: Add redirects
         run: echo '/* /index.html 200' > build/web/_redirects
-        
-      - name: Deploy to Netlify
-        run: netlify deploy --prod --dir=build/web --auth=${{ secrets.NETLIFY_AUTH_TOKEN }} --site=${{ secrets.NETLIFY_SITE_ID }}
+cd ~/Documents/hat_finder && git add .github && git commit -m "Fix: install netlify-cli in CI" && git push origin main
