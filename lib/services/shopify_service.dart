@@ -475,6 +475,10 @@ class ShopifyService {
       throw Exception('Failed to load products: \${response.statusCode}');
     }
 
+    // Web release builds can fail silently in isolates; parse on main thread.
+    if (kIsWeb) {
+      return _parseProductNodes(response.body);
+    }
     return compute(_parseProductNodes, response.body);
   }
 

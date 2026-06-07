@@ -382,7 +382,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
     });
     Future.microtask(() {
       if (!mounted) return;
-      setState(_refreshShapeProductMaps);
+      setState(() {
+        _refreshShapeProductMaps();
+        if (selectedCrownShape != null) {
+          _onCrownSelectionChanged();
+        }
+      });
     });
   }
 
@@ -2653,11 +2658,38 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
       builder: (context, snapshot) {
-        final catalogLoading = _allProducts == null &&
-            snapshot.connectionState == ConnectionState.waiting;
+        final catalogLoading = _allProducts == null;
 
         final sortedShapes = _availableBrimShapes;
         final shopifyProductsMap = _brimProductsMap;
+
+        if (selectedCrownShape != null && catalogLoading) {
+          return Column(
+            children: [
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFF559C99),
+              ),
+              _buildWizardStepTitle('Select Brim Shape:'),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Loading hat catalog…',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
 
         if (sortedShapes.isEmpty) {
           return Column(
