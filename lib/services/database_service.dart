@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/app_config.dart';
 
 class DatabaseService {
   static const String _savedHatsKey = 'saved_hats';
   static const int _maxSavedHats = 100;
-
-  static String get baseUrl => AppConfig.apiBaseUrl;
 
   static Future<bool> saveHat({
     required String name,
@@ -27,7 +24,6 @@ class DatabaseService {
         'url': url,
         'created_at': DateTime.now().toIso8601String(),
       };
-
       savedHats.removeWhere((hat) {
         if (hat is! Map) return false;
         final savedUrl = hat['url']?.toString();
@@ -37,7 +33,6 @@ class DatabaseService {
         return hat['name']?.toString() == name;
       });
       savedHats.insert(0, bookmark);
-
       final encoded = jsonEncode(savedHats.take(_maxSavedHats).toList());
       return prefs.setString(_savedHatsKey, encoded);
     } catch (e) {

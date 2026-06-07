@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
+import '../config/app_config.dart';
 import '../models/hat.dart';
 
 /// Parsed Shopify metafields for one product (computed once per catalog load).
@@ -331,16 +332,96 @@ class ShopifyService {
   }
 
   static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
-    final uri = Uri.parse(
-      '${DatabaseService.baseUrl}/api/shopify_products?lite=${lite ? 'true' : 'false'}',
-    );
-    final response = await http.get(
-      uri,
-      headers: const {'Content-Type': 'application/json'},
+    final query = lite ? r"""
+    {
+      products(first: 250) {
+        edges {
+          node {
+            id
+            title
+            vendor
+            productType
+            handle
+            tags
+            priceRange {
+              minVariantPrice { amount currencyCode }
+            }
+            images(first: 1) {
+              edges { node { url altText } }
+            }
+            variants(first: 50) {
+              edges {
+                node {
+                  id
+                  title
+                  price { amount currencyCode }
+                  selectedOptions { name value }
+                  availableForSale
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """ : r"""
+    {
+      products(first: 250) {
+        edges {
+          node {
+            id
+            title
+            vendor
+            productType
+            handle
+            tags
+            priceRange {
+              minVariantPrice { amount currencyCode }
+            }
+            images(first: 1) {
+              edges { node { url altText } }
+            }
+            variants(first: 50) {
+              edges {
+                node {
+                  id
+                  title
+                  price { amount currencyCode }
+                  selectedOptions { name value }
+                  availableForSale
+                }
+              }
+            }
+            metafields(identifiers: [
+              {namespace: "custom", key: "felt_straw_or_ballcap"},
+              {namespace: "custom", key: "crown_shape"},
+              {namespace: "custom", key: "brim_shape"},
+              {namespace: "custom", key: "crown_height"},
+              {namespace: "custom", key: "brim_width"},
+              {namespace: "custom", key: "stetson_profile"},
+              {namespace: "custom", key: "city"},
+              {namespace: "custom", key: "outdoors"}
+            ]) {
+              key
+              value
+            }
+          }
+        }
+      }
+    }
+    """;
+
+    final response = await http.post(
+      Uri.parse(AppConfig.storefrontApiUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': AppConfig.storefrontApiToken,
+      },
+      body: jsonEncode({'query': query}),
     ).timeout(_requestTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load products: ${response.statusCode}');
+      throw Exception('Failed to load products: \${response.statusCode}');
     }
 
     return compute(_parseProductNodes, response.body);
@@ -537,25 +618,25 @@ class ShopifyService {
   static Future<Map<String, List<String>>> _downloadValidationChoices({
     bool forceRefresh = false,
   }) async {
-    final uri =
-        Uri.parse('${DatabaseService.baseUrl}/api/validation_choices').replace(
-      queryParameters:
-          forceRefresh ? const {'refresh': 'true'} : const <String, String>{},
-    );
-    final response = await http.get(
-      uri,
-      headers: const {'Content-Type': 'application/json'},
-    ).timeout(_requestTimeout);
+    final products = await fetchFullProducts(forceRefresh: forceRefresh);
+    final crownShapes = <String>{};
+    final brimShapes = <String>{};
+    final materialTypes = <String>{};
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return {
-        'crown_shapes': List<String>.from(data['crown_shapes'] ?? []),
-        'brim_shapes': List<String>.from(data['brim_shapes'] ?? []),
-        'material_types': List<String>.from(data['material_types'] ?? []),
-      };
+    for (final product in products) {
+      final crown = parseMetafieldValue(product['crownShape'] ?? '').trim();
+      final brim = parseMetafieldValue(product['brimShape'] ?? '').trim();
+      final material = parseMetafieldValue(product['feltStrawOrBallcap'] ?? '').trim();
+      if (crown.isNotEmpty) crownShapes.add(crown);
+      if (brim.isNotEmpty) brimShapes.add(brim);
+      if (material.isNotEmpty) materialTypes.add(material);
     }
-    throw Exception('Failed to load choices: ${response.statusCode}');
+
+    return {
+      'crown_shapes': crownShapes.toList()..sort(),
+      'brim_shapes': brimShapes.toList()..sort(),
+      'material_types': materialTypes.toList()..sort(),
+    };
   }
 
   /// Call during splash so the hat wizard opens with catalog already in memory.

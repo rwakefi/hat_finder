@@ -1,11 +1,6 @@
 class AppConfig {
-  static const productionApiBaseUrl =
-      'https://hatfinder-production.up.railway.app';
-
-  static const _apiBaseUrlOverride = String.fromEnvironment(
-    'HAT_FINDER_API_BASE_URL',
-  );
-
-  static String get apiBaseUrl =>
-      _apiBaseUrlOverride.isEmpty ? productionApiBaseUrl : _apiBaseUrlOverride;
+  static const shopifyStoreDomain = 'raftermhatco.myshopify.com';
+  static const storefrontApiToken = '0eb766e2857fd651ebbbd51d00404ea2';
+  static const storefrontApiUrl =
+      'https://raftermhatco.myshopify.com/api/2024-01/graphql.json';
 }
