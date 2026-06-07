@@ -352,6 +352,12 @@ class ShopifyService {
               case 'outdoors': meta['outdoors'] = {'value': value}; break;
             }
           }
+          // Flatten first image to node['image']['url'] for app compatibility
+          final imagesEdges = (node['images']?['edges'] as List<dynamic>?) ?? [];
+          if (imagesEdges.isNotEmpty) {
+            final imgNode = imagesEdges.first['node'];
+            meta['image'] = {'url': imgNode?['url'], 'altText': imgNode?['altText']};
+          }
           return {...node, ...meta};
         }).toList();
     return _eligibleCatalogProducts(nodes);
@@ -658,10 +664,22 @@ class ShopifyService {
       if (material.isNotEmpty) materialTypes.add(material);
     }
 
+    // Material types use a preferred order (Felt, Straw first), not alphabetical
+    const materialOrder = ['Felt', 'Straw', 'Ballcap', 'Beanie/Flat Cap'];
+    final sortedMaterials = materialTypes.toList()
+      ..sort((a, b) {
+        final ai = materialOrder.indexOf(a);
+        final bi = materialOrder.indexOf(b);
+        if (ai == -1 && bi == -1) return a.compareTo(b);
+        if (ai == -1) return 1;
+        if (bi == -1) return -1;
+        return ai.compareTo(bi);
+      });
+
     return {
       'crown_shapes': crownShapes.toList()..sort(),
       'brim_shapes': brimShapes.toList()..sort(),
-      'material_types': materialTypes.toList()..sort(),
+      'material_types': sortedMaterials,
     };
   }
 
