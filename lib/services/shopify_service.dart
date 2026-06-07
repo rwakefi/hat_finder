@@ -48,16 +48,23 @@ class ShopifyService {
 
   /// Parse metafield JSON once (shared by filter + UI).
   static String parseMetafieldValue(dynamic entry) {
-    if (entry == null || entry['value'] == null) return '';
-    try {
-      final parsed = jsonDecode(entry['value'] as String);
-      if (parsed is List && parsed.isNotEmpty) {
-        return parsed.first.toString();
+    if (entry == null) return '';
+    // Handle plain string (direct from Storefront API mapping)
+    if (entry is String) return entry;
+    // Handle wrapped {value: ...} format
+    if (entry is Map && entry['value'] == null) return '';
+    if (entry is Map) {
+      try {
+        final parsed = jsonDecode(entry['value'] as String);
+        if (parsed is List && parsed.isNotEmpty) {
+          return parsed.first.toString();
+        }
+        return parsed.toString();
+      } catch (_) {
+        return entry['value'].toString();
       }
-      return parsed.toString();
-    } catch (_) {
-      return entry['value'].toString();
     }
+    return '';
   }
 
   /// Whether a Shopify product belongs in Hat Finder (and future catalog UIs).
