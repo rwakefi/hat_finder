@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_breakpoints.dart';
 import '../screens/app_shell.dart';
 import '../screens/hat_results_screen.dart';
 import 'moon_ridge_bottom_nav.dart';
@@ -13,13 +14,20 @@ class ShellTabBarFooter extends StatelessWidget {
 
   final int selectedIndex;
 
-  @override
-  Widget build(BuildContext context) {
+  static AppNavLayout layoutFor(BuildContext context) =>
+      AppBreakpoints.useWebTopNavigation(context)
+          ? AppNavLayout.top
+          : AppNavLayout.bottom;
+
+  static MoonRidgeBottomNav buildNav(
+    BuildContext context, {
+    required int selectedIndex,
+  }) {
     return MoonRidgeBottomNav(
       selectedIndex: selectedIndex,
+      layout: layoutFor(context),
       onSelected: (index) {
         if (index == 1) {
-          // "Find Hat" in footer → go directly to results with all filters set to Any
           Navigator.of(context).push(
             _instantRoute(const HatResultsScreen()),
           );
@@ -27,6 +35,42 @@ class ShellTabBarFooter extends StatelessWidget {
           AppShell.navigateToTab(index);
         }
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return buildNav(context, selectedIndex: selectedIndex);
+  }
+}
+
+/// Wraps [child] with shell navigation at the top (desktop web) or bottom.
+class ShellNavigationHost extends StatelessWidget {
+  const ShellNavigationHost({
+    super.key,
+    required this.selectedIndex,
+    required this.child,
+    this.showNavigation = true,
+  });
+
+  final int selectedIndex;
+  final Widget child;
+  final bool showNavigation;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showNavigation) return child;
+
+    final useTopNav = AppBreakpoints.useWebTopNavigation(context);
+    final nav = ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (useTopNav) nav,
+        Expanded(child: child),
+        if (!useTopNav) nav,
+      ],
     );
   }
 }
@@ -52,11 +96,24 @@ class ShellTabBarWithFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final useTopNav = AppBreakpoints.useWebTopNavigation(context);
+    final nav = ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
+
+    if (useTopNav) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          nav,
+          footer,
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         footer,
-        ShellTabBarFooter(selectedIndex: selectedIndex),
+        nav,
       ],
     );
   }

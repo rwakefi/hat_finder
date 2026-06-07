@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import '../widgets/shell_tab_bar_footer.dart';
+import '../widgets/web_content_scope.dart';
 
 class HeadMeasurementScreen extends StatefulWidget {
   const HeadMeasurementScreen({
@@ -140,64 +141,68 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
       child: Scaffold(
         backgroundColor: _surface,
         appBar: _buildAppBar(),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-            Text(
-              'OPTIONAL',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.6,
-                color: _espresso.withValues(alpha: 0.55),
+        body: ShellNavigationHost(
+          selectedIndex: 2,
+          child: WebContentScope(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'OPTIONAL',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.6,
+                      color: _espresso.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildGuidanceNote(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      'What is your head size?',
+                      textAlign: TextAlign.center,
+                      style: _stepTitleStyle,
+                    ),
+                  ),
+                  _buildTextField(
+                    controller: _centimetersController,
+                    label: 'Circumference (cm)',
+                    hint: '58',
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _inchesController,
+                    label: 'Circumference (inches)',
+                    hint: '22.8',
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _hatSizeController,
+                    label: 'Known hat size',
+                    hint: '7 1/4',
+                    keyboardType: TextInputType.text,
+                  ),
+                  const SizedBox(height: 32),
+                  _buildPrimaryButton('SAVE MEASUREMENT', _saveMeasurement),
+                  const SizedBox(height: 12),
+                  _buildSecondaryButton(
+                    'SKIP FOR NOW',
+                    _goBack,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            _buildGuidanceNote(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text(
-                'What is your head size?',
-                textAlign: TextAlign.center,
-                style: _stepTitleStyle,
-              ),
-            ),
-            _buildTextField(
-              controller: _centimetersController,
-              label: 'Circumference (cm)',
-              hint: '58',
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _inchesController,
-              label: 'Circumference (inches)',
-              hint: '22.8',
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _hatSizeController,
-              label: 'Known hat size',
-              hint: '7 1/4',
-              keyboardType: TextInputType.text,
-            ),
-            const SizedBox(height: 32),
-            _buildPrimaryButton('SAVE MEASUREMENT', _saveMeasurement),
-            const SizedBox(height: 12),
-            _buildSecondaryButton(
-              'SKIP FOR NOW',
-              _goBack,
-            ),
-            ],
           ),
         ),
-        bottomNavigationBar: const ShellTabBarFooter(selectedIndex: 2),
       ),
     );
   }

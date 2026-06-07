@@ -9,6 +9,7 @@ import '../models/head_shape_profile.dart';
 import '../utils/storefront_links.dart';
 import '../widgets/fine_tuning_tray.dart';
 import '../widgets/shell_tab_bar_footer.dart';
+import '../widgets/web_content_scope.dart';
 
 class HatResultsScreen extends StatefulWidget {
   final HeadShapeProfile? headShapeProfile;
@@ -112,7 +113,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   int _resultsCrossAxisCount(BuildContext context) =>
-      AppBreakpoints.gridCrossAxisCount(context, desktop: 3);
+      AppBreakpoints.gridCrossAxisCount(context, laptop: 3, desktop: 4);
 
   Future<List<dynamic>> _fetchFilteredHats() async {
     final all = await ShopifyService.fetchFullProducts();
@@ -566,14 +567,18 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Turquoise progress accent line
-          Container(height: 3, color: _turquoise),
-          _buildSearchSummary(),
-          const Divider(height: 1, color: _borderGrey),
-          Expanded(
-            child: FutureBuilder<List<dynamic>>(
+      body: ShellNavigationHost(
+        selectedIndex: 1,
+        showNavigation: !widget.hideFooter,
+        child: WebContentScope(
+          child: Column(
+            children: [
+              // Turquoise progress accent line
+              Container(height: 3, color: _turquoise),
+              _buildSearchSummary(),
+              const Divider(height: 1, color: _borderGrey),
+              Expanded(
+                child: FutureBuilder<List<dynamic>>(
               future: _hatsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -744,9 +749,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               },
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
-      bottomNavigationBar: widget.hideFooter ? null : const ShellTabBarFooter(selectedIndex: 1),
     );
   }
 

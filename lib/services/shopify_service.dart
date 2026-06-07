@@ -595,6 +595,11 @@ class ShopifyService {
     }).toList();
   }
 
+  /// Public: does a product's `felt_straw_or_ballcap` value match a UI hat type
+  /// (handles the Beanie/Flat Cap synonym group).
+  static bool matchesHatType(String prodHatType, String hatType) =>
+      _matchesHatType(prodHatType, hatType);
+
   static bool _matchesHatType(String prodHatType, String hatType) {
     final prod = prodHatType.toLowerCase();
     final target = hatType.toLowerCase();

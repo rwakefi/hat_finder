@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_breakpoints.dart';
 import '../widgets/moon_ridge_bottom_nav.dart';
+import '../widgets/web_content_scope.dart';
 import 'hat_input_screen.dart';
 import 'hat_results_screen.dart';
 import 'head_shape_screen.dart';
@@ -91,29 +93,35 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final useTopNav = AppBreakpoints.useWebTopNavigation(context);
+    final nav = MoonRidgeBottomNav(
+      selectedIndex: _selectedIndex,
+      layout: useTopNav ? AppNavLayout.top : AppNavLayout.bottom,
+      onSelected: (index) {
+        if (index == 1) {
+          Navigator.of(context).push(
+            _instantRoute(const HatResultsScreen()),
+          );
+        } else {
+          _selectTab(index);
+        }
+      },
+    );
+
+    final content = WebContentScope(
+      child: IndexedStack(
+        index: _selectedIndex,
+        children: List.generate(5, _buildTab),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8F5),
       body: Column(
         children: [
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: List.generate(5, _buildTab),
-            ),
-          ),
-          MoonRidgeBottomNav(
-            selectedIndex: _selectedIndex,
-            onSelected: (index) {
-              if (index == 1) {
-                // "Find Hat" footer → go straight to results (all filters = Any)
-                Navigator.of(context).push(
-                  _instantRoute(const HatResultsScreen()),
-                );
-              } else {
-                _selectTab(index);
-              }
-            },
-          ),
+          if (useTopNav) nav,
+          Expanded(child: content),
+          if (!useTopNav) nav,
         ],
       ),
     );

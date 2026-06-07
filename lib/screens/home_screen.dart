@@ -47,50 +47,118 @@ class _HomeScreenState extends State<HomeScreen> {
     final buttonGap = compact ? 12.0 : (isWideDesktop ? 18.0 : 16.0);
     final heroFlex = isWideDesktop ? 12 : 11;
     final actionsFlex = isWideDesktop ? 10 : 9;
+    final webSplit = splitLayout && kIsWeb;
+
+    Widget buildHeroStack() {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          const _RotatingPhotos(photos: _homePhotos),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  _HomePalette.espresso.withValues(alpha: 0.35),
+                  Colors.transparent,
+                  _HomePalette.espresso.withValues(alpha: 0.45),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _HomeHeadline(
+                    light: true,
+                    heroTop: true,
+                    compact: compact,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     final hero = SizedBox(
       height: splitLayout ? double.infinity : heroHeight,
-      child: ClipPath(
-        clipper: _WaveBottomClipper(),
-        child: Stack(
-          fit: StackFit.expand,
+      child: webSplit
+          ? buildHeroStack()
+          : ClipPath(
+              clipper: _WaveBottomClipper(),
+              child: buildHeroStack(),
+            ),
+    );
+
+    final actionChildren = <Widget>[
+      _OptionBlock(
+        icon: Icons.style_outlined,
+        label: 'SEARCH BY HAT TYPE',
+        emphasized: true,
+        onTap: widget.onFindHat,
+        compact: compact,
+      ),
+      SizedBox(height: buttonGap),
+      _OptionBlock(
+        icon: Icons.face_outlined,
+        label: 'LEARN YOUR HEAD SHAPE',
+        onTap: widget.onFitGuide,
+        compact: compact,
+      ),
+      SizedBox(height: buttonGap),
+      _OptionBlock(
+        icon: Icons.shopping_bag_outlined,
+        label: 'JUST TAKE ME TO THE HATS!',
+        onTap: widget.onShop,
+        compact: compact,
+      ),
+      SizedBox(height: buttonGap),
+      IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _RotatingPhotos(photos: _homePhotos),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _HomePalette.espresso.withValues(alpha: 0.35),
-                    Colors.transparent,
-                    _HomePalette.espresso.withValues(alpha: 0.45),
-                  ],
-                ),
+            Expanded(
+              child: _SmallBubble(
+                icon: Icons.play_circle_outline_rounded,
+                label: 'How to Measure\nfor Hat Size',
+                onTap: () => _showVideoModal(context),
               ),
             ),
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding:
-                    EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _HomeHeadline(
-                      light: true,
-                      heroTop: true,
-                      compact: compact,
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SmallBubble(
+                icon: Icons.straighten_outlined,
+                label: 'Virtual Head\nMeasurement',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Coming soon!'),
+                      duration: Duration(seconds: 2),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-    );
+      SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : 16),
+      Center(
+        child: Image.asset(
+          'assets/images/Moon Ridge Header Logo.png',
+          height: logoHeight,
+          fit: BoxFit.contain,
+        ),
+      ),
+    ];
 
     final actions = SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -101,69 +169,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _OptionBlock(
-            icon: Icons.style_outlined,
-            label: 'SEARCH BY HAT TYPE',
-            emphasized: true,
-            onTap: widget.onFindHat,
-            compact: compact,
-          ),
-          SizedBox(height: buttonGap),
-          _OptionBlock(
-            icon: Icons.face_outlined,
-            label: 'LEARN YOUR HEAD SHAPE',
-            onTap: widget.onFitGuide,
-            compact: compact,
-          ),
-          SizedBox(height: buttonGap),
-          _OptionBlock(
-            icon: Icons.shopping_bag_outlined,
-            label: 'JUST TAKE ME TO THE HATS!',
-            onTap: widget.onShop,
-            compact: compact,
-          ),
-          SizedBox(height: buttonGap),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _SmallBubble(
-                    icon: Icons.play_circle_outline_rounded,
-                    label: 'How to Measure\nfor Hat Size',
-                    onTap: () => _showVideoModal(context),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SmallBubble(
-                    icon: Icons.straighten_outlined,
-                    label: 'Virtual Head\nMeasurement',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Coming soon!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : 16),
-          Center(
-            child: Image.asset(
-              'assets/images/Moon Ridge Header Logo.png',
-              height: logoHeight,
-              fit: BoxFit.contain,
-            ),
-          ),
-        ],
+        children: actionChildren,
       ),
     );
+
+    if (webSplit) {
+      return _WebHomeSplit(
+        hero: hero,
+        heroFlex: heroFlex,
+        actionsFlex: actionsFlex,
+        isWideDesktop: isWideDesktop,
+        actionChildren: actionChildren,
+      );
+    }
 
     return ColoredBox(
       color: _HomePalette.surface,
@@ -189,6 +207,117 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(child: actions),
               ],
             ),
+    );
+  }
+}
+
+/// Centered, bounded hero+actions card for laptop/desktop web.
+class _WebHomeSplit extends StatelessWidget {
+  const _WebHomeSplit({
+    required this.hero,
+    required this.heroFlex,
+    required this.actionsFlex,
+    required this.isWideDesktop,
+    required this.actionChildren,
+  });
+
+  final Widget hero;
+  final int heroFlex;
+  final int actionsFlex;
+  final bool isWideDesktop;
+  final List<Widget> actionChildren;
+
+  @override
+  Widget build(BuildContext context) {
+    final outerPadding = isWideDesktop ? 48.0 : 28.0;
+
+    return ColoredBox(
+      color: _HomePalette.surface,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableHeight = constraints.maxHeight;
+          // Keep the card from getting so tall the hero crops the headline.
+          final cardHeight =
+              (availableHeight - outerPadding * 2).clamp(420.0, 760.0);
+
+          final card = ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isWideDesktop ? 1180 : 1000,
+              maxHeight: cardHeight,
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: _HomePalette.espresso.withValues(alpha: 0.10),
+                    blurRadius: 44,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: heroFlex, child: hero),
+                    Expanded(
+                      flex: actionsFlex,
+                      child: _WebActionsPanel(
+                        isWideDesktop: isWideDesktop,
+                        children: actionChildren,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(outerPadding),
+              child: card,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _WebActionsPanel extends StatelessWidget {
+  const _WebActionsPanel({
+    required this.isWideDesktop,
+    required this.children,
+  });
+
+  final bool isWideDesktop;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: _HomePalette.surface,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isWideDesktop ? 44 : 32,
+            vertical: 32,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

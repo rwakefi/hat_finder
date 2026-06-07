@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../utils/embed_mode.dart';
 
 /// Shared layout breakpoints for web and large screens.
 class AppBreakpoints {
@@ -10,6 +13,7 @@ class AppBreakpoints {
   static const double laptop = 900;
   static const double desktop = 1024;
   static const double wide = 1280;
+  static const double webAppMax = 1280;
 
   static double widthOf(BuildContext context) =>
       MediaQuery.sizeOf(context).width;
@@ -22,8 +26,18 @@ class AppBreakpoints {
 
   static bool isWide(BuildContext context) => widthOf(context) >= wide;
 
+  /// Desktop web uses a top tab bar instead of the mobile-style bottom nav.
+  static bool useWebTopNavigation(BuildContext context) =>
+      kIsWeb && !EmbedMode.isActive && isDesktop(context);
+
   /// Side-by-side home hero + actions (laptop and up).
   static bool useSplitHomeLayout(BuildContext context) => isLaptop(context);
+
+  /// Max readable width for app content on large web screens.
+  static double webAppMaxWidth(BuildContext context) {
+    if (!isDesktop(context)) return widthOf(context);
+    return math.min(widthOf(context), webAppMax);
+  }
 
   /// Max width for the centered app column.
   static double contentMaxWidth(BuildContext context) {

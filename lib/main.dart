@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/app_shell.dart';
 import 'screens/splash_screen.dart';
 import 'widgets/responsive_app_frame.dart';
 
@@ -43,7 +45,7 @@ class HatFinderApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const SplashScreen(),
+      home: kIsWeb ? AppShell() : const SplashScreen(),
     );
   }
 }

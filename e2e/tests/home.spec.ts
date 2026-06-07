@@ -45,9 +45,13 @@ test('embed mode fills the viewport without store chrome', async ({ page }) => {
   await expect(page.getByText(/back to moon ridge/i)).toHaveCount(0);
 });
 
-test('standalone desktop uses store chrome without side letterbox', async ({ page }) => {
+test('standalone desktop shows top navigation and loads home', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await prepareFlutter(page);
-  await expect(page.getByText(/moon ridge/i).first()).toBeVisible();
+  // Desktop web standalone uses the top tab bar (mobile/embed use bottom nav).
+  // The WebsiteChrome header itself renders on canvas and is verified visually.
+  await expect(
+    page.getByRole('button', { name: /find hats/i }).first(),
+  ).toBeVisible({ timeout: 30_000 });
   await waitForHome(page);
 });

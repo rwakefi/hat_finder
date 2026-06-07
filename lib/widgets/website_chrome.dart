@@ -46,74 +46,91 @@ class WebsiteChrome extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(isWide ? 28 : 16, 10, isWide ? 28 : 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'MOON RIDGE',
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: AppBreakpoints.webAppMaxWidth(context),
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                isWide ? 28 : 16,
+                10,
+                isWide ? 28 : 16,
+                12,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'MOON RIDGE',
+                          style: GoogleFonts.montserrat(
+                            fontSize: isWide ? 15 : 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2.4,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
+                        ),
+                        Text(
+                          'Hat Finder',
+                          style: GoogleFonts.montserrat(
+                            fontSize: isWide ? 12 : 11,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.4,
+                            color: Colors.white.withValues(alpha: 0.72),
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _openStore(context),
+                    icon: Icon(
+                      Icons.arrow_back_rounded,
+                      size: isWide ? 18 : 16,
+                      color: Colors.white.withValues(alpha: 0.92),
+                    ),
+                    label: Text(
+                      isWide ? 'Back to Moon Ridge' : 'Store',
                       style: GoogleFonts.montserrat(
-                        fontSize: isWide ? 15 : 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2.4,
-                        color: Colors.white,
-                        height: 1.1,
+                        fontSize: isWide ? 13 : 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.92),
                       ),
                     ),
-                    Text(
-                      'Hat Finder',
-                      style: GoogleFonts.montserrat(
-                        fontSize: isWide ? 12 : 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.4,
-                        color: Colors.white.withValues(alpha: 0.72),
-                        height: 1.2,
+                  ),
+                  if (isWide) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () => _openHatsCollection(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: Text(
+                        'Browse Hats',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-              TextButton.icon(
-                onPressed: () => _openStore(context),
-                icon: Icon(
-                  Icons.arrow_back_rounded,
-                  size: isWide ? 18 : 16,
-                  color: Colors.white.withValues(alpha: 0.92),
-                ),
-                label: Text(
-                  isWide ? 'Back to Moon Ridge' : 'Store',
-                  style: GoogleFonts.montserrat(
-                    fontSize: isWide ? 13 : 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.92),
-                  ),
-                ),
-              ),
-              if (isWide) ...[
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () => _openHatsCollection(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                  child: Text(
-                    'Browse Hats',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),

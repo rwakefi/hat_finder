@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_breakpoints.dart';
@@ -5,8 +6,9 @@ import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import 'hat_results_screen.dart';
+import 'shape_guide_screen.dart';
 import 'dart:async';
-import 'dart:math' show pi, Random;
+import 'dart:math' show pi;
 import '../services/shopify_service.dart';
 import '../widgets/shell_tab_bar_footer.dart';
 
@@ -54,7 +56,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<HatShapeInfo> _rawBrimShapes = [];
   List<HatShapeInfo> _materialTypes = [];
   Map<String, String> _materialExampleUrls = {};
-  final Random _random = Random();
 
   HatShapeInfo? selectedHatType;
   String? selectedWesternStyle;
@@ -345,29 +346,34 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
   }
 
+  /// Picks one representative product image per hat type, driven by the Shopify
+  /// `custom.felt_straw_or_ballcap` metafield. Selection is deterministic (stable
+  /// by title) and restricted to catalog-eligible hats, so each card reliably
+  /// shows a product actually tagged with that material.
   Map<String, String> _computeMaterialExampleImages() {
     if (_allProducts == null) return {};
 
+    final products = List<dynamic>.from(_allProducts!)
+      ..sort((a, b) => (a['title'] ?? '')
+          .toString()
+          .toLowerCase()
+          .compareTo((b['title'] ?? '').toString().toLowerCase()));
+
     final usedUrls = <String>{};
     final urls = <String, String>{};
-    final pendingTypes = {
-      for (final type in _availableHatTypes) type.name: type.name.toLowerCase(),
-    };
 
-    final candidates = List<dynamic>.from(_allProducts!)..shuffle(_random);
-    for (final product in candidates) {
-      if (pendingTypes.isEmpty) break;
-      final imageUrl = product['featuredImage']?['url'];
-      if (imageUrl == null || imageUrl.toString().isEmpty) continue;
-      final url = imageUrl as String;
-      if (usedUrls.contains(url)) continue;
+    for (final type in _availableHatTypes) {
+      for (final product in products) {
+        final imageUrl = product['featuredImage']?['url'];
+        if (imageUrl == null || imageUrl.toString().isEmpty) continue;
+        final url = imageUrl as String;
+        if (usedUrls.contains(url)) continue;
+        if (!ShopifyService.isHatFinderCatalogProduct(product)) continue;
 
-      final hatType = _metaValue(product['feltStrawOrBallcap']).toLowerCase();
-      for (final entry in pendingTypes.entries.toList()) {
-        if (hatType.contains(entry.value)) {
-          urls[entry.key] = url;
+        final prodType = _metaValue(product['feltStrawOrBallcap']);
+        if (ShopifyService.matchesHatType(prodType, type.name)) {
+          urls[type.name] = url;
           usedUrls.add(url);
-          pendingTypes.remove(entry.key);
           break;
         }
       }
@@ -864,6 +870,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  Widget _buildShapeGuideLink({
+    required String label,
+    required WidgetBuilder builder,
+  }) {
+    return Center(
+      child: TextButton.icon(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: builder),
+          );
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFF559C99),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: const Icon(Icons.menu_book_outlined, size: 18),
+        label: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrimGuideLink() => _buildShapeGuideLink(
+        label: 'What do these mean? View the brim guide',
+        builder: (_) => ShapeGuideScreen.brim(),
+      );
+
+  Widget _buildCrownGuideLink() => _buildShapeGuideLink(
+        label: 'What do these mean? View the crown guide',
+        builder: (_) => ShapeGuideScreen.crown(),
+      );
+
   Widget _buildExampleProductOverlay(String productTitle) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1281,34 +1325,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
         ),
         child: SafeArea(
           bottom: false,
-          child: Column(
-            children: [
-              _buildProgressBar(),
-              if (widget.headShapeProfile != null)
-                _buildHeadShapeProfileBanner(widget.headShapeProfile!),
-              if (widget.headMeasurementProfile != null)
-                _buildHeadMeasurementBanner(widget.headMeasurementProfile!),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics:
-                      const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPageIndex = index;
-                      _flippedCardIndex = null;
-                      _flippedBrimCardIndex = null;
-                      if (index == 0) {
-                        _materialExampleUrls = _computeMaterialExampleImages();
-                      }
-                    });
-                  },
-                  children: _pages,
-                ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: Column(
+                children: [
+                  _buildProgressBar(),
+                  if (widget.headShapeProfile != null)
+                    _buildHeadShapeProfileBanner(widget.headShapeProfile!),
+                  if (widget.headMeasurementProfile != null)
+                    _buildHeadMeasurementBanner(widget.headMeasurementProfile!),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics:
+                          const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentPageIndex = index;
+                          _flippedCardIndex = null;
+                          _flippedBrimCardIndex = null;
+                          if (index == 0) {
+                            _materialExampleUrls =
+                                _computeMaterialExampleImages();
+                          }
+                        });
+                      },
+                      children: _pages,
+                    ),
+                  ),
+                  if (_useInlineWizardFooter(context))
+                    _buildBottomNav(includeBottomSafeArea: false),
+                ],
               ),
-              if (_useInlineWizardFooter(context))
-                _buildBottomNav(includeBottomSafeArea: false),
-            ],
+            ),
           ),
         ),
       ),
@@ -1609,11 +1659,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       color: Color(0xFF559C99),
                     ),
                   Expanded(
-                    child: GridView.count(
-                      crossAxisCount: AppBreakpoints.gridCrossAxisCount(
-                        context,
-                        desktop: 3,
-                      ),
+                    child: Align(
+                      alignment: _isWebWide(context)
+                          ? Alignment.center
+                          : Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: _isWebWide(context) ? 640 : double.infinity,
+                        ),
+                        child: LayoutBuilder(
+                          builder: (context, c) {
+                            final webWide = _isWebWide(context);
+                            double aspect;
+                            if (webWide) {
+                              final rows =
+                                  (_availableHatTypes.length / 2).ceil();
+                              final cardW = (c.maxWidth - 24 - 12) / 2;
+                              final availH = c.maxHeight.isFinite
+                                  ? c.maxHeight
+                                  : cardW * rows;
+                              final cardH =
+                                  ((availH - 24 - 12 * (rows - 1)) / rows)
+                                      .clamp(150.0, 300.0);
+                              aspect = (cardW / cardH).clamp(0.7, 2.0);
+                            } else {
+                              aspect =
+                                  _isProMaxLayout(context) ? 0.92 : 0.85;
+                            }
+                            return GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: webWide,
+                      physics: webWide
+                          ? const NeverScrollableScrollPhysics()
+                          : null,
                       padding: EdgeInsets.fromLTRB(
                         12,
                         12,
@@ -1622,7 +1700,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       ),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: _isProMaxLayout(context) ? 0.92 : 0.85,
+                      childAspectRatio: aspect,
                       children: _availableHatTypes.map((typeInfo) {
                         final isSelected = selectedHatType == typeInfo;
                         final imageUrl = _materialExampleUrls[typeInfo.name];
@@ -1659,6 +1737,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
+                                  // Real product image, chosen by the Shopify
+                                  // `felt_straw_or_ballcap` metafield. Falls back
+                                  // to the curated category asset if the catalog
+                                  // image is missing or fails to load.
                                   child: imageUrl != null
                                       ? Image.network(
                                           imageUrl,
@@ -1710,6 +1792,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           ),
                         );
                       }).toList(),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1720,6 +1806,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
       ],
     );
   }
+
+  /// True on laptop/desktop web, where grids need a centered max width.
+  bool _isWebWide(BuildContext context) =>
+      kIsWeb && AppBreakpoints.isLaptop(context);
 
   Widget _buildVisualWesternSelection() {
     return Column(
@@ -2197,6 +2287,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
+            _buildCrownGuideLink(),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             _buildShapeCarouselArea(
               stack: Stack(
@@ -2729,6 +2820,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
+            _buildBrimGuideLink(),
             // Carousel with swipe arrows
             _buildShapeCarouselArea(
               stack: Stack(
