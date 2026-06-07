@@ -37,16 +37,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final compact = screenHeight < 860;
-    final isDesktop = AppBreakpoints.isDesktop(context);
-    final heroHeight = isDesktop
-        ? 420.0
+    final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
+    final isWideDesktop = AppBreakpoints.isWide(context);
+    final heroHeight = splitLayout
+        ? double.infinity
         : (screenHeight * (compact ? 0.30 : 0.36))
             .clamp(compact ? 200.0 : 240.0, compact ? 270.0 : 320.0);
-    final logoHeight = compact ? 88.0 : 118.0;
-    final buttonGap = compact ? 12.0 : 16.0;
+    final logoHeight = compact ? 88.0 : (isWideDesktop ? 128.0 : 118.0);
+    final buttonGap = compact ? 12.0 : (isWideDesktop ? 18.0 : 16.0);
+    final heroFlex = isWideDesktop ? 12 : 11;
+    final actionsFlex = isWideDesktop ? 10 : 9;
 
     final hero = SizedBox(
-      height: isDesktop ? double.infinity : heroHeight,
+      height: splitLayout ? double.infinity : heroHeight,
       child: ClipPath(
         clipper: _WaveBottomClipper(),
         child: Stack(
@@ -90,7 +93,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     final actions = SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(24, isDesktop ? 32 : 16, 24, 12),
+      padding: EdgeInsets.fromLTRB(
+        isWideDesktop ? 32 : 24,
+        splitLayout ? (isWideDesktop ? 40 : 28) : 16,
+        isWideDesktop ? 32 : 24,
+        12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -145,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          SizedBox(height: isDesktop ? 24 : 16),
+          SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : 16),
           Center(
             child: Image.asset(
               'assets/images/Moon Ridge Header Logo.png',
@@ -159,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return ColoredBox(
       color: _HomePalette.surface,
-      child: isDesktop
+      child: splitLayout
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -167,8 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(flex: 11, child: hero),
-                      Expanded(flex: 9, child: actions),
+                      Expanded(flex: heroFlex, child: hero),
+                      Expanded(flex: actionsFlex, child: actions),
                     ],
                   ),
                 ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../config/app_breakpoints.dart';
+
 /// Bottom bar with text tabs and active mark.
 class MoonRidgeBottomNav extends StatefulWidget {
   const MoonRidgeBottomNav({
@@ -56,11 +58,17 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final isLaptop = AppBreakpoints.isLaptop(context);
 
     return ColoredBox(
       color: _barColor,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 14, 16, bottomInset > 0 ? 10 : 16),
+        padding: EdgeInsets.fromLTRB(
+          isLaptop ? 24 : 16,
+          isLaptop ? 12 : 14,
+          isLaptop ? 24 : 16,
+          bottomInset > 0 ? 10 : (isLaptop ? 14 : 16),
+        ),
         child: SizedBox(
           height: _tabColumnHeight,
           child: Row(

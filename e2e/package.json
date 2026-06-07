@@ -1,0 +1,14 @@
+{
+  "name": "hat-finder-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install-browsers": "playwright install chromium",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "drive": "node drive.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}
