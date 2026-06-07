@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
+import 'widgets/responsive_app_frame.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,10 @@ class HatFinderApp extends StatelessWidget {
     return MaterialApp(
       title: 'Moon Ridge Hat Finder',
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return ResponsiveAppFrame(child: child);
+      },
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light, // Shift to Premium Light Mode

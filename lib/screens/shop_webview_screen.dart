@@ -1,13 +1,16 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/shell_tab_bar_footer.dart';
 
-class ShopWebViewScreen extends StatefulWidget {
+/// In-app storefront browser on iOS/Android; opens a new browser tab on web.
+class ShopWebViewScreen extends StatelessWidget {
   final String url;
   final String title;
   final VoidCallback? onBack;
@@ -24,10 +27,46 @@ class ShopWebViewScreen extends StatefulWidget {
   });
 
   @override
-  State<ShopWebViewScreen> createState() => _ShopWebViewScreenState();
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return _WebStorefrontLauncher(
+        url: url,
+        title: title,
+        onBack: onBack,
+        selectedIndex: selectedIndex,
+      );
+    }
+    return _MobileShopWebViewScreen(
+      url: url,
+      title: title,
+      onBack: onBack,
+      hideHeaderFooter: hideHeaderFooter,
+      selectedIndex: selectedIndex,
+    );
+  }
 }
 
-class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
+class _MobileShopWebViewScreen extends StatefulWidget {
+  const _MobileShopWebViewScreen({
+    required this.url,
+    required this.title,
+    this.onBack,
+    required this.hideHeaderFooter,
+    required this.selectedIndex,
+  });
+
+  final String url;
+  final String title;
+  final VoidCallback? onBack;
+  final bool hideHeaderFooter;
+  final int selectedIndex;
+
+  @override
+  State<_MobileShopWebViewScreen> createState() =>
+      _MobileShopWebViewScreenState();
+}
+
+class _MobileShopWebViewScreenState extends State<_MobileShopWebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
 
@@ -130,12 +169,10 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
       margin-top: 0 !important;
     }
     
-    /* Fix white border/gap by making the base page and section backgrounds match the app's dark theme */
     body, html, main, #MainContent, .events-directory, .shopify-section {
       background-color: #1C1917 !important;
     }
     
-    /* Fix iOS z-index rendering bug for video overlays */
     .events-video-banner__bg video {
       filter: brightness(0.5) !important;
       -webkit-filter: brightness(0.5) !important;
@@ -239,6 +276,122 @@ class _ShopWebViewScreenState extends State<ShopWebViewScreen> {
               ),
             ),
         ],
+      ),
+      bottomNavigationBar: showShellNav
+          ? ShellTabBarFooter(selectedIndex: widget.selectedIndex)
+          : null,
+    );
+  }
+}
+
+class _WebStorefrontLauncher extends StatefulWidget {
+  const _WebStorefrontLauncher({
+    required this.url,
+    required this.title,
+    this.onBack,
+    required this.selectedIndex,
+  });
+
+  final String url;
+  final String title;
+  final VoidCallback? onBack;
+  final int selectedIndex;
+
+  @override
+  State<_WebStorefrontLauncher> createState() => _WebStorefrontLauncherState();
+}
+
+class _WebStorefrontLauncherState extends State<_WebStorefrontLauncher> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _open());
+  }
+
+  Future<void> _open() async {
+    final launched = await launchUrl(
+      Uri.parse(widget.url),
+      webOnlyWindowName: '_blank',
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the shop page.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showShellNav = Navigator.of(context).canPop();
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2D2926)),
+          onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          widget.title,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2D2926),
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.open_in_new, size: 48, color: Color(0xFF559C99)),
+              const SizedBox(height: 20),
+              Text(
+                'Opening in your browser…',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D2926),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'If a new tab did not open, use the button below.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.65),
+                ),
+              ),
+              const SizedBox(height: 28),
+              FilledButton(
+                onPressed: _open,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF559C99),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                ),
+                child: Text(
+                  'OPEN PRODUCT PAGE',
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       bottomNavigationBar: showShellNav
           ? ShellTabBarFooter(selectedIndex: widget.selectedIndex)

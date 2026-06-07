@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
+import '../config/app_breakpoints.dart';
 import '../services/shopify_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,133 +37,169 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final compact = screenHeight < 860;
-    final heroHeight = (screenHeight * (compact ? 0.30 : 0.36))
-        .clamp(compact ? 200.0 : 240.0, compact ? 270.0 : 320.0);
+    final isDesktop = AppBreakpoints.isDesktop(context);
+    final heroHeight = isDesktop
+        ? 420.0
+        : (screenHeight * (compact ? 0.30 : 0.36))
+            .clamp(compact ? 200.0 : 240.0, compact ? 270.0 : 320.0);
     final logoHeight = compact ? 88.0 : 118.0;
     final buttonGap = compact ? 12.0 : 16.0;
 
-    return ColoredBox(
-      color: _HomePalette.surface,
+    final hero = SizedBox(
+      height: isDesktop ? double.infinity : heroHeight,
+      child: ClipPath(
+        clipper: _WaveBottomClipper(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const _RotatingPhotos(photos: _homePhotos),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _HomePalette.espresso.withValues(alpha: 0.35),
+                    Colors.transparent,
+                    _HomePalette.espresso.withValues(alpha: 0.45),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _HomeHeadline(
+                      light: true,
+                      heroTop: true,
+                      compact: compact,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final actions = SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(24, isDesktop ? 32 : 16, 24, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: heroHeight,
-            child: ClipPath(
-              clipper: _WaveBottomClipper(),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const _RotatingPhotos(photos: _homePhotos),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          _HomePalette.espresso.withValues(alpha: 0.35),
-                          Colors.transparent,
-                          _HomePalette.espresso.withValues(alpha: 0.45),
-                        ],
-                      ),
-                    ),
+          _OptionBlock(
+            icon: Icons.style_outlined,
+            label: 'SEARCH BY HAT TYPE',
+            emphasized: true,
+            onTap: widget.onFindHat,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          _OptionBlock(
+            icon: Icons.face_outlined,
+            label: 'LEARN YOUR HEAD SHAPE',
+            onTap: widget.onFitGuide,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          _OptionBlock(
+            icon: Icons.shopping_bag_outlined,
+            label: 'JUST TAKE ME TO THE HATS!',
+            onTap: widget.onShop,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _SmallBubble(
+                    icon: Icons.play_circle_outline_rounded,
+                    label: 'How to Measure\nfor Hat Size',
+                    onTap: () => _showVideoModal(context),
                   ),
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _HomeHeadline(light: true, heroTop: true, compact: compact),
-                        ],
-                      ),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _SmallBubble(
+                    icon: Icons.straighten_outlined,
+                    label: 'Virtual Head\nMeasurement',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Coming soon!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _OptionBlock(
-                    icon: Icons.style_outlined,
-                    label: 'SEARCH BY HAT TYPE',
-                    emphasized: true,
-                    onTap: widget.onFindHat,
-                    compact: compact,
-                  ),
-                  SizedBox(height: buttonGap),
-                  _OptionBlock(
-                    icon: Icons.face_outlined,
-                    label: 'LEARN YOUR HEAD SHAPE',
-                    onTap: widget.onFitGuide,
-                    compact: compact,
-                  ),
-                  SizedBox(height: buttonGap),
-                  _OptionBlock(
-                    icon: Icons.shopping_bag_outlined,
-                    label: 'JUST TAKE ME TO THE HATS!',
-                    onTap: widget.onShop,
-                    compact: compact,
-                  ),
-                  SizedBox(height: buttonGap),
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _SmallBubble(
-                            icon: Icons.play_circle_outline_rounded,
-                            label: 'How to Measure\nfor Hat Size',
-                            onTap: () => _showVideoModal(context),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _SmallBubble(
-                            icon: Icons.straighten_rounded,
-                            label: 'Virtual Head\nMeasurement',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Coming soon!'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: compact ? 16 : 22),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/Moon Ridge Header Logo.png',
-                        height: logoHeight,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          SizedBox(height: isDesktop ? 24 : 16),
+          Center(
+            child: Image.asset(
+              'assets/images/Moon Ridge Header Logo.png',
+              height: logoHeight,
+              fit: BoxFit.contain,
             ),
           ),
         ],
       ),
+    );
+
+    return ColoredBox(
+      color: _HomePalette.surface,
+      child: isDesktop
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(flex: 11, child: hero),
+                      Expanded(flex: 9, child: actions),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                hero,
+                Expanded(child: actions),
+              ],
+            ),
     );
   }
 }
 
 void _showVideoModal(BuildContext context) {
   const videoId = 'URwlW5-5CV8';
+  final youtubeUri = Uri.parse('https://www.youtube.com/watch?v=$videoId');
+
+  if (kIsWeb) {
+    unawaited(
+      launchUrl(
+        youtubeUri,
+        webOnlyWindowName: '_blank',
+        mode: LaunchMode.externalApplication,
+      ),
+    );
+    return;
+  }
+
   const htmlString = '''
     <!DOCTYPE html>
     <html>

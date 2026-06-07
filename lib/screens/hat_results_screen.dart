@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'shop_webview_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../config/app_breakpoints.dart';
 import '../services/shopify_service.dart';
 import '../services/database_service.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../utils/storefront_links.dart';
 import '../widgets/fine_tuning_tray.dart';
 import '../widgets/shell_tab_bar_footer.dart';
 
@@ -103,11 +104,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   /// Shorter cards than before — trims empty space below the CTA without changing width.
   double _resultsCardAspectRatio(BuildContext context) {
+    if (AppBreakpoints.isDesktop(context)) return 0.68;
     final height = MediaQuery.sizeOf(context).height;
     if (height < 700) return 0.49;
     if (height < 820) return 0.51;
     return 0.52;
   }
+
+  int _resultsCrossAxisCount(BuildContext context) =>
+      AppBreakpoints.gridCrossAxisCount(context, desktop: 3);
 
   Future<List<dynamic>> _fetchFilteredHats() async {
     final all = await ShopifyService.fetchFullProducts();
@@ -518,13 +523,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return [];
   }
 
-  String _productUrlForVariant(String baseUrl, String variantGid) {
-    final variantId = variantGid.split('/').last;
-    final uri = Uri.parse(baseUrl);
-    return uri.replace(
-      queryParameters: {...uri.queryParameters, 'variant': variantId},
-    ).toString();
-  }
+  String _productUrlForVariant(String baseUrl, String variantGid) =>
+      StorefrontLinks.withVariant(baseUrl, variantGid);
 
 
   @override
@@ -726,7 +726,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               addRepaintBoundaries: true,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
+                                crossAxisCount: _resultsCrossAxisCount(context),
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
                                 childAspectRatio: _resultsCardAspectRatio(context),
@@ -793,9 +793,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       debugPrint('Price parse error for "$title": $e');
     }
 
-    final String? productUrl = hat['onlineStoreUrl'];
+    final String? productUrl = StorefrontLinks.productUrlFor(hat);
 
-    void openProduct({String? variantGid}) {
+    Future<void> openProduct({String? variantGid}) async {
       if (productUrl == null || productUrl.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product link is unavailable.')),
@@ -805,14 +805,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       final url = variantGid != null
           ? _productUrlForVariant(productUrl, variantGid)
           : productUrl;
-      Navigator.push(
+      await StorefrontLinks.openProductPage(
         context,
-        MaterialPageRoute(
-          builder: (_) => ShopWebViewScreen(
-            url: url,
-            title: title,
-          ),
-        ),
+        url: url,
+        title: title,
       );
     }
 

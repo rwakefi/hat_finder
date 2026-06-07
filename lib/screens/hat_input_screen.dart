@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../config/app_breakpoints.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
@@ -1609,7 +1610,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   Expanded(
                     child: GridView.count(
-                      crossAxisCount: 2,
+                      crossAxisCount: AppBreakpoints.gridCrossAxisCount(
+                        context,
+                        desktop: 3,
+                      ),
                       padding: EdgeInsets.fromLTRB(
                         12,
                         12,
