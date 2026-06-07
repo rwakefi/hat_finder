@@ -252,6 +252,14 @@ class ShopifyService {
   /// Shared shape matching for wizard UI and filtering.
   static bool matchShape(String prod, String ui) => _matchShape(prod, ui);
 
+  /// Returns cached full catalog if splash/home preload already finished.
+  static List<dynamic>? peekFullProducts() {
+    if (_cachedFullProducts != null && _isCacheValid(_cachedFullTime)) {
+      return _cachedFullProducts;
+    }
+    return null;
+  }
+
   /// Returns cached lite catalog if splash/home preload already finished.
   static List<dynamic>? peekLiteProducts() {
     if (_cachedLiteProducts != null && _isCacheValid(_liteCacheTime)) {
@@ -697,9 +705,10 @@ class ShopifyService {
   /// Call during splash so the hat wizard opens with catalog already in memory.
   static void preloadWizardCatalog({bool includeFullCatalog = false}) {
     _preload('validation choices', fetchValidationChoices());
-    _preload('lite catalog', fetchLiteProducts());
     if (includeFullCatalog) {
       _preload('full catalog', fetchFullProducts());
+    } else {
+      _preload('lite catalog', fetchLiteProducts());
     }
   }
 

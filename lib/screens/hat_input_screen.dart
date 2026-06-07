@@ -1100,7 +1100,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   void _startCatalogLoad() {
-    final cached = ShopifyService.peekLiteProducts();
+    // Wizard crown/brim filtering requires metafields — use full catalog, not lite.
+    final cached = ShopifyService.peekFullProducts();
     if (cached != null) {
       _allProducts = cached;
       _allProductsFuture = Future.value(cached);
@@ -1110,7 +1111,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       return;
     }
 
-    _allProductsFuture = ShopifyService.fetchLiteProducts().then((products) {
+    _allProductsFuture = ShopifyService.fetchFullProducts().then((products) {
       if (mounted) _onProductsLoaded(products);
       return products;
     });

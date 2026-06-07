@@ -228,6 +228,33 @@ void main() {
     );
   });
 
+  test('filterProducts needs metafields for crown and brim wizard filtering', () {
+    final withMeta = {
+      'feltStrawOrBallcap': {'value': '["Felt"]'},
+      'crownShape': {'value': '["Cattleman\'s"]'},
+      'brimShape': {'value': '["Medium Curved"]'},
+      'city': {'value': 'false'},
+      'outdoors': {'value': 'false'},
+    };
+    final withoutMeta = {'title': 'Stetson Oak Ridge'};
+
+    final matched = ShopifyService.filterProducts(
+      [withMeta],
+      hatType: 'Felt',
+      westernStyle: 'Western',
+      crownShape: "Cattleman's",
+    );
+    expect(matched, hasLength(1));
+
+    final unmatched = ShopifyService.filterProducts(
+      [withoutMeta],
+      hatType: 'Felt',
+      westernStyle: 'Western',
+      crownShape: "Cattleman's",
+    );
+    expect(unmatched, isEmpty);
+  });
+
   test('parseProductNodes maps images to featuredImage for UI', () {
     const body = r'''
     {
