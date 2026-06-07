@@ -325,10 +325,29 @@ class ShopifyService {
     if (data['errors'] != null) {
       throw Exception('GraphQL Error: ${data['errors']}');
     }
-    return _eligibleCatalogProducts(
-      (data['data']['products']['edges'] as List<dynamic>)
-          .map((p) => p['node']),
-    );
+    final nodes = (data['data']['products']['edges'] as List<dynamic>)
+        .map((p) => p['node'] as Map<String, dynamic>)
+        .map((node) {
+          final metafields = node['metafields'] as List<dynamic>? ?? [];
+          final meta = <String, dynamic>{};
+          for (final mf in metafields) {
+            if (mf == null) continue;
+            final key = mf['key']?.toString() ?? '';
+            final value = mf['value'];
+            switch (key) {
+              case 'felt_straw_or_ballcap': meta['feltStrawOrBallcap'] = value; break;
+              case 'crown_shape': meta['crownShape'] = value; break;
+              case 'brim_shape': meta['brimShape'] = value; break;
+              case 'crown_height': meta['crownHeight'] = value; break;
+              case 'brim_width': meta['brimWidth'] = value; break;
+              case 'stetson_profile': meta['stetsonProfile'] = value; break;
+              case 'city': meta['city'] = value; break;
+              case 'outdoors': meta['outdoors'] = value; break;
+            }
+          }
+          return {...node, ...meta};
+        }).toList();
+    return _eligibleCatalogProducts(nodes);
   }
 
   static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
