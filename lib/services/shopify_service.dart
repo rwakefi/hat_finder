@@ -335,14 +335,14 @@ class ShopifyService {
             final key = mf['key']?.toString() ?? '';
             final value = mf['value'];
             switch (key) {
-              case 'felt_straw_or_ballcap': meta['feltStrawOrBallcap'] = value; break;
-              case 'crown_shape': meta['crownShape'] = value; break;
-              case 'brim_shape': meta['brimShape'] = value; break;
-              case 'crown_height': meta['crownHeight'] = value; break;
-              case 'brim_width': meta['brimWidth'] = value; break;
-              case 'stetson_profile': meta['stetsonProfile'] = value; break;
-              case 'city': meta['city'] = value; break;
-              case 'outdoors': meta['outdoors'] = value; break;
+              case 'felt_straw_or_ballcap': meta['feltStrawOrBallcap'] = {'value': value}; break;
+              case 'crown_shape': meta['crownShape'] = {'value': value}; break;
+              case 'brim_shape': meta['brimShape'] = {'value': value}; break;
+              case 'crown_height': meta['crownHeight'] = {'value': value}; break;
+              case 'brim_width': meta['brimWidth'] = {'value': value}; break;
+              case 'stetson_profile': meta['stetsonProfile'] = {'value': value}; break;
+              case 'city': meta['city'] = {'value': value}; break;
+              case 'outdoors': meta['outdoors'] = {'value': value}; break;
             }
           }
           return {...node, ...meta};
