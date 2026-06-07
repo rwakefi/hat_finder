@@ -228,6 +228,55 @@ void main() {
     );
   });
 
+  test('parseProductNodes maps images to featuredImage for UI', () {
+    const body = r'''
+    {
+      "data": {
+        "products": {
+          "edges": [
+            {
+              "node": {
+                "id": "gid://shopify/Product/1",
+                "title": "Stetson Quality Western Goods Cap",
+                "handle": "stetson-cap",
+                "onlineStoreUrl": "https://example.com/products/stetson-cap",
+                "images": {
+                  "edges": [
+                    {
+                      "node": {
+                        "url": "https://cdn.shopify.com/cap.png",
+                        "altText": "Cap"
+                      }
+                    }
+                  ]
+                },
+                "metafields": [
+                  {
+                    "key": "felt_straw_or_ballcap",
+                    "value": "[\"Ballcap\"]"
+                  }
+                ],
+                "variants": { "edges": [] }
+              }
+            }
+          ]
+        }
+      }
+    }
+    ''';
+
+    final products = ShopifyService.parseProductNodesForTest(body);
+    expect(products, hasLength(1));
+    final product = products.first as Map<String, dynamic>;
+    expect(product['featuredImage']?['url'], 'https://cdn.shopify.com/cap.png');
+    expect(product['image']?['url'], 'https://cdn.shopify.com/cap.png');
+    expect(product['onlineStoreUrl'], 'https://example.com/products/stetson-cap');
+    expect(
+      ShopifyService.parseMetafieldValue(product['feltStrawOrBallcap']),
+      'Ballcap',
+    );
+  });
+
   test('fetch caches reuse in-flight request', () async {
     ShopifyService.clearCache();
     // Cache layer is exercised indirectly; ensure clearCache resets state.

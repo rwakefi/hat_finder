@@ -756,7 +756,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     // Metafield values
     final crownShape = _metaValue(hat['crownShape']);
     final crownHeight = _formatInchesDisplay(hat['crownHeight']);
-    final material = _metaValue(hat['material']);
+    final material = _metaValue(hat['feltStrawOrBallcap']);
     final brimShape = _metaValue(hat['brimShape']);
     final brimWidth = _formatInchesDisplay(hat['brimWidth']);
     final hatTypeLower = (widget.hatType ?? _filterHatType ?? '').toLowerCase();
@@ -1168,7 +1168,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       }
     }
 
-    final featured = hat['featuredImage']?['url'] as String?;
+    final featured = hat['featuredImage']?['url'] as String? ??
+        hat['image']?['url'] as String?;
     if (featured != null &&
         featured.isNotEmpty &&
         _urlMatchesColorName(featured, colorName)) {
@@ -1192,7 +1193,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       }
     }
 
-    final featured = hat['featuredImage']?['url'] as String?;
+    final featured = hat['featuredImage']?['url'] as String? ??
+        hat['image']?['url'] as String?;
     for (final entry in swatchColors) {
       if (entry.imageUrl != null && entry.imageUrl!.isNotEmpty) {
         return entry.imageUrl;

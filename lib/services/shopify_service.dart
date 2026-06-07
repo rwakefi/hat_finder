@@ -327,6 +327,10 @@ class ShopifyService {
     return future;
   }
 
+  @visibleForTesting
+  static List<dynamic> parseProductNodesForTest(String body) =>
+      _parseProductNodes(body);
+
   static List<dynamic> _parseProductNodes(String body) {
     final data = jsonDecode(body);
     if (data['errors'] != null) {
@@ -352,11 +356,16 @@ class ShopifyService {
               case 'outdoors': meta['outdoors'] = {'value': value}; break;
             }
           }
-          // Flatten first image to node['image']['url'] for app compatibility
+          // Flatten first image for app compatibility (UI reads featuredImage).
           final imagesEdges = (node['images']?['edges'] as List<dynamic>?) ?? [];
           if (imagesEdges.isNotEmpty) {
             final imgNode = imagesEdges.first['node'];
-            meta['image'] = {'url': imgNode?['url'], 'altText': imgNode?['altText']};
+            final imagePayload = <String, dynamic>{
+              'url': imgNode?['url'],
+              'altText': imgNode?['altText'],
+            };
+            meta['image'] = imagePayload;
+            meta['featuredImage'] = imagePayload;
           }
           return {...node, ...meta};
         }).toList();
@@ -374,6 +383,7 @@ class ShopifyService {
             vendor
             productType
             handle
+            onlineStoreUrl
             tags
             priceRange {
               minVariantPrice { amount currencyCode }
@@ -406,6 +416,7 @@ class ShopifyService {
             vendor
             productType
             handle
+            onlineStoreUrl
             tags
             priceRange {
               minVariantPrice { amount currencyCode }
