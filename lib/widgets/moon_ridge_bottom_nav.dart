@@ -30,8 +30,8 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   static const _inactive = Color(0xFF9E9890);
   static const _accent = Color(0xFF559C99);
 
-  static const _labelSlotHeight = 26.0;
-  static const _labelFontSize = 13.0;
+  static const _labelSlotHeight = 36.0;
+  static const _labelFontSize = 12.0;
 
   static const _tabs = <_NavTab>[
     _NavTab.label('Home'),
@@ -110,9 +110,9 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           isLaptop ? 24 : 16,
-          isLaptop ? 8 : 10,
+          isLaptop ? 10 : 12,
           isLaptop ? 24 : 16,
-          bottomInset > 0 ? 8 : (isLaptop ? 10 : 12),
+          bottomInset > 0 ? 10 : (isLaptop ? 12 : 14),
         ),
         child: SizedBox(
           height: _labelSlotHeight,
@@ -166,7 +166,7 @@ class _TopNavTabItem extends StatelessWidget {
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  letterSpacing: 0.2,
+                  letterSpacing: 0.8,
                   color: active
                       ? _MoonRidgeBottomNavState._active
                       : _MoonRidgeBottomNavState._inactive,
@@ -211,8 +211,8 @@ class _BottomNavTabItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelStyle = GoogleFonts.montserrat(
       fontSize: _MoonRidgeBottomNavState._labelFontSize,
-      fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-      letterSpacing: 0.2,
+      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+      letterSpacing: 0.8,
       color: active ? activeColor : inactiveColor,
       height: 1.15,
     );
