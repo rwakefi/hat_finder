@@ -26,7 +26,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   late int _visualSelectedIndex = widget.selectedIndex;
 
   static const _barColor = Color(0xFF1C1917);
-  static const _active = Colors.white;
+  static const _active = Color(0xFFB8860B);
   static const _inactive = Color(0xFF9E9890);
   static const _accent = Color(0xFF559C99);
 
