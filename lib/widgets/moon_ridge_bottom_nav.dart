@@ -30,12 +30,13 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   static const _inactive = Color(0xFF9E9890);
   static const _accent = Color(0xFF559C99);
 
-  static const _labelSlotHeight = 34.0;
-  static const _indicatorSlotHeight = 14.0;
-  static const _labelIndicatorGap = 8.0;
+  // Reduced heights for a slimmer bar
+  static const _labelSlotHeight = 26.0;
+  static const _indicatorSlotHeight = 8.0;
+  static const _labelIndicatorGap = 5.0;
   static const _tabColumnHeight =
       _labelSlotHeight + _labelIndicatorGap + _indicatorSlotHeight;
-  static const _labelFontSize = 13.0;
+  static const _labelFontSize = 11.0;
 
   static const _tabs = <_NavTab>[
     _NavTab.label('Home'),
@@ -114,9 +115,9 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           isLaptop ? 24 : 16,
-          isLaptop ? 12 : 14,
+          isLaptop ? 8 : 10,
           isLaptop ? 24 : 16,
-          bottomInset > 0 ? 10 : (isLaptop ? 14 : 16),
+          bottomInset > 0 ? 8 : (isLaptop ? 10 : 12),
         ),
         child: SizedBox(
           height: _tabColumnHeight,
@@ -271,7 +272,14 @@ class _BottomNavTabItem extends StatelessWidget {
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 180),
                   opacity: active ? 1 : 0,
-                  child: const _NavActiveMark(),
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -310,46 +318,4 @@ class _NavTab {
 
   String get semanticsLabel =>
       topLabel ?? label ?? (isStacked ? '$topLine $bottomLine' : '');
-}
-
-class _NavActiveMark extends StatelessWidget {
-  const _NavActiveMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(12, 12),
-      painter: _FourPointMarkPainter(color: Colors.white),
-    );
-  }
-}
-
-class _FourPointMarkPainter extends CustomPainter {
-  _FourPointMarkPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(size.width * 0.5, 0)
-      ..lineTo(size.width * 0.62, size.height * 0.38)
-      ..lineTo(size.width, size.height * 0.5)
-      ..lineTo(size.width * 0.62, size.height * 0.62)
-      ..lineTo(size.width * 0.5, size.height)
-      ..lineTo(size.width * 0.38, size.height * 0.62)
-      ..lineTo(0, size.height * 0.5)
-      ..lineTo(size.width * 0.38, size.height * 0.38)
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _FourPointMarkPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
