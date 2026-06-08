@@ -30,12 +30,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   static const _inactive = Color(0xFF9E9890);
   static const _accent = Color(0xFF559C99);
 
-  // Reduced heights for a slimmer bar
   static const _labelSlotHeight = 26.0;
-  static const _indicatorSlotHeight = 8.0;
-  static const _labelIndicatorGap = 5.0;
-  static const _tabColumnHeight =
-      _labelSlotHeight + _labelIndicatorGap + _indicatorSlotHeight;
   static const _labelFontSize = 11.0;
 
   static const _tabs = <_NavTab>[
@@ -120,7 +115,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
           bottomInset > 0 ? 8 : (isLaptop ? 10 : 12),
         ),
         child: SizedBox(
-          height: _tabColumnHeight,
+          height: _labelSlotHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: List.generate(_tabs.length, (index) {
@@ -130,8 +125,6 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
                   active: index == _visualSelectedIndex,
                   onTap: () => _handleTap(index),
                   labelSlotHeight: _labelSlotHeight,
-                  indicatorSlotHeight: _indicatorSlotHeight,
-                  labelIndicatorGap: _labelIndicatorGap,
                   activeColor: _active,
                   inactiveColor: _inactive,
                 ),
@@ -174,7 +167,9 @@ class _TopNavTabItem extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                   letterSpacing: 0.2,
-                  color: active ? _MoonRidgeBottomNavState._active : _MoonRidgeBottomNavState._inactive,
+                  color: active
+                      ? _MoonRidgeBottomNavState._active
+                      : _MoonRidgeBottomNavState._inactive,
                 ),
               ),
               const SizedBox(height: 8),
@@ -201,8 +196,6 @@ class _BottomNavTabItem extends StatelessWidget {
     required this.active,
     required this.onTap,
     required this.labelSlotHeight,
-    required this.indicatorSlotHeight,
-    required this.labelIndicatorGap,
     required this.activeColor,
     required this.inactiveColor,
   });
@@ -211,8 +204,6 @@ class _BottomNavTabItem extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
   final double labelSlotHeight;
-  final double indicatorSlotHeight;
-  final double labelIndicatorGap;
   final Color activeColor;
   final Color inactiveColor;
 
@@ -220,7 +211,7 @@ class _BottomNavTabItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelStyle = GoogleFonts.montserrat(
       fontSize: _MoonRidgeBottomNavState._labelFontSize,
-      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+      fontWeight: active ? FontWeight.w600 : FontWeight.w400,
       letterSpacing: 0.2,
       color: active ? activeColor : inactiveColor,
       height: 1.15,
@@ -233,57 +224,34 @@ class _BottomNavTabItem extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: labelSlotHeight,
-              child: Center(
-                child: tab.isStacked
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            tab.topLine!,
-                            textAlign: TextAlign.center,
-                            style: labelStyle,
-                          ),
-                          Text(
-                            tab.bottomLine!,
-                            textAlign: TextAlign.center,
-                            style: labelStyle,
-                          ),
-                        ],
-                      )
-                    : Text(
-                        tab.label!,
+        child: SizedBox(
+          height: labelSlotHeight,
+          child: Center(
+            child: tab.isStacked
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        tab.topLine!,
                         textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: labelStyle,
                       ),
-              ),
-            ),
-            SizedBox(height: labelIndicatorGap),
-            SizedBox(
-              height: indicatorSlotHeight,
-              child: Center(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  opacity: active ? 1 : 0,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
+                      Text(
+                        tab.bottomLine!,
+                        textAlign: TextAlign.center,
+                        style: labelStyle,
+                      ),
+                    ],
+                  )
+                : Text(
+                    tab.label!,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
                   ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
