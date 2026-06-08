@@ -1181,6 +1181,12 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     return bestMatch;
   }
 
+  static bool _isRedColorName(String colorName) {
+    final c = colorName.toLowerCase().trim();
+    return c == 'red' || c.startsWith('red ') || c.endsWith(' red') ||
+        c.contains(' red ');
+  }
+
   String? _heroImageForHat(
     dynamic hat,
     List<({String color, String variantGid, String? imageUrl})> swatchColors,
@@ -1195,6 +1201,16 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       }
     }
 
+    // Prefer a non-red variant image first
+    for (final entry in swatchColors) {
+      if (!_isRedColorName(entry.color) &&
+          entry.imageUrl != null &&
+          entry.imageUrl!.isNotEmpty) {
+        return entry.imageUrl;
+      }
+    }
+
+    // Fall back to any swatch image (including red) if no other option
     final featured = hat['featuredImage']?['url'] as String? ??
         hat['image']?['url'] as String?;
     for (final entry in swatchColors) {
