@@ -121,7 +121,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _fullCatalog = all;
     final filtered = _filterCatalog(all);
     _rebuildSwatchCache(filtered);
-    return filtered;
+    return ShopifyService.orderBigalliLast(filtered);
   }
 
   List<double> _crownHeightOptionsForFineTuning() {

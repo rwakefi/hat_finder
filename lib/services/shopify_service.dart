@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'database_service.dart';
 import '../config/app_config.dart';
 import '../models/hat.dart';
 
@@ -185,8 +184,28 @@ class ShopifyService {
     return values.toList();
   }
 
+  /// Bigalli Hats USA stays in the catalog, but should trail other suppliers in
+  /// all product listings and never supply wizard/guide example imagery.
+  static bool isBigalliProduct(dynamic product) {
+    final vendor = (product?['vendor'] ?? '').toString().trim().toLowerCase();
+    return vendor == 'bigalli hats usa';
+  }
+
+  static List<dynamic> orderBigalliLast(Iterable<dynamic> products) {
+    final primary = <dynamic>[];
+    final bigalli = <dynamic>[];
+    for (final product in products) {
+      if (isBigalliProduct(product)) {
+        bigalli.add(product);
+      } else {
+        primary.add(product);
+      }
+    }
+    return [...primary, ...bigalli];
+  }
+
   static List<dynamic> _eligibleCatalogProducts(Iterable<dynamic> products) =>
-      products.where(isHatFinderCatalogProduct).toList();
+      orderBigalliLast(products.where(isHatFinderCatalogProduct));
 
   /// All crown height values on a product metafield (often a JSON list).
   static List<double> parseCrownHeightValues(dynamic entry) {
@@ -524,7 +543,7 @@ class ShopifyService {
       return catalog;
     }
 
-    return catalog.where((product) {
+    final filtered = catalog.where((product) {
       final meta = _productMeta(product);
 
       if (hatType != null && hatType != 'Any Type') {
@@ -593,6 +612,7 @@ class ShopifyService {
 
       return matches;
     }).toList();
+    return orderBigalliLast(filtered);
   }
 
   /// Public: does a product's `felt_straw_or_ballcap` value match a UI hat type

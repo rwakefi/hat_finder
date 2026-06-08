@@ -364,6 +364,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     for (final type in _availableHatTypes) {
       for (final product in products) {
+        if (ShopifyService.isBigalliProduct(product)) continue;
         final imageUrl = product['featuredImage']?['url'];
         if (imageUrl == null || imageUrl.toString().isEmpty) continue;
         final url = imageUrl as String;
@@ -697,6 +698,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final materialTarget = selectedHatType?.name.toLowerCase();
 
     for (final product in _allProducts!) {
+      if (ShopifyService.isBigalliProduct(product)) continue;
       if (product['featuredImage']?['url'] == null) continue;
 
       // Filter out products that don't match the selected hat type (Felt or Straw)
@@ -804,7 +806,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 8, 16, 4);
+  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 8, 16, 0);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 0, bottom: 0);
 
@@ -813,25 +815,71 @@ class _HatInputScreenState extends State<HatInputScreen> {
   bool _isProMaxLayout(BuildContext context) =>
       MediaQuery.sizeOf(context).height >= 920;
 
-  double _shapeCarouselCardHeight(
-    BuildContext context, {
+  /// Shopify slash-separated names (e.g. Gambler/Telescope) break onto new lines.
+  String _shapeCardDisplayTitle(String name) {
+    if (!name.contains('/')) return name.toUpperCase();
+    return name
+        .split('/')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .join('\n')
+        .toUpperCase();
+  }
+
+  int _shapeCardTitleLineCount(String name) {
+    final display = _shapeCardDisplayTitle(name);
+    return display.split('\n').length.clamp(1, 3);
+  }
+
+  /// Title size scales down for long Shopify validation names (e.g. brim CHL).
+  double _shapeCardTitleFontSize(String name) {
+    final len = name.length;
+    if (len > 48) return 11;
+    if (len > 38) return 12;
+    if (len > 30) return 13;
+    if (len > 24) return 15;
+    if (len > 18) return 17;
+    return 19;
+  }
+
+  double _shapeCardTitleLetterSpacing(String name) {
+    final len = name.length;
+    if (len > 38) return 0.3;
+    if (len > 28) return 0.6;
+    if (len > 20) return 0.9;
+    return 1.2;
+  }
+
+  double _shapeCardImageScale(BuildContext context) {
+    if (_isProMaxLayout(context)) return 1.48;
+    return 1.42;
+  }
+
+  Widget _buildShapeCardBackTitle(String name) {
+    final displayTitle = _shapeCardDisplayTitle(name);
+    final maxLines = _shapeCardTitleLineCount(name).clamp(1, 3);
+    return Text(
+      displayTitle,
+      textAlign: TextAlign.center,
+      maxLines: maxLines,
+      softWrap: true,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.montserrat(
+        fontSize: _shapeCardTitleFontSize(name),
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+        letterSpacing: _shapeCardTitleLetterSpacing(name),
+        height: 1.2,
+      ),
+    );
+  }
+
+  double _shapeCarouselCardHeight({
     required double maxExpandedHeight,
   }) {
-    final screenH = MediaQuery.sizeOf(context).height;
-    final hasFitBanner = widget.headShapeProfile != null ||
-        widget.headMeasurementProfile != null;
-
-    double preferred;
-    if (screenH >= 920) {
-      // Pro Max only — trim when fit banners eat vertical space.
-      preferred = hasFitBanner ? 530 : 570;
-    } else if (screenH >= 780) {
-      preferred = hasFitBanner ? 500 : 530;
-    } else {
-      preferred = (screenH * 0.60).clamp(380.0, 500.0);
-    }
-
-    return preferred.clamp(360.0, maxExpandedHeight);
+    if (maxExpandedHeight <= 0) return 0;
+    // Fill the carousel slot so the card uses all space above the dots.
+    return maxExpandedHeight;
   }
 
   Widget _buildShapeCarouselArea({required Widget stack}) {
@@ -839,12 +887,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final cardHeight = _shapeCarouselCardHeight(
-            context,
             maxExpandedHeight: constraints.maxHeight,
           );
-          return Center(
+          return Align(
+            alignment: Alignment.topCenter,
             child: SizedBox(
               height: cardHeight,
+              width: double.infinity,
               child: stack,
             ),
           );
@@ -883,14 +932,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
         },
         style: TextButton.styleFrom(
           foregroundColor: const Color(0xFF559C99),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           visualDensity: VisualDensity.compact,
         ),
-        icon: const Icon(Icons.menu_book_outlined, size: 18),
+        icon: const Icon(Icons.menu_book_outlined, size: 16),
         label: Text(
           label,
           style: GoogleFonts.montserrat(
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -916,13 +965,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
           'Example:',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
-            fontSize: 11,
+            fontSize: 9,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF5A5551),
-            letterSpacing: 1.5,
+            letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -930,7 +979,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             maxLines: 1,
             style: GoogleFonts.cormorantGaramond(
-              fontSize: 23,
+              fontSize: 15,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF3C3530),
               fontStyle: FontStyle.italic,
@@ -942,6 +991,31 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  String? _exampleProductTitleForCarousel({
+    required List<HatShapeInfo> shapes,
+    required int index,
+    required Map<String, List<Map<String, String>>> productsMap,
+  }) {
+    if (index < 0 || index >= shapes.length) return null;
+    final shape = shapes[index];
+    final photo = _pickShapeCardPhoto(
+      shapeName: shape.name,
+      shopifyProducts: productsMap[shape.name] ?? [],
+      shapeCarouselIndex: index,
+    );
+    return photo.productTitle;
+  }
+
+  Widget _buildShapeExampleBar(String? productTitle) {
+    if (productTitle == null || productTitle.isEmpty) {
+      return const SizedBox(height: 2);
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
+      child: _buildExampleProductOverlay(productTitle),
+    );
+  }
+
   Widget _buildShapeCardFrontFooter({
     required HatShapeInfo shape,
     required VoidCallback onSelect,
@@ -949,33 +1023,38 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String selectLabel,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            shape.name.toUpperCase(),
+            _shapeCardDisplayTitle(shape.name),
             textAlign: TextAlign.center,
+            maxLines: 3,
+            softWrap: true,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.montserrat(
-              fontSize: 21,
+              fontSize: _shapeCardTitleFontSize(shape.name) + 2,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF2D2926),
-              letterSpacing: 1.5,
+              letterSpacing: _shapeCardTitleLetterSpacing(shape.name),
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             shape.description,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 11,
               color: Color(0xFF4A4541),
-              height: 1.3,
+              height: 1.25,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -983,7 +1062,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF559C99),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -992,20 +1071,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 selectLabel,
                 style: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           OutlinedButton(
             onPressed: onFlip,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF559C99),
               side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1013,9 +1092,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
             child: Text(
               'FLIP FOR MORE INFO',
               style: GoogleFonts.montserrat(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+                letterSpacing: 0.8,
               ),
             ),
           ),
@@ -1025,9 +1104,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildShapeCardFrontFace({
+    required BuildContext context,
     required HatShapeInfo shape,
     required String? imageUrl,
-    required String? productTitle,
     required bool isSelected,
     required VoidCallback onSelect,
     required VoidCallback onFlip,
@@ -1055,37 +1134,27 @@ class _HatInputScreenState extends State<HatInputScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Flexible(
-              fit: FlexFit.loose,
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 52),
-                    child: Transform.scale(
-                      scale: 1.23,
-                      child: _buildShapeCardHatImage(imageUrl, fallbackAsset: shape.imagePath),
+            Expanded(
+              child: ClipRect(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Transform.scale(
+                    scale: _shapeCardImageScale(context),
+                    child: _buildShapeCardHatImage(
+                      imageUrl,
+                      fallbackAsset: shape.imagePath,
                     ),
                   ),
-                  if (productTitle != null && productTitle.isNotEmpty)
-                    Positioned(
-                      top: 10,
-                      left: 12,
-                      right: 12,
-                      child: _buildExampleProductOverlay(productTitle),
-                    ),
-                ],
+                ),
               ),
             ),
-            Transform.translate(
-              offset: const Offset(0, 0),
-              child: _buildShapeCardFrontFooter(
-                shape: shape,
-                onSelect: onSelect,
-                onFlip: onFlip,
-                selectLabel: selectLabel,
-              ),
+            _buildShapeCardFrontFooter(
+              shape: shape,
+              onSelect: onSelect,
+              onFlip: onFlip,
+              selectLabel: selectLabel,
             ),
           ],
         ),
@@ -1305,19 +1374,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 90,
+        toolbarHeight: 108,
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/images/Moon Ridge Header Logo.png',
-              height: 55.0,
+              height: 94.0,
             ),
           ],
         ),
         centerTitle: true,
         automaticallyImplyLeading: false,
         leading: null,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(3),
+          child: _buildProgressBar(),
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -1330,7 +1403,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               constraints: const BoxConstraints(maxWidth: 1040),
               child: Column(
                 children: [
-                  _buildProgressBar(),
                   if (widget.headShapeProfile != null)
                     _buildHeadShapeProfileBanner(widget.headShapeProfile!),
                   if (widget.headMeasurementProfile != null)
@@ -1457,11 +1529,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildProgressBar() {
-    return LinearProgressIndicator(
-      value: (_currentPageIndex + 1) / _pages.length.toDouble(),
-      backgroundColor: Colors.grey[200],
-      valueColor: const AlwaysStoppedAnimation<Color>(
-          Color(0xFF559C99)), // Turquoise accent
+    return SizedBox(
+      height: 3,
+      width: double.infinity,
+      child: LinearProgressIndicator(
+        value: (_currentPageIndex + 1) / _pages.length.toDouble(),
+        minHeight: 3,
+        backgroundColor: Colors.grey[200],
+        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)),
+      ),
     );
   }
 
@@ -1609,39 +1685,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualHatTypeSelection() {
     return Column(
       children: [
+        _buildWizardStepTitle('Select a Hat Type:'),
         Padding(
-          padding: _wizardStepTitlePadding,
-          child: Column(
-            children: [
-              Text(
-                'Select a Hat Type:',
-                textAlign: TextAlign.center,
-                style: _wizardStepTitleStyle,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: OutlinedButton(
+            onPressed: () {
+              setState(() => selectedHatType = null);
+              _nextPage(overrideValidation: true);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2D2926),
+              side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            ),
+            child: Text(
+              'ANY HAT TYPE',
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
               ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () {
-                  setState(() => selectedHatType = null);
-                  _nextPage(overrideValidation: true);
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D2926),
-                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                ),
-                child: Text(
-                  'ANY HAT TYPE',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         Expanded(
@@ -1814,39 +1881,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualWesternSelection() {
     return Column(
       children: [
+        _buildWizardStepTitle('Select Style:'),
         Padding(
-          padding: _wizardStepTitlePadding,
-          child: Column(
-            children: [
-              Text(
-                'Select Style:',
-                textAlign: TextAlign.center,
-                style: _wizardStepTitleStyle,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: OutlinedButton(
+            onPressed: () {
+              setState(() => selectedWesternStyle = null);
+              _nextPage(overrideValidation: true);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2D2926),
+              side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            ),
+            child: Text(
+              'ANY STYLE',
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
               ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () {
-                  setState(() => selectedWesternStyle = null);
-                  _nextPage(overrideValidation: true);
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D2926),
-                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                ),
-                child: Text(
-                  'ANY STYLE',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         Expanded(
@@ -1877,7 +1935,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
               final imageUrls = <String, String?>{};
               if (snapshot.hasData) {
                 try {
-                  var products = List<dynamic>.from(snapshot.data!);
+                  var products = List<dynamic>.from(snapshot.data!)
+                      .where((p) => !ShopifyService.isBigalliProduct(p))
+                      .toList();
                   if (selectedHatType != null) {
                     final target = selectedHatType!.name.toLowerCase();
                     products = products.where((p) {
@@ -2287,6 +2347,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
+            _buildShapeExampleBar(
+              _exampleProductTitleForCarousel(
+                shapes: sortedShapes,
+                index: _currentCrownCarouselIndex,
+                productsMap: shopifyProductsMap,
+              ),
+            ),
             _buildCrownGuideLink(),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             _buildShapeCarouselArea(
@@ -2321,7 +2388,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         shapeCarouselIndex: index,
                       );
                       final imageUrl = photo.imageUrl;
-                      final productTitle = photo.productTitle;
                       final bool isFlipped = _flippedCardIndex == index;
 
                       return Padding(
@@ -2377,16 +2443,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.center,
                                               children: [
-                                                Text(
-                                                  shape.name.toUpperCase(),
-                                                  textAlign: TextAlign.center,
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                    letterSpacing: 3.0,
-                                                  ),
-                                                ),
+                                                _buildShapeCardBackTitle(shape.name),
                                                 const SizedBox(height: 6),
                                                 Container(
                                                   width: 40,
@@ -2590,9 +2647,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                       )
                                     // ── FRONT FACE (image) ──
                                     : _buildShapeCardFrontFace(
+                                        context: context,
                                         shape: shape,
                                         imageUrl: imageUrl,
-                                        productTitle: productTitle,
                                         isSelected: isSelected,
                                         onSelect: () => _selectCrownAndAdvance(
                                             shape, index),
@@ -2689,7 +2746,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots — hugging the bottom of the card
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -2711,7 +2768,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             // Next Up row (centred)
             if (_currentCrownCarouselIndex + 1 < sortedShapes.length)
               Padding(
-                padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
+                padding: const EdgeInsets.only(top: 2.0, bottom: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -2720,21 +2777,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     Text(
                       'NEXT UP: ',
                       style: GoogleFonts.montserrat(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[500],
-                        letterSpacing: 1.8,
+                        letterSpacing: 1.4,
                       ),
                     ),
                     Flexible(
-                      child: Text(
-                        sortedShapes[_currentCrownCarouselIndex + 1].name,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cormorantGaramond(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2D2926),
-                          fontStyle: FontStyle.italic,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          sortedShapes[_currentCrownCarouselIndex + 1].name,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2D2926),
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ),
@@ -2820,6 +2880,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
+            _buildShapeExampleBar(
+              _exampleProductTitleForCarousel(
+                shapes: sortedShapes,
+                index: _currentBrimCarouselIndex,
+                productsMap: shopifyProductsMap,
+              ),
+            ),
             _buildBrimGuideLink(),
             // Carousel with swipe arrows
             _buildShapeCarouselArea(
@@ -2851,7 +2918,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         shapeCarouselIndex: index,
                       );
                       final imageUrl = photo.imageUrl;
-                      final productTitle = photo.productTitle;
                       final bool isFlipped = _flippedBrimCardIndex == index;
 
                       return Padding(
@@ -2906,16 +2972,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.center,
                                               children: [
-                                                Text(
-                                                  shape.name.toUpperCase(),
-                                                  textAlign: TextAlign.center,
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                    letterSpacing: 3.0,
-                                                  ),
-                                                ),
+                                                _buildShapeCardBackTitle(shape.name),
                                                 const SizedBox(height: 6),
                                                 Container(
                                                   width: 40,
@@ -3110,9 +3167,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                       )
                                     // ── FRONT FACE (image) ──
                                     : _buildShapeCardFrontFace(
+                                        context: context,
                                         shape: shape,
                                         imageUrl: imageUrl,
-                                        productTitle: productTitle,
                                         isSelected: isSelected,
                                         onSelect: () =>
                                             _selectBrimAndAdvance(shape, index),
@@ -3195,7 +3252,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             // Dots
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -3217,7 +3274,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             // Next Up row (centred)
             if (_currentBrimCarouselIndex + 1 < sortedShapes.length)
               Padding(
-                padding: const EdgeInsets.only(top: 4.0, bottom: 16.0),
+                padding: const EdgeInsets.only(top: 2.0, bottom: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -3226,21 +3283,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     Text(
                       'NEXT UP: ',
                       style: GoogleFonts.montserrat(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[500],
-                        letterSpacing: 1.8,
+                        letterSpacing: 1.4,
                       ),
                     ),
                     Flexible(
-                      child: Text(
-                        sortedShapes[_currentBrimCarouselIndex + 1].name,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cormorantGaramond(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2D2926),
-                          fontStyle: FontStyle.italic,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          sortedShapes[_currentBrimCarouselIndex + 1].name,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2D2926),
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ),

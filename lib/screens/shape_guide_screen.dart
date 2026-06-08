@@ -112,6 +112,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
     final result = <String, String>{};
     for (final shape in widget.shapes) {
       for (final product in sorted) {
+        if (ShopifyService.isBigalliProduct(product)) continue;
         if (!ShopifyService.isHatFinderCatalogProduct(product)) continue;
         final imageUrl = product['featuredImage']?['url'];
         if (imageUrl == null || imageUrl.toString().isEmpty) continue;
