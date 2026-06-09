@@ -815,20 +815,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
   bool _isProMaxLayout(BuildContext context) =>
       MediaQuery.sizeOf(context).height >= 920;
 
-  /// Shopify slash-separated names (e.g. Gambler/Telescope) break onto new lines.
-  String _shapeCardDisplayTitle(String name) {
-    if (!name.contains('/')) return name.toUpperCase();
+  /// Shopify slash-separated names (e.g. Gambler/Telescope) as separate lines.
+  List<String> _shapeCardTitleParts(String name) {
+    if (!name.contains('/')) return [name.toUpperCase()];
     return name
         .split('/')
-        .map((part) => part.trim())
+        .map((part) => part.trim().toUpperCase())
         .where((part) => part.isNotEmpty)
-        .join('\n')
-        .toUpperCase();
-  }
-
-  int _shapeCardTitleLineCount(String name) {
-    final display = _shapeCardDisplayTitle(name);
-    return display.split('\n').length.clamp(1, 3);
+        .take(3)
+        .toList();
   }
 
   /// Title size scales down for long Shopify validation names (e.g. brim CHL).
@@ -855,22 +850,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return 1.42;
   }
 
+  Widget _buildStackedShapeTitle({
+    required String name,
+    required Color primaryColor,
+    required Color aliasColor,
+  }) {
+    final parts = _shapeCardTitleParts(name);
+    final baseSize = _shapeCardTitleFontSize(name);
+    final baseSpacing = _shapeCardTitleLetterSpacing(name);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < parts.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 1),
+            child: Text(
+              parts[i],
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                fontSize: i == 0 ? baseSize : baseSize * 0.84,
+                fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w600,
+                color: i == 0 ? primaryColor : aliasColor,
+                letterSpacing: i == 0 ? baseSpacing : baseSpacing * 0.65,
+                height: 1.15,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildShapeCardBackTitle(String name) {
-    final displayTitle = _shapeCardDisplayTitle(name);
-    final maxLines = _shapeCardTitleLineCount(name).clamp(1, 3);
-    return Text(
-      displayTitle,
-      textAlign: TextAlign.center,
-      maxLines: maxLines,
-      softWrap: true,
-      overflow: TextOverflow.ellipsis,
-      style: GoogleFonts.montserrat(
-        fontSize: _shapeCardTitleFontSize(name),
-        fontWeight: FontWeight.w700,
-        color: Colors.white,
-        letterSpacing: _shapeCardTitleLetterSpacing(name),
-        height: 1.2,
-      ),
+    return _buildStackedShapeTitle(
+      name: name,
+      primaryColor: Colors.white,
+      aliasColor: Colors.white.withValues(alpha: 0.62),
     );
   }
 
@@ -967,11 +984,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
           style: GoogleFonts.montserrat(
             fontSize: 9,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.9),
+            color: const Color(0xFF5A5551),
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -979,9 +996,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             maxLines: 2,
             style: GoogleFonts.cormorantGaramond(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: const Color(0xFF3C3530),
               fontStyle: FontStyle.italic,
               letterSpacing: 0.0,
             ),
@@ -1010,37 +1027,31 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (productTitle == null || productTitle.isEmpty) {
       return const SizedBox(height: 2);
     }
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFF559C99),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
       child: _buildExampleProductOverlay(productTitle),
     );
   }
 
-  /// Full-width teal band below the hat photo; grows vertically for long names.
+  /// Shape name below the hat photo — compact type with a teal accent rule.
   Widget _buildShapeCardTitleBar(String name) {
-    final displayTitle = _shapeCardDisplayTitle(name);
-    final maxLines = _shapeCardTitleLineCount(name).clamp(1, 3);
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFF559C99),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      constraints: const BoxConstraints(minHeight: 64),
-      alignment: Alignment.center,
-      child: Text(
-        displayTitle,
-        textAlign: TextAlign.center,
-        maxLines: maxLines,
-        softWrap: true,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.montserrat(
-          fontSize: _shapeCardTitleFontSize(name),
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          letterSpacing: _shapeCardTitleLetterSpacing(name),
-          height: 1.2,
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildStackedShapeTitle(
+            name: name,
+            primaryColor: const Color(0xFF2D2926),
+            aliasColor: const Color(0xFF559C99),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 40,
+            height: 2,
+            color: const Color(0xFF559C99),
+          ),
+        ],
       ),
     );
   }
