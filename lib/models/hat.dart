@@ -127,11 +127,11 @@ const List<HatShapeInfo> crownShapes = [
         'A performance-minded evolution of the Cattleman. The side dents are bumped out and popped, widening the crown from the front for a squarer, more aggressive stance.',
   ),
   HatShapeInfo(
-    'Gambler/Telescope',
+    'Gambler/Telescope/Buckaroo',
     'assets/images/crowns/gambler.png',
     'A flat circular top with a continuous gutter around the crown.',
     physicalDescription:
-        'Clean and unconventional. A flat, circular top with a continuous gutter running all the way around the outer edge — no pinch, no crease, just a bold, unbroken line.',
+        'Clean and unconventional. A flat, circular top with a continuous gutter running all the way around the outer edge — no pinch, no crease, just a bold, unbroken line. The Buckaroo shares this low, flat profile with a working-ranch attitude.',
   ),
   HatShapeInfo(
     'CHL (Cool Hand Luke)',

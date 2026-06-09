@@ -962,26 +962,26 @@ class _HatInputScreenState extends State<HatInputScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Example:',
+          'Featured:',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
             fontSize: 9,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF5A5551),
+            color: Colors.white.withValues(alpha: 0.9),
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
             productTitle,
             textAlign: TextAlign.center,
-            maxLines: 1,
+            maxLines: 2,
             style: GoogleFonts.cormorantGaramond(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF3C3530),
+              color: Colors.white,
               fontStyle: FontStyle.italic,
               letterSpacing: 0.0,
             ),
@@ -1010,9 +1010,38 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (productTitle == null || productTitle.isEmpty) {
       return const SizedBox(height: 2);
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF559C99),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: _buildExampleProductOverlay(productTitle),
+    );
+  }
+
+  /// Full-width teal band below the hat photo; grows vertically for long names.
+  Widget _buildShapeCardTitleBar(String name) {
+    final displayTitle = _shapeCardDisplayTitle(name);
+    final maxLines = _shapeCardTitleLineCount(name).clamp(1, 3);
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF559C99),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 64),
+      alignment: Alignment.center,
+      child: Text(
+        displayTitle,
+        textAlign: TextAlign.center,
+        maxLines: maxLines,
+        softWrap: true,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.montserrat(
+          fontSize: _shapeCardTitleFontSize(name),
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: _shapeCardTitleLetterSpacing(name),
+          height: 1.2,
+        ),
+      ),
     );
   }
 
@@ -1023,25 +1052,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String selectLabel,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _shapeCardDisplayTitle(shape.name),
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            softWrap: true,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: _shapeCardTitleFontSize(shape.name) + 2,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF2D2926),
-              letterSpacing: _shapeCardTitleLetterSpacing(shape.name),
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 4),
           Text(
             shape.description,
             textAlign: TextAlign.center,
@@ -1150,6 +1164,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
+            _buildShapeCardTitleBar(shape.name),
             _buildShapeCardFrontFooter(
               shape: shape,
               onSelect: onSelect,
@@ -2347,6 +2362,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
+            _buildCrownGuideLink(),
             _buildShapeExampleBar(
               _exampleProductTitleForCarousel(
                 shapes: sortedShapes,
@@ -2354,7 +2370,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 productsMap: shopifyProductsMap,
               ),
             ),
-            _buildCrownGuideLink(),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             _buildShapeCarouselArea(
               stack: Stack(
@@ -2880,6 +2895,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99),
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
+            _buildBrimGuideLink(),
             _buildShapeExampleBar(
               _exampleProductTitleForCarousel(
                 shapes: sortedShapes,
@@ -2887,7 +2903,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 productsMap: shopifyProductsMap,
               ),
             ),
-            _buildBrimGuideLink(),
             // Carousel with swipe arrows
             _buildShapeCarouselArea(
               stack: Stack(
