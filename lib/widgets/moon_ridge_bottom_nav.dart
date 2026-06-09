@@ -29,7 +29,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   static const _active = Color(0xFFD4A843);
   static const _inactive = Color(0xFF9E9890);
 
-  static const _labelSlotHeight = 30.0;
+  static const _labelSlotHeight = 34.0;
   static const _labelFontSize = 12.0;
 
   static const _tabs = <_NavTab>[
@@ -217,21 +217,24 @@ class _BottomNavTabItem extends StatelessWidget {
           height: labelSlotHeight,
           child: Center(
             child: tab.isStacked
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        tab.topLine!,
-                        textAlign: TextAlign.center,
-                        style: labelStyle,
-                      ),
-                      Text(
-                        tab.bottomLine!,
-                        textAlign: TextAlign.center,
-                        style: labelStyle,
-                      ),
-                    ],
+                ? FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          tab.topLine!,
+                          textAlign: TextAlign.center,
+                          style: labelStyle,
+                        ),
+                        Text(
+                          tab.bottomLine!,
+                          textAlign: TextAlign.center,
+                          style: labelStyle,
+                        ),
+                      ],
+                    ),
                   )
                 : Text(
                     tab.label!,

@@ -806,6 +806,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  /// Hat-type grid photos — show the full hat without cropping the brim.
+  Widget _buildHatTypeCardImage({
+    required String? imageUrl,
+    required String imagePath,
+  }) {
+    const surface = Color(0xFFFAFAFA);
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return ColoredBox(
+        color: surface,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          alignment: Alignment.center,
+          errorBuilder: (_, __, ___) => ColoredBox(
+            color: surface,
+            child: _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
+          ),
+        ),
+      );
+    }
+    if (imagePath != 'assets/images/placeholder.png') {
+      return ColoredBox(
+        color: surface,
+        child: _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
+      );
+    }
+    return const ColoredBox(
+      color: surface,
+      child: Center(
+        child: Icon(Icons.category, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+
   static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 8, 16, 0);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 0, bottom: 0);
@@ -1772,8 +1806,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   : cardW * rows;
                               final cardH =
                                   ((availH - 24 - 12 * (rows - 1)) / rows)
-                                      .clamp(150.0, 300.0);
-                              aspect = (cardW / cardH).clamp(0.7, 2.0);
+                                      .clamp(200.0, 380.0);
+                              aspect = (cardW / cardH).clamp(0.55, 1.0);
                             } else {
                               aspect =
                                   _isProMaxLayout(context) ? 0.92 : 0.85;
@@ -1829,38 +1863,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
-                                  // Real product image, chosen by the Shopify
-                                  // `felt_straw_or_ballcap` metafield. Falls back
-                                  // to the curated category asset if the catalog
-                                  // image is missing or fails to load.
-                                  child: imageUrl != null
-                                      ? Image.network(
-                                          imageUrl,
-                                          fit: BoxFit.cover,
-                                          alignment:
-                                              const Alignment(0.0, -0.35),
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Image.asset(
-                                            typeInfo.imagePath,
-                                            fit: BoxFit.cover,
-                                            alignment:
-                                                const Alignment(0.0, -0.35),
-                                          ),
-                                        )
-                                      : (typeInfo.imagePath !=
-                                              'assets/images/placeholder.png'
-                                          ? Image.asset(
-                                              typeInfo.imagePath,
-                                              fit: BoxFit.cover,
-                                              alignment:
-                                                  const Alignment(0.0, -0.35),
-                                            )
-                                          : Container(
-                                              color: Colors.grey[50],
-                                              child: const Icon(Icons.category,
-                                                  size: 48, color: Colors.grey),
-                                            )),
+                                  child: _buildHatTypeCardImage(
+                                    imageUrl: imageUrl,
+                                    imagePath: typeInfo.imagePath,
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
