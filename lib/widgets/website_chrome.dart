@@ -27,9 +27,108 @@ class WebsiteChrome extends StatelessWidget {
     await launchUrl(uri, webOnlyWindowName: '_top');
   }
 
-  Future<void> _openHatsCollection(BuildContext context) async {
-    final uri = Uri.parse('${AppConfig.publicStoreUrl}/collections/hats');
-    await launchUrl(uri, webOnlyWindowName: '_blank');
+  Widget _buildBrandLockup({required bool isWide, required double logoHeight}) {
+    final titleSize = isWide ? 15.0 : 12.0;
+    final accentHeight = isWide ? 30.0 : 26.0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Image.asset(
+          _logoAsset,
+          height: logoHeight,
+          fit: BoxFit.contain,
+          color: Colors.white,
+          colorBlendMode: BlendMode.srcIn,
+        ),
+        SizedBox(width: isWide ? 18 : 14),
+        Container(
+          width: 1,
+          height: logoHeight * 0.62,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white.withValues(alpha: 0.04),
+                Colors.white.withValues(alpha: 0.22),
+                Colors.white.withValues(alpha: 0.06),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: isWide ? 16 : 12),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 3,
+              height: accentHeight,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF7BB8B5),
+                    _teal,
+                    Color(0xFF3D7A77),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _teal.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'HAT FINDER',
+                  style: GoogleFonts.montserrat(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: isWide ? 2.4 : 2.0,
+                    color: _gold,
+                    height: 1.0,
+                    shadows: const [
+                      Shadow(
+                        color: Color(0x40000000),
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: isWide ? 7 : 6),
+                Container(
+                  height: 2,
+                  width: isWide ? 92 : 76,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(1),
+                    gradient: LinearGradient(
+                      colors: [
+                        _teal.withValues(alpha: 0.15),
+                        _teal,
+                        _gold.withValues(alpha: 0.55),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -59,6 +158,18 @@ class WebsiteChrome extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.0),
+                  Colors.white.withValues(alpha: 0.12),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
           SafeArea(
             bottom: false,
             child: Center(
@@ -69,82 +180,34 @@ class WebsiteChrome extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     isWide ? 28 : 16,
-                    isWide ? 12 : 10,
+                    isWide ? 10 : 8,
                     isWide ? 28 : 16,
-                    isWide ? 14 : 12,
+                    isWide ? 12 : 10,
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () => _openStore(context),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isWide ? 14 : 10,
+                                vertical: isWide ? 8 : 6,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(
-                                    _logoAsset,
-                                    height: logoHeight,
-                                    fit: BoxFit.contain,
-                                    color: Colors.white,
-                                    colorBlendMode: BlendMode.srcIn,
-                                  ),
-                                  SizedBox(width: isWide ? 16 : 12),
-                                  Container(
-                                    width: 1,
-                                    height: logoHeight * 0.72,
-                                    color: Colors.white.withValues(alpha: 0.18),
-                                  ),
-                                  SizedBox(width: isWide ? 16 : 12),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'HAT FINDER',
-                                        style: GoogleFonts.montserrat(
-                                          fontSize: isWide ? 13 : 11,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: isWide ? 2.0 : 1.6,
-                                          color: _gold,
-                                          height: 1.1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Container(
-                                        width: isWide ? 36 : 28,
-                                        height: 2,
-                                        decoration: BoxDecoration(
-                                          color: _teal,
-                                          borderRadius:
-                                              BorderRadius.circular(1),
-                                        ),
-                                      ),
-                                      if (isWide) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Curated western & specialty hats',
-                                          style: GoogleFonts.montserrat(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                            letterSpacing: 0.2,
-                                            color: _champagne
-                                                .withValues(alpha: 0.82),
-                                            height: 1.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white.withValues(alpha: 0.035),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.07),
+                                ),
+                              ),
+                              child: _buildBrandLockup(
+                                isWide: isWide,
+                                logoHeight: logoHeight,
                               ),
                             ),
                           ),
@@ -154,9 +217,16 @@ class WebsiteChrome extends StatelessWidget {
                         onPressed: () => _openStore(context),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
+                          backgroundColor: Colors.white.withValues(alpha: 0.04),
                           padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 12 : 8,
+                            horizontal: isWide ? 14 : 10,
                             vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                         ),
                         icon: Icon(
@@ -173,35 +243,6 @@ class WebsiteChrome extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (isWide) ...[
-                        const SizedBox(width: 10),
-                        OutlinedButton(
-                          onPressed: () => _openHatsCollection(context),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: _teal.withValues(alpha: 0.18),
-                            side: BorderSide(
-                              color: _teal.withValues(alpha: 0.75),
-                              width: 1.2,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 11,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          child: Text(
-                            'Browse Hats',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
