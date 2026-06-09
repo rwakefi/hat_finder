@@ -12,10 +12,12 @@ class WebsiteChrome extends StatelessWidget {
   const WebsiteChrome({super.key});
 
   static const _logoAsset = 'assets/images/moon_ridge_logo.png';
-  static const _espresso = Color(0xFF2D2926);
-  static const _champagne = Color(0xFFC9BBA8);
-  static const _gold = Color(0xFFD4A843);
-  static const _teal = Color(0xFF559C99);
+
+  // Palette aligned with moonridgecompany.com (Shopify theme).
+  static const _brandBrown = Color(0xFF312110);
+  static const _announcementTeal = Color(0xFF4A9E9A);
+  static const _brandGold = Color(0xFFC5A059);
+  static const _headerBorder = Color(0xFFE0E0E0);
 
   static bool shouldShow(BuildContext context) {
     if (!kIsWeb || EmbedMode.isActive) return false;
@@ -27,9 +29,8 @@ class WebsiteChrome extends StatelessWidget {
     await launchUrl(uri, webOnlyWindowName: '_top');
   }
 
-  Widget _buildBrandLockup({required bool isWide, required double logoHeight}) {
-    final titleSize = isWide ? 15.0 : 12.0;
-    final accentHeight = isWide ? 30.0 : 26.0;
+  Widget _buildBrandLockup({required bool isDesktop, required double logoHeight}) {
+    final titleSize = isDesktop ? 13.0 : 11.0;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -39,91 +40,39 @@ class WebsiteChrome extends StatelessWidget {
           _logoAsset,
           height: logoHeight,
           fit: BoxFit.contain,
-          color: Colors.white,
-          colorBlendMode: BlendMode.srcIn,
         ),
-        SizedBox(width: isWide ? 18 : 14),
+        SizedBox(width: isDesktop ? 18 : 14),
         Container(
-          width: 1,
-          height: logoHeight * 0.62,
+          width: 2,
+          height: logoHeight * 0.42,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.04),
-                Colors.white.withValues(alpha: 0.22),
-                Colors.white.withValues(alpha: 0.06),
-              ],
-            ),
+            color: _brandGold.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(1),
           ),
         ),
-        SizedBox(width: isWide ? 16 : 12),
-        Row(
+        SizedBox(width: isDesktop ? 16 : 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 3,
-              height: accentHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF7BB8B5),
-                    _teal,
-                    Color(0xFF3D7A77),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _teal.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+            Text(
+              'HAT FINDER',
+              style: GoogleFonts.montserrat(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: isDesktop ? 2.2 : 1.8,
+                color: _brandBrown,
+                height: 1.0,
               ),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'HAT FINDER',
-                  style: GoogleFonts.montserrat(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: isWide ? 2.4 : 2.0,
-                    color: _gold,
-                    height: 1.0,
-                    shadows: const [
-                      Shadow(
-                        color: Color(0x40000000),
-                        offset: Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: isWide ? 7 : 6),
-                Container(
-                  height: 2,
-                  width: isWide ? 92 : 76,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(1),
-                    gradient: LinearGradient(
-                      colors: [
-                        _teal.withValues(alpha: 0.15),
-                        _teal,
-                        _gold.withValues(alpha: 0.55),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            SizedBox(height: isDesktop ? 6 : 5),
+            Container(
+              height: 2,
+              width: isDesktop ? 72 : 60,
+              decoration: BoxDecoration(
+                color: _announcementTeal,
+                borderRadius: BorderRadius.circular(1),
+              ),
             ),
           ],
         ),
@@ -133,131 +82,92 @@ class WebsiteChrome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = AppBreakpoints.isDesktop(context);
-    final logoHeight = isWide ? 50.0 : 42.0;
+    final isDesktop = AppBreakpoints.isDesktop(context);
+    final logoHeight = isDesktop ? 44.0 : 38.0;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF3D322C),
-            _espresso,
-            Color(0xFF241F1C),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
+    return ColoredBox(
+      color: Colors.white,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.0),
-                  Colors.white.withValues(alpha: 0.12),
-                  Colors.white.withValues(alpha: 0.0),
-                ],
+          const ColoredBox(
+            color: _announcementTeal,
+            child: SizedBox(height: 3, width: double.infinity),
+          ),
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: _headerBorder),
               ),
             ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: AppBreakpoints.webAppMaxWidth(context),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    isWide ? 28 : 16,
-                    isWide ? 10 : 8,
-                    isWide ? 28 : 16,
-                    isWide ? 12 : 10,
+            child: SafeArea(
+              bottom: false,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: AppBreakpoints.webAppMaxWidth(context),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _openStore(context),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isWide ? 14 : 10,
-                                vertical: isWide ? 8 : 6,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.white.withValues(alpha: 0.035),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.07),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isDesktop ? 32 : 16,
+                      isDesktop ? 14 : 10,
+                      isDesktop ? 32 : 16,
+                      isDesktop ? 16 : 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _openStore(context),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                child: _buildBrandLockup(
+                                  isDesktop: isDesktop,
+                                  logoHeight: logoHeight,
                                 ),
                               ),
-                              child: _buildBrandLockup(
-                                isWide: isWide,
-                                logoHeight: logoHeight,
-                              ),
                             ),
                           ),
                         ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _openStore(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.white.withValues(alpha: 0.04),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 14 : 10,
-                            vertical: 8,
+                        TextButton.icon(
+                          onPressed: () => _openStore(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: _brandBrown,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isDesktop ? 12 : 8,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.1),
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            size: isDesktop ? 18 : 16,
+                            color: _brandBrown.withValues(alpha: 0.85),
+                          ),
+                          label: Text(
+                            isDesktop ? 'Back to Moon Ridge' : 'Store',
+                            style: GoogleFonts.montserrat(
+                              fontSize: isDesktop ? 13 : 12,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                              color: _brandBrown,
                             ),
                           ),
                         ),
-                        icon: Icon(
-                          Icons.arrow_back_rounded,
-                          size: isWide ? 18 : 16,
-                          color: _champagne.withValues(alpha: 0.95),
-                        ),
-                        label: Text(
-                          isWide ? 'Back to Moon Ridge' : 'Store',
-                          style: GoogleFonts.montserrat(
-                            fontSize: isWide ? 13 : 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.92),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          Container(
-            height: 2,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0x00559C99),
-                  _teal,
-                  Color(0x00559C99),
-                ],
               ),
             ),
           ),
