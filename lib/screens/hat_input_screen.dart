@@ -806,34 +806,40 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  /// Hat-type grid photos — show the full hat without cropping the brim.
+  /// Hat-type grid photos — full hat visible inside the 2×2 grid (no brim crop).
   Widget _buildHatTypeCardImage({
     required String? imageUrl,
     required String imagePath,
   }) {
-    const surface = Color(0xFFFAFAFA);
+    const inset = EdgeInsets.fromLTRB(10, 10, 10, 6);
+    Widget buildImage(Widget image) {
+      return Padding(padding: inset, child: image);
+    }
+
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return ColoredBox(
-        color: surface,
-        child: Image.network(
-          imageUrl,
-          fit: BoxFit.contain,
-          alignment: Alignment.center,
-          errorBuilder: (_, __, ___) => ColoredBox(
-            color: surface,
-            child: _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
+        color: Colors.white,
+        child: buildImage(
+          Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) =>
+                _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
           ),
         ),
       );
     }
     if (imagePath != 'assets/images/placeholder.png') {
       return ColoredBox(
-        color: surface,
-        child: _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
+        color: Colors.white,
+        child: buildImage(
+          _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
+        ),
       );
     }
     return const ColoredBox(
-      color: surface,
+      color: Colors.white,
       child: Center(
         child: Icon(Icons.category, size: 48, color: Colors.grey),
       ),
@@ -1870,7 +1876,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 16.0),
+                                      vertical: 12.0),
                                   color: Colors.white,
                                   child: Text(
                                     typeInfo.name.toUpperCase(),
