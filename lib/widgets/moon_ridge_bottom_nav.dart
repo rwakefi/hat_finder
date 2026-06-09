@@ -26,7 +26,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   late int _visualSelectedIndex = widget.selectedIndex;
 
   static const _barColor = Color(0xFF1C1917);
-  static const _active = Color(0xFFD4AF37);
+  static const _active = Color(0xFFD4A843);
   static const _inactive = Color(0xFF9E9890);
 
   static const _labelSlotHeight = 30.0;
@@ -165,8 +165,10 @@ class _TopNavTabItem extends StatelessWidget {
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: 0.2,
-                  color: active ? _MoonRidgeBottomNavState._active : _MoonRidgeBottomNavState._inactive,
+                  letterSpacing: 0.8,
+                  color: active
+                      ? _MoonRidgeBottomNavState._active
+                      : _MoonRidgeBottomNavState._inactive,
                 ),
               ),
             ],
@@ -199,7 +201,7 @@ class _BottomNavTabItem extends StatelessWidget {
     final labelStyle = GoogleFonts.montserrat(
       fontSize: _MoonRidgeBottomNavState._labelFontSize,
       fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-      letterSpacing: 0.2,
+      letterSpacing: 0.8,
       color: active ? activeColor : inactiveColor,
       height: 1.1,
     );

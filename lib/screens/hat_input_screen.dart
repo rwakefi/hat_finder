@@ -1376,18 +1376,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
       _isProMaxLayout(context);
 
   Widget? _buildScaffoldFooter(BuildContext context) {
+    // When embedded in AppShell (not a pushed overlay), the shell renders
+    // the nav bar — returning anything here causes a double nav bar.
+    if (!_isOverlayRoute) return null;
+
     if (_useInlineWizardFooter(context)) {
-      return _isOverlayRoute
-          ? const ShellTabBarFooter(selectedIndex: 1)
-          : null;
+      return const ShellTabBarFooter(selectedIndex: 1);
     }
-    if (_isOverlayRoute) {
-      return ShellTabBarWithFooter(
-        selectedIndex: 1,
-        footer: _buildBottomNav(includeBottomSafeArea: false),
-      );
-    }
-    return _buildBottomNav();
+    return ShellTabBarWithFooter(
+      selectedIndex: 1,
+      footer: _buildBottomNav(includeBottomSafeArea: false),
+    );
   }
 
   @override
