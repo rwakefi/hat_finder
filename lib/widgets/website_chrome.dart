@@ -93,6 +93,8 @@ class WebsiteChrome extends StatelessWidget {
                                     _logoAsset,
                                     height: logoHeight,
                                     fit: BoxFit.contain,
+                                    color: Colors.white,
+                                    colorBlendMode: BlendMode.srcIn,
                                   ),
                                   SizedBox(width: isWide ? 16 : 12),
                                   Container(
