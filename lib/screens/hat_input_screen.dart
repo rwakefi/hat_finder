@@ -795,8 +795,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildHatTypeCardImage({
     required String? imageUrl,
     required String imagePath,
+    bool compact = false,
   }) {
-    const inset = EdgeInsets.fromLTRB(10, 10, 10, 6);
+    final inset = compact
+        ? const EdgeInsets.fromLTRB(4, 2, 4, 0)
+        : const EdgeInsets.fromLTRB(10, 10, 10, 6);
     Widget buildImage(Widget image) {
       return Padding(padding: inset, child: image);
     }
@@ -951,12 +954,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
       );
 
   Widget _buildWizardStepTitle(String title) {
+    final compactWeb = _isWebDesktopWizard(context);
     return Padding(
-      padding: _wizardStepTitlePadding,
+      padding: compactWeb
+          ? const EdgeInsets.fromLTRB(16, 2, 16, 0)
+          : _wizardStepTitlePadding,
       child: Text(
         title,
         textAlign: TextAlign.center,
-        style: _wizardStepTitleStyle,
+        style: compactWeb
+            ? _wizardStepTitleStyle.copyWith(fontSize: 22)
+            : _wizardStepTitleStyle,
       ),
     );
   }
@@ -1424,13 +1432,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 108,
+        toolbarHeight: _isWebDesktopWizard(context) ? 64.0 : 108.0,
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/images/Moon Ridge Header Logo.png',
-              height: 94.0,
+              height: _isWebDesktopWizard(context) ? 52.0 : 94.0,
             ),
           ],
         ),
@@ -1450,7 +1458,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
           bottom: false,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1040),
+              constraints: BoxConstraints(
+                maxWidth: kIsWeb
+                    ? AppBreakpoints.webAppMaxWidth(context)
+                    : 1040,
+              ),
               child: Column(
                 children: [
                   if (widget.headShapeProfile != null)
@@ -1776,36 +1788,37 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       color: Color(0xFF559C99),
                     ),
                   Expanded(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: kIsWeb
-                              ? _webWizardGridMaxWidth
-                              : double.infinity,
-                        ),
-                        child: LayoutBuilder(
+                    child: LayoutBuilder(
                           builder: (context, c) {
                             final fourUp = _isWebWizardFourUp(c.maxWidth);
                             final crossAxisCount =
                                 fourUp ? _webWizardGridColumns : 2;
+                            final webLayout = fourUp
+                                ? _webWizardFourUpLayout(
+                                    width: c.maxWidth,
+                                    height: c.maxHeight,
+                                    itemCount: _availableHatTypes.length,
+                                  )
+                                : null;
                             final aspect = fourUp
-                                ? 0.72
+                                ? webLayout!.aspect
                                 : (_isProMaxLayout(context) ? 0.92 : 0.85);
-                            return GridView.count(
+                            final grid = GridView.count(
                       crossAxisCount: crossAxisCount,
                       shrinkWrap: fourUp,
                       physics: fourUp
                           ? const NeverScrollableScrollPhysics()
                           : null,
-                      padding: EdgeInsets.fromLTRB(
-                        12,
-                        12,
-                        12,
-                        fourUp ? 32 : (_isProMaxLayout(context) ? 4 : 12),
-                      ),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                      padding: fourUp
+                          ? webLayout!.padding
+                          : EdgeInsets.fromLTRB(
+                              12,
+                              12,
+                              12,
+                              _isProMaxLayout(context) ? 4 : 12,
+                            ),
+                      crossAxisSpacing: fourUp ? webLayout!.spacing : 12,
+                      mainAxisSpacing: fourUp ? webLayout!.spacing : 12,
                       childAspectRatio: aspect,
                       children: _availableHatTypes.map((typeInfo) {
                         final isSelected = selectedHatType == typeInfo;
@@ -1846,6 +1859,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   child: _buildHatTypeCardImage(
                                     imageUrl: imageUrl,
                                     imagePath: typeInfo.imagePath,
+                                    compact: fourUp,
                                   ),
                                 ),
                                 Container(
@@ -1873,9 +1887,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         );
                       }).toList(),
                             );
+                            if (fourUp) {
+                              return Align(
+                                alignment: Alignment.center,
+                                child: grid,
+                              );
+                            }
+                            return grid;
                           },
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -1887,12 +1906,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  static const _webWizardGridMaxWidth = 1040.0;
   static const _webWizardGridColumns = 4;
+
+  bool _isWebDesktopWizard(BuildContext context) =>
+      kIsWeb && AppBreakpoints.isDesktop(context);
 
   /// Four-across wizard grids on web when the content area is tablet-wide+.
   bool _isWebWizardFourUp(double layoutWidth) =>
       kIsWeb && layoutWidth >= AppBreakpoints.tablet;
+
+  /// Sizes four-across wizard cards from the available content area.
+  ({double aspect, EdgeInsets padding, double spacing}) _webWizardFourUpLayout({
+    required double width,
+    required double height,
+    required int itemCount,
+  }) {
+    const columns = _webWizardGridColumns;
+    const hPad = 28.0;
+    const vPad = 8.0;
+    const spacing = 20.0;
+    final rows = (itemCount / columns).ceil();
+    final cardW = (width - hPad * 2 - spacing * (columns - 1)) / columns;
+    final rowGap = rows > 1 ? spacing * (rows - 1) : 0.0;
+    final cardH =
+        ((height - vPad * 2 - rowGap) / rows).clamp(190.0, 280.0);
+    return (
+      aspect: cardW / cardH,
+      padding: const EdgeInsets.fromLTRB(hPad, vPad, hPad, vPad),
+      spacing: spacing,
+    );
+  }
 
   Widget _buildVisualWesternSelection() {
     return Column(
@@ -2018,16 +2061,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 } catch (_) {}
               }
 
-              return Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: _webWizardGridMaxWidth,
-                  ),
-                  child: LayoutBuilder(
+              return LayoutBuilder(
                     builder: (context, constraints) {
                       final fourUp =
                           _isWebWizardFourUp(constraints.maxWidth);
+                      final webLayout = fourUp
+                          ? _webWizardFourUpLayout(
+                              width: constraints.maxWidth,
+                              height: constraints.maxHeight,
+                              itemCount: styles.length,
+                            )
+                          : null;
                       final cards = List.generate(styles.length, (index) {
                         final style = styles[index];
                         final name = style['name'] as String;
@@ -2115,15 +2159,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       });
 
                       if (fourUp) {
-                        return GridView.count(
-                          crossAxisCount: _webWizardGridColumns,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.72,
-                          children: cards,
+                        return Align(
+                          alignment: Alignment.center,
+                          child: GridView.count(
+                            crossAxisCount: _webWizardGridColumns,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: webLayout!.padding,
+                            crossAxisSpacing: webLayout.spacing,
+                            mainAxisSpacing: webLayout.spacing,
+                            childAspectRatio: webLayout.aspect,
+                            children: cards,
+                          ),
                         );
                       }
 
@@ -2156,9 +2203,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         ),
                       );
                     },
-                  ),
-                ),
-              );
+                  );
             },
           ),
         ),
