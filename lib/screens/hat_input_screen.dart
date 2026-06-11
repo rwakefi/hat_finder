@@ -927,20 +927,50 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return maxExpandedHeight;
   }
 
+  static const _webShapeCarouselMaxWidth = 460.0;
+  static const _webShapeCardMaxHeight = 500.0;
+  static const _webShapeActionButtonMaxWidth = 230.0;
+
+  Widget _wrapWebShapeActionButton(BuildContext context, Widget button) {
+    if (!_isWebDesktopWizard(context)) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+    return Align(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints:
+            const BoxConstraints(maxWidth: _webShapeActionButtonMaxWidth),
+        child: SizedBox(width: double.infinity, child: button),
+      ),
+    );
+  }
+
   Widget _buildShapeCarouselArea({required Widget stack}) {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final cardHeight = _shapeCarouselCardHeight(
+          final webDesktop = _isWebDesktopWizard(context);
+          var cardHeight = _shapeCarouselCardHeight(
             maxExpandedHeight: constraints.maxHeight,
+          );
+          if (webDesktop) {
+            cardHeight = cardHeight.clamp(0, _webShapeCardMaxHeight);
+          }
+          final carousel = SizedBox(
+            height: cardHeight,
+            width: double.infinity,
+            child: stack,
           );
           return Align(
             alignment: Alignment.topCenter,
-            child: SizedBox(
-              height: cardHeight,
-              width: double.infinity,
-              child: stack,
-            ),
+            child: webDesktop
+                ? ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: _webShapeCarouselMaxWidth,
+                    ),
+                    child: carousel,
+                  )
+                : carousel,
           );
         },
       ),
@@ -1095,8 +1125,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required VoidCallback onFlip,
     required String selectLabel,
   }) {
+    final compactWeb = _isWebDesktopWizard(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+      padding: EdgeInsets.fromLTRB(
+        compactWeb ? 12 : 14,
+        compactWeb ? 4 : 6,
+        compactWeb ? 12 : 14,
+        compactWeb ? 8 : 10,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1105,22 +1141,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF4A4541),
+            style: TextStyle(
+              fontSize: compactWeb ? 10 : 11,
+              color: const Color(0xFF4A4541),
               height: 1.25,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
+          SizedBox(height: compactWeb ? 6 : 8),
+          _wrapWebShapeActionButton(
+            context,
+            ElevatedButton(
               onPressed: onSelect,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF559C99),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: compactWeb ? 7 : 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -1129,30 +1165,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 selectLabel,
                 style: GoogleFonts.montserrat(
-                  fontSize: 10,
+                  fontSize: compactWeb ? 9 : 10,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+                  letterSpacing: compactWeb ? 0.8 : 1.2,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 5),
-          OutlinedButton(
-            onPressed: onFlip,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF559C99),
-              side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+          SizedBox(height: compactWeb ? 4 : 5),
+          _wrapWebShapeActionButton(
+            context,
+            OutlinedButton(
+              onPressed: onFlip,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF559C99),
+                side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compactWeb ? 10 : 12,
+                  vertical: compactWeb ? 4 : 5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-            ),
-            child: Text(
-              'FLIP FOR MORE INFO',
-              style: GoogleFonts.montserrat(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
+              child: Text(
+                'FLIP FOR MORE INFO',
+                style: GoogleFonts.montserrat(
+                  fontSize: compactWeb ? 8 : 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
               ),
             ),
           ),
@@ -2668,9 +2710,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 ),
                                                 const SizedBox(height: 10),
                                                 // ── Select button ──
-                                                SizedBox(
-                                                  width: double.infinity,
-                                                  child: ElevatedButton(
+                                                _wrapWebShapeActionButton(
+                                                  context,
+                                                  ElevatedButton(
                                                     onPressed: () {
                                                       _selectCrownAndAdvance(
                                                           shape, index);
@@ -3197,9 +3239,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 ),
                                                 const SizedBox(height: 10),
                                                 // ── Select button ──
-                                                SizedBox(
-                                                  width: double.infinity,
-                                                  child: ElevatedButton(
+                                                _wrapWebShapeActionButton(
+                                                  context,
+                                                  ElevatedButton(
                                                     onPressed: () {
                                                       _selectBrimAndAdvance(
                                                           shape, index);
