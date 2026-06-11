@@ -1780,26 +1780,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       alignment: Alignment.topCenter,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          maxWidth: _isWebWide(context) ? 1040 : double.infinity,
+                          maxWidth: kIsWeb
+                              ? _webWizardGridMaxWidth
+                              : double.infinity,
                         ),
                         child: LayoutBuilder(
                           builder: (context, c) {
-                            final webWide = _isWebWide(context);
-                            final crossAxisCount = webWide ? 4 : 2;
-                            final aspect = webWide
+                            final fourUp = _isWebWizardFourUp(c.maxWidth);
+                            final crossAxisCount =
+                                fourUp ? _webWizardGridColumns : 2;
+                            final aspect = fourUp
                                 ? 0.72
                                 : (_isProMaxLayout(context) ? 0.92 : 0.85);
                             return GridView.count(
                       crossAxisCount: crossAxisCount,
-                      shrinkWrap: webWide,
-                      physics: webWide
+                      shrinkWrap: fourUp,
+                      physics: fourUp
                           ? const NeverScrollableScrollPhysics()
                           : null,
                       padding: EdgeInsets.fromLTRB(
                         12,
                         12,
                         12,
-                        webWide ? 32 : (_isProMaxLayout(context) ? 4 : 12),
+                        fourUp ? 32 : (_isProMaxLayout(context) ? 4 : 12),
                       ),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -1847,8 +1850,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 ),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                    vertical: webWide ? 10.0 : 12.0,
-                                    horizontal: webWide ? 4.0 : 0,
+                                    vertical: fourUp ? 10.0 : 12.0,
+                                    horizontal: fourUp ? 4.0 : 0,
                                   ),
                                   color: Colors.white,
                                   child: Text(
@@ -1857,10 +1860,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.montserrat(
-                                      fontSize: webWide ? 11 : 14,
+                                      fontSize: fourUp ? 11 : 14,
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF2D2926),
-                                      letterSpacing: webWide ? 1.2 : 2.0,
+                                      letterSpacing: fourUp ? 1.2 : 2.0,
                                     ),
                                   ),
                                 ),
@@ -1884,9 +1887,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  /// True on laptop/desktop web, where grids need a centered max width.
-  bool _isWebWide(BuildContext context) =>
-      kIsWeb && AppBreakpoints.isLaptop(context);
+  static const _webWizardGridMaxWidth = 1040.0;
+  static const _webWizardGridColumns = 4;
+
+  /// Four-across wizard grids on web when the content area is tablet-wide+.
+  bool _isWebWizardFourUp(double layoutWidth) =>
+      kIsWeb && layoutWidth >= AppBreakpoints.tablet;
 
   Widget _buildVisualWesternSelection() {
     return Column(
@@ -2012,114 +2018,146 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 } catch (_) {}
               }
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  const horizontalPadding = 12.0;
-                  const crossAxisSpacing = 12.0;
-                  final itemWidth = (constraints.maxWidth -
-                          horizontalPadding * 2 -
-                          crossAxisSpacing) /
-                      2;
-                  final itemHeight = itemWidth / 0.85;
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(
-                      left: horizontalPadding,
-                      right: horizontalPadding,
-                      top: 12,
-                      bottom: 40,
-                    ),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: crossAxisSpacing,
-                      runSpacing: crossAxisSpacing,
-                      children: List.generate(styles.length, (index) {
+              return Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: _webWizardGridMaxWidth,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final fourUp =
+                          _isWebWizardFourUp(constraints.maxWidth);
+                      final cards = List.generate(styles.length, (index) {
                         final style = styles[index];
                         final name = style['name'] as String;
                         final isSelected = selectedWesternStyle == name;
-
                         final imageUrl = imageUrls[name];
 
-                        return SizedBox(
-                          width: itemWidth,
-                          height: itemHeight,
-                          child: Card(
-                            elevation: 0,
-                            clipBehavior: Clip.antiAlias,
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? const Color(0xFF559C99)
-                                    : const Color(0xFF559C99).withValues(alpha: 0.35),
-                                width: isSelected ? 3 : 1,
-                              ),
+                        return Card(
+                          elevation: 0,
+                          clipBehavior: Clip.antiAlias,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? const Color(0xFF559C99)
+                                  : const Color(0xFF559C99)
+                                      .withValues(alpha: 0.35),
+                              width: isSelected ? 3 : 1,
                             ),
-                            child: InkWell(
-                              onTap: () {
-                                _onWesternStyleSelected(name);
-                                _nextPage();
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Expanded(
-                                    child: imageUrl != null
-                                        ? Image.network(
-                                            imageUrl,
-                                            fit: BoxFit.cover,
-                                            alignment: const Alignment(
-                                              0.0,
-                                              -0.35,
-                                            ),
-                                          )
-                                        : (style['fallback'] != null
-                                            ? Image.asset(
-                                                style['fallback'] as String,
-                                                fit: BoxFit.cover,
-                                                alignment: const Alignment(
-                                                  0.0,
-                                                  -0.35,
-                                                ),
-                                              )
-                                            : Container(
-                                                color: Colors.grey[50],
-                                                child: const Icon(
-                                                  Icons.style,
-                                                  size: 48,
-                                                  color: Colors.grey,
-                                                ),
-                                              )),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              _onWesternStyleSelected(name);
+                              _nextPage();
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: imageUrl != null
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: fourUp
+                                              ? BoxFit.contain
+                                              : BoxFit.cover,
+                                          alignment: fourUp
+                                              ? Alignment.center
+                                              : const Alignment(0.0, -0.35),
+                                        )
+                                      : (style['fallback'] != null
+                                          ? Image.asset(
+                                              style['fallback'] as String,
+                                              fit: fourUp
+                                                  ? BoxFit.contain
+                                                  : BoxFit.cover,
+                                              alignment: fourUp
+                                                  ? Alignment.center
+                                                  : const Alignment(
+                                                      0.0,
+                                                      -0.35,
+                                                    ),
+                                            )
+                                          : Container(
+                                              color: Colors.grey[50],
+                                              child: const Icon(
+                                                Icons.style,
+                                                size: 48,
+                                                color: Colors.grey,
+                                              ),
+                                            )),
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: fourUp ? 10.0 : 12.0,
+                                    horizontal: fourUp ? 4.0 : 8.0,
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12.0,
-                                      horizontal: 8.0,
-                                    ),
-                                    color: Colors.white,
-                                    child: Text(
-                                      (style['title'] ?? name).toUpperCase(),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF2D2926),
-                                        letterSpacing: 1.5,
-                                      ),
+                                  color: Colors.white,
+                                  child: Text(
+                                    (style['title'] ?? name).toUpperCase(),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: fourUp ? 11 : 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2926),
+                                      letterSpacing: fourUp ? 1.2 : 1.5,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         );
-                      }),
-                    ),
-                  );
-                },
+                      });
+
+                      if (fourUp) {
+                        return GridView.count(
+                          crossAxisCount: _webWizardGridColumns,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.72,
+                          children: cards,
+                        );
+                      }
+
+                      const horizontalPadding = 12.0;
+                      const crossAxisSpacing = 12.0;
+                      final itemWidth = (constraints.maxWidth -
+                              horizontalPadding * 2 -
+                              crossAxisSpacing) /
+                          2;
+                      final itemHeight = itemWidth / 0.85;
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.only(
+                          left: horizontalPadding,
+                          right: horizontalPadding,
+                          top: 12,
+                          bottom: 40,
+                        ),
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: crossAxisSpacing,
+                          runSpacing: crossAxisSpacing,
+                          children: List.generate(cards.length, (index) {
+                            return SizedBox(
+                              width: itemWidth,
+                              height: itemHeight,
+                              child: cards[index],
+                            );
+                          }),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               );
             },
           ),
