@@ -8,7 +8,7 @@ import '../models/head_shape_profile.dart';
 import 'hat_results_screen.dart';
 import 'shape_guide_screen.dart';
 import 'dart:async';
-import 'dart:math' show pi;
+import 'dart:math' show pi, min;
 import '../services/shopify_service.dart';
 import '../widgets/shell_tab_bar_footer.dart';
 
@@ -39,11 +39,17 @@ class _ShapeCardPhoto {
 
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
+  final PageController _hatTypeCarouselController =
+      PageController(viewportFraction: 0.76);
+  final PageController _styleCarouselController =
+      PageController(viewportFraction: 0.76);
   final PageController _crownCarouselController =
       PageController(viewportFraction: 0.76);
   final PageController _brimCarouselController =
       PageController(viewportFraction: 0.76);
   int _currentPageIndex = 0;
+  int _currentHatTypeCarouselIndex = 0;
+  int _currentStyleCarouselIndex = 0;
   int _currentCrownCarouselIndex = 0;
   int _currentBrimCarouselIndex = 0;
   int? _flippedCardIndex; // which crown card is showing history
@@ -945,7 +951,17 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildShapeCarouselArea({required Widget stack}) {
+  // Width of the tap target gutter on each side of the carousel where the
+  // chevron arrows live. Reserved from the available width so the carousel
+  // never overflows and arrows never overlap the cards.
+  static const double _carouselNavGutter = 44.0;
+
+  Widget _buildWizardCarouselArea({
+    required Widget pageView,
+    required PageController controller,
+    required int currentIndex,
+    required int itemCount,
+  }) {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -956,24 +972,563 @@ class _HatInputScreenState extends State<HatInputScreen> {
           if (webDesktop) {
             cardHeight = cardHeight.clamp(0, _webShapeCardMaxHeight);
           }
-          final carousel = SizedBox(
-            height: cardHeight,
-            width: double.infinity,
-            child: stack,
-          );
+
+          final available = constraints.maxWidth;
+          // Total block (card area + both gutters) is capped on desktop and
+          // never exceeds the available width on any platform.
+          final blockWidth = webDesktop
+              ? min(available, _webShapeCarouselMaxWidth + _carouselNavGutter * 2)
+              : available;
+
           return Align(
             alignment: Alignment.topCenter,
-            child: webDesktop
-                ? ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: _webShapeCarouselMaxWidth,
+            child: SizedBox(
+              width: blockWidth,
+              height: cardHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildCarouselArrowSlot(
+                    visible: currentIndex > 0,
+                    icon: Icons.chevron_left_rounded,
+                    onTap: () => controller.previousPage(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeInOut,
                     ),
-                    child: carousel,
-                  )
-                : carousel,
+                  ),
+                  Expanded(
+                    child: SizedBox(height: cardHeight, child: pageView),
+                  ),
+                  _buildCarouselArrowSlot(
+                    visible: currentIndex < itemCount - 1,
+                    icon: Icons.chevron_right_rounded,
+                    onTap: () => controller.nextPage(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeInOut,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCarouselArrowSlot({
+    required bool visible,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: _carouselNavGutter,
+      child: Center(
+        child: visible
+            ? _buildCarouselNavButton(icon: icon, onTap: onTap)
+            : const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  Widget _buildCarouselNavButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.7),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 18, color: Colors.grey[600]),
+      ),
+    );
+  }
+
+  Widget _buildCarouselDots({
+    required int itemCount,
+    required int currentIndex,
+    int maxDots = 9,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          itemCount.clamp(0, maxDots),
+          (i) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: i == currentIndex ? 20 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              color: i == currentIndex
+                  ? const Color(0xFF2D2926)
+                  : Colors.grey.shade300,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarouselNextUp({
+    required int currentIndex,
+    required int itemCount,
+    required String nextLabel,
+  }) {
+    if (currentIndex + 1 >= itemCount) {
+      return const SizedBox(height: 20);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 2.0, bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            'NEXT UP: ',
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[500],
+              letterSpacing: 1.4,
+            ),
+          ),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                nextLabel,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D2926),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWizardCarouselFooter({
+    required int itemCount,
+    required int currentIndex,
+    required String nextLabel,
+    int maxDots = 9,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCarouselDots(
+          itemCount: itemCount,
+          currentIndex: currentIndex,
+          maxDots: maxDots,
+        ),
+        _buildCarouselNextUp(
+          currentIndex: currentIndex,
+          itemCount: itemCount,
+          nextLabel: nextLabel,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWizardSelectionCard({
+    required String title,
+    required Widget image,
+    required bool isSelected,
+    required VoidCallback onSelect,
+    required String selectLabel,
+    String? description,
+  }) {
+    final compactWeb = _isWebDesktopWizard(context);
+    return GestureDetector(
+      onTap: onSelect,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF559C99)
+                : const Color(0xFF559C99).withValues(alpha: 0.35),
+            width: isSelected ? 2.5 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.03),
+              blurRadius: 16,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: image),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: compactWeb ? 15 : 17,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF2D2926),
+                        letterSpacing: compactWeb ? 1.0 : 1.2,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 40,
+                      height: 2,
+                      color: const Color(0xFF559C99),
+                    ),
+                  ],
+                ),
+              ),
+              if (description != null && description.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+                  child: Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compactWeb ? 10 : 11,
+                      color: const Color(0xFF4A4541),
+                      height: 1.25,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  compactWeb ? 12 : 14,
+                  compactWeb ? 4 : 6,
+                  compactWeb ? 12 : 14,
+                  compactWeb ? 8 : 10,
+                ),
+                child: _wrapWebShapeActionButton(
+                  context,
+                  ElevatedButton(
+                    onPressed: onSelect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF559C99),
+                      foregroundColor: Colors.white,
+                      padding:
+                          EdgeInsets.symmetric(vertical: compactWeb ? 7 : 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      selectLabel,
+                      style: GoogleFonts.montserrat(
+                        fontSize: compactWeb ? 9 : 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: compactWeb ? 0.8 : 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _selectHatTypeAndAdvance(HatShapeInfo typeInfo, int index) {
+    setState(() {
+      selectedHatType = typeInfo;
+      _currentHatTypeCarouselIndex = index;
+      selectedWesternStyle = null;
+      selectedCrownShape = null;
+      selectedBrimShape = null;
+      _refreshShapeProductMaps();
+    });
+    if (_skipsShapeWizard(typeInfo.name)) {
+      _submitSearch();
+    } else {
+      _nextPage();
+    }
+  }
+
+  Widget _buildHatTypeWebCarousel() {
+    final types = _availableHatTypes;
+    return Column(
+      children: [
+        _buildWizardCarouselArea(
+          controller: _hatTypeCarouselController,
+          currentIndex: _currentHatTypeCarouselIndex,
+          itemCount: types.length,
+          pageView: PageView.builder(
+            controller: _hatTypeCarouselController,
+            clipBehavior: Clip.hardEdge,
+            onPageChanged: (index) {
+              setState(() {
+                _currentHatTypeCarouselIndex = index;
+                if (index < types.length) {
+                  selectedHatType = types[index];
+                }
+              });
+            },
+            itemCount: types.length,
+            itemBuilder: (context, index) {
+              final typeInfo = types[index];
+              final isSelected = selectedHatType == typeInfo ||
+                  index == _currentHatTypeCarouselIndex;
+              final imageUrl = _materialExampleUrls[typeInfo.name];
+
+              return Padding(
+                padding: _shapeCardPagePadding,
+                child: _buildWizardSelectionCard(
+                  title: typeInfo.name,
+                  image: _buildHatTypeCardImage(
+                    imageUrl: imageUrl,
+                    imagePath: typeInfo.imagePath,
+                  ),
+                  isSelected: isSelected,
+                  onSelect: () => _selectHatTypeAndAdvance(typeInfo, index),
+                  selectLabel: 'SELECT THIS TYPE',
+                ),
+              );
+            },
+          ),
+        ),
+        _buildWizardCarouselFooter(
+          itemCount: types.length,
+          currentIndex: _currentHatTypeCarouselIndex,
+          nextLabel: _currentHatTypeCarouselIndex + 1 < types.length
+              ? types[_currentHatTypeCarouselIndex + 1].name
+              : '',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStyleCardImage({
+    required String? imageUrl,
+    required String? fallbackAsset,
+    bool compact = false,
+  }) {
+    if (imageUrl != null) {
+      return Image.network(
+        imageUrl,
+        fit: compact ? BoxFit.contain : BoxFit.cover,
+        alignment:
+            compact ? Alignment.center : const Alignment(0.0, -0.35),
+        errorBuilder: (_, __, ___) => fallbackAsset != null
+            ? Image.asset(
+                fallbackAsset,
+                fit: compact ? BoxFit.contain : BoxFit.cover,
+                alignment:
+                    compact ? Alignment.center : const Alignment(0.0, -0.35),
+              )
+            : Container(
+                color: Colors.grey[50],
+                child: const Icon(Icons.style, size: 48, color: Colors.grey),
+              ),
+      );
+    }
+    if (fallbackAsset != null) {
+      return Image.asset(
+        fallbackAsset,
+        fit: compact ? BoxFit.contain : BoxFit.cover,
+        alignment: compact ? Alignment.center : const Alignment(0.0, -0.35),
+      );
+    }
+    return Container(
+      color: Colors.grey[50],
+      child: const Icon(Icons.style, size: 48, color: Colors.grey),
+    );
+  }
+
+  List<Map<String, String>> get _westernStyleOptions => const [
+        {
+          'name': 'Western',
+          'title': 'Western',
+          'desc': 'Classic cowboy styles.',
+          'fallback': 'assets/images/western.jpg',
+        },
+        {
+          'name': 'City',
+          'title': 'City',
+          'desc': 'Fedoras and dress hats.',
+          'fallback': 'assets/images/city.png',
+        },
+        {
+          'name': 'Outdoor',
+          'title': 'Outdoor/Sportsman',
+          'desc': 'Sun and adventure hats.',
+          'fallback': 'assets/images/outdoor.png',
+        },
+      ];
+
+  Map<String, String?> _westernStyleImageUrls(List<dynamic>? products) {
+    final styles = _westernStyleOptions;
+    final imageUrls = <String, String?>{};
+    if (products == null) return imageUrls;
+
+    try {
+      var filtered = List<dynamic>.from(products)
+          .where((p) => !ShopifyService.isExcludedFromHatFinderExamples(p))
+          .toList();
+      if (selectedHatType != null) {
+        final target = selectedHatType!.name.toLowerCase();
+        filtered = filtered.where((p) {
+          final type = _metaValue(p['feltStrawOrBallcap']).toLowerCase();
+          return type.contains(target);
+        }).toList();
+      }
+      final usedUrls = <String>{};
+
+      for (final style in styles) {
+        final styleName = style['name']!;
+        String? foundUrl;
+
+        if (styleName == 'Western') {
+          const westernProfiles = [
+            '01',
+            '1',
+            '2',
+            '11',
+            '18',
+            '33',
+            '45',
+            '48',
+            '50',
+            '72',
+            '75',
+            '77',
+            '91',
+            '94',
+            '9G',
+          ];
+          foundUrl = filtered.firstWhere((p) {
+            final profile = _metaValue(p['stetsonProfile']);
+            final url = p['featuredImage']?['url'] as String?;
+            return westernProfiles.contains(profile) &&
+                url != null &&
+                !usedUrls.contains(url);
+          }, orElse: () => null)?['featuredImage']?['url'];
+        } else if (styleName == 'City') {
+          foundUrl = filtered.firstWhere((p) {
+            final url = p['featuredImage']?['url'] as String?;
+            return _metaValue(p['city']).toLowerCase() == 'true' &&
+                url != null &&
+                !usedUrls.contains(url);
+          }, orElse: () => null)?['featuredImage']?['url'];
+        } else if (styleName == 'Outdoor') {
+          foundUrl = filtered.firstWhere((p) {
+            final url = p['featuredImage']?['url'] as String?;
+            return _metaValue(p['outdoors']).toLowerCase() == 'true' &&
+                url != null &&
+                !usedUrls.contains(url);
+          }, orElse: () => null)?['featuredImage']?['url'];
+        }
+
+        if (foundUrl != null) {
+          usedUrls.add(foundUrl);
+        }
+        imageUrls[styleName] = foundUrl;
+      }
+    } catch (_) {}
+
+    return imageUrls;
+  }
+
+  void _selectWesternStyleAndAdvance(String name, int index) {
+    _onWesternStyleSelected(name);
+    setState(() => _currentStyleCarouselIndex = index);
+    _nextPage();
+  }
+
+  Widget _buildStyleWebCarousel(Map<String, String?> imageUrls) {
+    final styles = _westernStyleOptions;
+    return Column(
+      children: [
+        _buildWizardCarouselArea(
+          controller: _styleCarouselController,
+          currentIndex: _currentStyleCarouselIndex,
+          itemCount: styles.length,
+          pageView: PageView.builder(
+            controller: _styleCarouselController,
+            clipBehavior: Clip.hardEdge,
+            onPageChanged: (index) {
+              setState(() {
+                _currentStyleCarouselIndex = index;
+                if (index < styles.length) {
+                  selectedWesternStyle = styles[index]['name'];
+                }
+              });
+            },
+            itemCount: styles.length,
+            itemBuilder: (context, index) {
+              final style = styles[index];
+              final name = style['name']!;
+              final title = style['title'] ?? name;
+              final isSelected = selectedWesternStyle == name ||
+                  index == _currentStyleCarouselIndex;
+              final imageUrl = imageUrls[name];
+
+              return Padding(
+                padding: _shapeCardPagePadding,
+                child: _buildWizardSelectionCard(
+                  title: title,
+                  description: style['desc'],
+                  image: _buildStyleCardImage(
+                    imageUrl: imageUrl,
+                    fallbackAsset: style['fallback'],
+                    compact: true,
+                  ),
+                  isSelected: isSelected,
+                  onSelect: () => _selectWesternStyleAndAdvance(name, index),
+                  selectLabel: 'SELECT THIS STYLE',
+                ),
+              );
+            },
+          ),
+        ),
+        _buildWizardCarouselFooter(
+          itemCount: styles.length,
+          currentIndex: _currentStyleCarouselIndex,
+          nextLabel: _currentStyleCarouselIndex + 1 < styles.length
+              ? (styles[_currentStyleCarouselIndex + 1]['title'] ??
+                  styles[_currentStyleCarouselIndex + 1]['name']!)
+              : '',
+        ),
+      ],
     );
   }
 
@@ -1331,6 +1886,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _hatTypeCarouselController.dispose();
+    _styleCarouselController.dispose();
     _crownCarouselController.dispose();
     _brimCarouselController.dispose();
     super.dispose();
@@ -1683,9 +2240,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               OutlinedButton(
-                onPressed: _currentPageIndex > 0
-                    ? _previousPage
-                    : _exitWizard,
+                onPressed:
+                    _currentPageIndex > 0 ? _previousPage : _exitWizard,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.5),
@@ -1827,110 +2383,79 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   Expanded(
                     child: LayoutBuilder(
                           builder: (context, c) {
-                            final fourUp = _isWebWizardFourUp(c.maxWidth);
-                            final crossAxisCount =
-                                fourUp ? _webWizardGridColumns : 2;
-                            final webLayout = fourUp
-                                ? _webWizardFourUpLayout(
-                                    width: c.maxWidth,
-                                    height: c.maxHeight,
-                                    itemCount: _availableHatTypes.length,
-                                  )
-                                : null;
-                            final aspect = fourUp
-                                ? webLayout!.aspect
-                                : (_isProMaxLayout(context) ? 0.92 : 0.85);
-                            final grid = GridView.count(
-                      crossAxisCount: crossAxisCount,
-                      shrinkWrap: fourUp,
-                      physics: fourUp
-                          ? const NeverScrollableScrollPhysics()
-                          : null,
-                      padding: fourUp
-                          ? webLayout!.padding
-                          : EdgeInsets.fromLTRB(
-                              12,
-                              12,
-                              12,
-                              _isProMaxLayout(context) ? 4 : 12,
-                            ),
-                      crossAxisSpacing: fourUp ? webLayout!.spacing : 12,
-                      mainAxisSpacing: fourUp ? webLayout!.spacing : 12,
-                      childAspectRatio: aspect,
-                      children: _availableHatTypes.map((typeInfo) {
-                        final isSelected = selectedHatType == typeInfo;
-                        final imageUrl = _materialExampleUrls[typeInfo.name];
+                            if (_useWebWizardCarousel(c.maxWidth)) {
+                              return _buildHatTypeWebCarousel();
+                            }
+                            return GridView.count(
+                              crossAxisCount: 2,
+                              padding: EdgeInsets.fromLTRB(
+                                12,
+                                12,
+                                12,
+                                _isProMaxLayout(context) ? 4 : 12,
+                              ),
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio:
+                                  _isProMaxLayout(context) ? 0.92 : 0.85,
+                              children: _availableHatTypes.map((typeInfo) {
+                                final isSelected = selectedHatType == typeInfo;
+                                final imageUrl =
+                                    _materialExampleUrls[typeInfo.name];
 
-                        return Card(
-                          elevation: 0,
-                          clipBehavior: Clip.antiAlias,
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? const Color(0xFF559C99)
-                                  : const Color(0xFF559C99).withValues(alpha: 0.35),
-                              width: isSelected ? 3 : 1,
-                            ),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                selectedHatType = typeInfo;
-                                selectedWesternStyle = null;
-                                selectedCrownShape = null;
-                                selectedBrimShape = null;
-                                _refreshShapeProductMaps();
-                              });
-                              if (_skipsShapeWizard(typeInfo.name)) {
-                                _submitSearch();
-                              } else {
-                                _nextPage();
-                              }
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: _buildHatTypeCardImage(
-                                    imageUrl: imageUrl,
-                                    imagePath: typeInfo.imagePath,
-                                    compact: fourUp,
-                                  ),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: fourUp ? 10.0 : 12.0,
-                                    horizontal: fourUp ? 4.0 : 0,
-                                  ),
+                                return Card(
+                                  elevation: 0,
+                                  clipBehavior: Clip.antiAlias,
                                   color: Colors.white,
-                                  child: Text(
-                                    typeInfo.name.toUpperCase(),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: fourUp ? 11 : 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF2D2926),
-                                      letterSpacing: fourUp ? 1.2 : 2.0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? const Color(0xFF559C99)
+                                          : const Color(0xFF559C99)
+                                              .withValues(alpha: 0.35),
+                                      width: isSelected ? 3 : 1,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                                  child: InkWell(
+                                    onTap: () => _selectHatTypeAndAdvance(
+                                      typeInfo,
+                                      _availableHatTypes.indexOf(typeInfo),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          child: _buildHatTypeCardImage(
+                                            imageUrl: imageUrl,
+                                            imagePath: typeInfo.imagePath,
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12.0,
+                                          ),
+                                          color: Colors.white,
+                                          child: Text(
+                                            typeInfo.name.toUpperCase(),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF2D2926),
+                                              letterSpacing: 2.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             );
-                            if (fourUp) {
-                              return Align(
-                                alignment: Alignment.center,
-                                child: grid,
-                              );
-                            }
-                            return grid;
                           },
                     ),
                   ),
@@ -1942,8 +2467,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
       ],
     );
   }
-
-  static const _webWizardGridColumns = 4;
 
   bool _isWebDesktopWizard(BuildContext context) =>
       kIsWeb && AppBreakpoints.isDesktop(context);
@@ -1966,31 +2489,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  /// Four-across wizard grids on web when the content area is tablet-wide+.
-  bool _isWebWizardFourUp(double layoutWidth) =>
+  /// Web tablet+: hat type / style use the crown-sized carousel.
+  bool _useWebWizardCarousel(double layoutWidth) =>
       kIsWeb && layoutWidth >= AppBreakpoints.tablet;
-
-  /// Sizes four-across wizard cards from the available content area.
-  ({double aspect, EdgeInsets padding, double spacing}) _webWizardFourUpLayout({
-    required double width,
-    required double height,
-    required int itemCount,
-  }) {
-    const columns = _webWizardGridColumns;
-    const hPad = 28.0;
-    const vPad = 8.0;
-    const spacing = 20.0;
-    final rows = (itemCount / columns).ceil();
-    final cardW = (width - hPad * 2 - spacing * (columns - 1)) / columns;
-    final rowGap = rows > 1 ? spacing * (rows - 1) : 0.0;
-    final cardH =
-        ((height - vPad * 2 - rowGap) / rows).clamp(190.0, 280.0);
-    return (
-      aspect: cardW / cardH,
-      padding: const EdgeInsets.fromLTRB(hPad, vPad, hPad, vPad),
-      spacing: spacing,
-    );
-  }
 
   Widget _buildVisualWesternSelection() {
     return Column(
@@ -2025,240 +2526,103 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: FutureBuilder<List<dynamic>>(
             future: _allProductsFuture,
             builder: (context, snapshot) {
-              final styles = [
-                {
-                  'name': 'Western',
-                  'title': 'Western',
-                  'desc': 'Classic cowboy styles.',
-                  'fallback': 'assets/images/western.jpg'
-                },
-                {
-                  'name': 'City',
-                  'title': 'City',
-                  'desc': 'Fedoras and dress hats.',
-                  'fallback': 'assets/images/city.png'
-                },
-                {
-                  'name': 'Outdoor',
-                  'title': 'Outdoor/Sportsman',
-                  'desc': 'Sun and adventure hats.',
-                  'fallback': 'assets/images/outdoor.png'
-                },
-              ];
-
-              final imageUrls = <String, String?>{};
-              if (snapshot.hasData) {
-                try {
-                  var products = List<dynamic>.from(snapshot.data!)
-                      .where((p) => !ShopifyService.isExcludedFromHatFinderExamples(p))
-                      .toList();
-                  if (selectedHatType != null) {
-                    final target = selectedHatType!.name.toLowerCase();
-                    products = products.where((p) {
-                      final type =
-                          _metaValue(p['feltStrawOrBallcap']).toLowerCase();
-                      return type.contains(target);
-                    }).toList();
-                  }
-                  final Set<String> usedUrls = {};
-
-                  for (int i = 0; i < styles.length; i++) {
-                    final styleName = styles[i]['name'] as String;
-                    String? foundUrl;
-
-                    if (styleName == 'Western') {
-                      final westernProfiles = [
-                        '01',
-                        '1',
-                        '2',
-                        '11',
-                        '18',
-                        '33',
-                        '45',
-                        '48',
-                        '50',
-                        '72',
-                        '75',
-                        '77',
-                        '91',
-                        '94',
-                        '9G'
-                      ];
-                      foundUrl = products.firstWhere((p) {
-                        final profile = _metaValue(p['stetsonProfile']);
-                        final url = p['featuredImage']?['url'] as String?;
-                        return westernProfiles.contains(profile) &&
-                            url != null &&
-                            !usedUrls.contains(url);
-                      }, orElse: () => null)?['featuredImage']?['url'];
-                    } else if (styleName == 'City') {
-                      foundUrl = products.firstWhere((p) {
-                        final url = p['featuredImage']?['url'] as String?;
-                        return _metaValue(p['city']).toLowerCase() == 'true' &&
-                            url != null &&
-                            !usedUrls.contains(url);
-                      }, orElse: () => null)?['featuredImage']?['url'];
-                    } else if (styleName == 'Outdoor') {
-                      foundUrl = products.firstWhere((p) {
-                        final url = p['featuredImage']?['url'] as String?;
-                        return _metaValue(p['outdoors']).toLowerCase() ==
-                                'true' &&
-                            url != null &&
-                            !usedUrls.contains(url);
-                      }, orElse: () => null)?['featuredImage']?['url'];
-                    }
-
-                    if (foundUrl != null) {
-                      usedUrls.add(foundUrl);
-                    }
-                    imageUrls[styleName] = foundUrl;
-                  }
-                } catch (_) {}
-              }
+              final styles = _westernStyleOptions;
+              final imageUrls = _westernStyleImageUrls(
+                snapshot.hasData ? snapshot.data : null,
+              );
 
               return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final fourUp =
-                          _isWebWizardFourUp(constraints.maxWidth);
-                      final webLayout = fourUp
-                          ? _webWizardFourUpLayout(
-                              width: constraints.maxWidth,
-                              height: constraints.maxHeight,
-                              itemCount: styles.length,
-                            )
-                          : null;
-                      final cards = List.generate(styles.length, (index) {
-                        final style = styles[index];
-                        final name = style['name'] as String;
-                        final isSelected = selectedWesternStyle == name;
-                        final imageUrl = imageUrls[name];
+                builder: (context, constraints) {
+                  if (_useWebWizardCarousel(constraints.maxWidth)) {
+                    return _buildStyleWebCarousel(imageUrls);
+                  }
 
-                        return Card(
-                          elevation: 0,
-                          clipBehavior: Clip.antiAlias,
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? const Color(0xFF559C99)
-                                  : const Color(0xFF559C99)
-                                      .withValues(alpha: 0.35),
-                              width: isSelected ? 3 : 1,
-                            ),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              _onWesternStyleSelected(name);
-                              _nextPage();
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: imageUrl != null
-                                      ? Image.network(
-                                          imageUrl,
-                                          fit: fourUp
-                                              ? BoxFit.contain
-                                              : BoxFit.cover,
-                                          alignment: fourUp
-                                              ? Alignment.center
-                                              : const Alignment(0.0, -0.35),
-                                        )
-                                      : (style['fallback'] != null
-                                          ? Image.asset(
-                                              style['fallback'] as String,
-                                              fit: fourUp
-                                                  ? BoxFit.contain
-                                                  : BoxFit.cover,
-                                              alignment: fourUp
-                                                  ? Alignment.center
-                                                  : const Alignment(
-                                                      0.0,
-                                                      -0.35,
-                                                    ),
-                                            )
-                                          : Container(
-                                              color: Colors.grey[50],
-                                              child: const Icon(
-                                                Icons.style,
-                                                size: 48,
-                                                color: Colors.grey,
-                                              ),
-                                            )),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: fourUp ? 10.0 : 12.0,
-                                    horizontal: fourUp ? 4.0 : 8.0,
-                                  ),
-                                  color: Colors.white,
-                                  child: Text(
-                                    (style['title'] ?? name).toUpperCase(),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: fourUp ? 11 : 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF2D2926),
-                                      letterSpacing: fourUp ? 1.2 : 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      });
+                  final cards = List.generate(styles.length, (index) {
+                    final style = styles[index];
+                    final name = style['name']!;
+                    final isSelected = selectedWesternStyle == name;
+                    final imageUrl = imageUrls[name];
 
-                      if (fourUp) {
-                        return Align(
-                          alignment: Alignment.center,
-                          child: GridView.count(
-                            crossAxisCount: _webWizardGridColumns,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: webLayout!.padding,
-                            crossAxisSpacing: webLayout.spacing,
-                            mainAxisSpacing: webLayout.spacing,
-                            childAspectRatio: webLayout.aspect,
-                            children: cards,
-                          ),
-                        );
-                      }
-
-                      const horizontalPadding = 12.0;
-                      const crossAxisSpacing = 12.0;
-                      final itemWidth = (constraints.maxWidth -
-                              horizontalPadding * 2 -
-                              crossAxisSpacing) /
-                          2;
-                      final itemHeight = itemWidth / 0.85;
-
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.only(
-                          left: horizontalPadding,
-                          right: horizontalPadding,
-                          top: 12,
-                          bottom: 40,
+                    return Card(
+                      elevation: 0,
+                      clipBehavior: Clip.antiAlias,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: isSelected
+                              ? const Color(0xFF559C99)
+                              : const Color(0xFF559C99).withValues(alpha: 0.35),
+                          width: isSelected ? 3 : 1,
                         ),
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: crossAxisSpacing,
-                          runSpacing: crossAxisSpacing,
-                          children: List.generate(cards.length, (index) {
-                            return SizedBox(
-                              width: itemWidth,
-                              height: itemHeight,
-                              child: cards[index],
-                            );
-                          }),
+                      ),
+                      child: InkWell(
+                        onTap: () =>
+                            _selectWesternStyleAndAdvance(name, index),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _buildStyleCardImage(
+                                imageUrl: imageUrl,
+                                fallbackAsset: style['fallback'],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12.0,
+                                horizontal: 8.0,
+                              ),
+                              color: Colors.white,
+                              child: Text(
+                                (style['title'] ?? name).toUpperCase(),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2D2926),
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  });
+
+                  const horizontalPadding = 12.0;
+                  const crossAxisSpacing = 12.0;
+                  final itemWidth = (constraints.maxWidth -
+                          horizontalPadding * 2 -
+                          crossAxisSpacing) /
+                      2;
+                  final itemHeight = itemWidth / 0.85;
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      top: 12,
+                      bottom: 40,
+                    ),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: crossAxisSpacing,
+                      runSpacing: crossAxisSpacing,
+                      children: List.generate(cards.length, (index) {
+                        return SizedBox(
+                          width: itemWidth,
+                          height: itemHeight,
+                          child: cards[index],
+                        );
+                      }),
+                    ),
                   );
+                },
+              );
             },
           ),
         ),
@@ -2487,13 +2851,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
             _buildCrownGuideLink(),
-            // Carousel — image fills the card edge-to-edge, with swipe hint arrows
-            _buildShapeCarouselArea(
-              stack: Stack(
-                children: [
-                  PageView.builder(
+            // Carousel — image fills the card edge-to-edge, with side nav arrows
+            _buildWizardCarouselArea(
+              controller: _crownCarouselController,
+              currentIndex: _currentCrownCarouselIndex,
+              itemCount: sortedShapes.length,
+              pageView: PageView.builder(
                     controller: _crownCarouselController,
-                    clipBehavior: Clip.none,
+                    clipBehavior: Clip.hardEdge,
                     onPageChanged: (index) {
                       setState(() {
                         _currentCrownCarouselIndex = index;
@@ -2800,142 +3165,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       );
                     },
                   ),
-                  // Left arrow — subtle swipe hint
-                  if (_currentCrownCarouselIndex > 0)
-                    Positioned(
-                      left: 2,
-                      top: 0,
-                      bottom: 20,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            _crownCarouselController.previousPage(
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              size: 18,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Right arrow — subtle swipe hint
-                  if (_currentCrownCarouselIndex < sortedShapes.length - 1)
-                    Positioned(
-                      right: 2,
-                      top: 0,
-                      bottom: 20,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            _crownCarouselController.nextPage(
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
             ),
-            // Dots — hugging the bottom of the card
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  sortedShapes.length.clamp(0, 8),
-                  (i) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: i == _currentCrownCarouselIndex ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
-                      color: i == _currentCrownCarouselIndex
-                          ? const Color(0xFF2D2926)
-                          : Colors.grey.shade300,
-                    ),
-                  ),
-                ),
-              ),
+            _buildWizardCarouselFooter(
+              itemCount: sortedShapes.length,
+              currentIndex: _currentCrownCarouselIndex,
+              nextLabel: _currentCrownCarouselIndex + 1 < sortedShapes.length
+                  ? sortedShapes[_currentCrownCarouselIndex + 1].name
+                  : '',
+              maxDots: 8,
             ),
-            // Next Up row (centred)
-            if (_currentCrownCarouselIndex + 1 < sortedShapes.length)
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0, bottom: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      'NEXT UP: ',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          sortedShapes[_currentCrownCarouselIndex + 1].name,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.cormorantGaramond(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2D2926),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              const SizedBox(height: 20),
           ],
         );
       },
@@ -3014,13 +3252,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
             _buildBrimGuideLink(),
-            // Carousel with swipe arrows
-            _buildShapeCarouselArea(
-              stack: Stack(
-                children: [
-                  PageView.builder(
+            // Carousel with side nav arrows
+            _buildWizardCarouselArea(
+              controller: _brimCarouselController,
+              currentIndex: _currentBrimCarouselIndex,
+              itemCount: sortedShapes.length,
+              pageView: PageView.builder(
                     controller: _brimCarouselController,
-                    clipBehavior: Clip.none,
+                    clipBehavior: Clip.hardEdge,
                     onPageChanged: (index) {
                       setState(() {
                         _currentBrimCarouselIndex = index;
@@ -3314,128 +3553,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       );
                     },
                   ),
-                  // Left arrow
-                  if (_currentBrimCarouselIndex > 0)
-                    Positioned(
-                      left: 2,
-                      top: 0,
-                      bottom: 20,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () => _brimCarouselController.previousPage(
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeInOut),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1))
-                              ],
-                            ),
-                            child: Icon(Icons.chevron_left_rounded,
-                                size: 18, color: Colors.grey[600]),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Right arrow
-                  if (_currentBrimCarouselIndex < sortedShapes.length - 1)
-                    Positioned(
-                      right: 2,
-                      top: 0,
-                      bottom: 20,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () => _brimCarouselController.nextPage(
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeInOut),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1))
-                              ],
-                            ),
-                            child: Icon(Icons.chevron_right_rounded,
-                                size: 18, color: Colors.grey[600]),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
             ),
-            // Dots
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  sortedShapes.length.clamp(0, 9),
-                  (i) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: i == _currentBrimCarouselIndex ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
-                      color: i == _currentBrimCarouselIndex
-                          ? const Color(0xFF2D2926)
-                          : Colors.grey.shade300,
-                    ),
-                  ),
-                ),
-              ),
+            _buildWizardCarouselFooter(
+              itemCount: sortedShapes.length,
+              currentIndex: _currentBrimCarouselIndex,
+              nextLabel: _currentBrimCarouselIndex + 1 < sortedShapes.length
+                  ? sortedShapes[_currentBrimCarouselIndex + 1].name
+                  : '',
             ),
-            // Next Up row (centred)
-            if (_currentBrimCarouselIndex + 1 < sortedShapes.length)
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0, bottom: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      'NEXT UP: ',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          sortedShapes[_currentBrimCarouselIndex + 1].name,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.cormorantGaramond(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2D2926),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              const SizedBox(height: 20),
           ],
         );
       },

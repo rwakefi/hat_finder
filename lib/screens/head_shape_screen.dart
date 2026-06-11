@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../config/app_breakpoints.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
 import 'head_measurement_screen.dart';
@@ -60,12 +62,23 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
         height: 1.2,
       );
 
-  TextStyle get _buttonLabelStyle => GoogleFonts.montserrat(
-        fontSize: 14,
+  bool _useCompactOptions(BuildContext context) =>
+      kIsWeb && AppBreakpoints.isTablet(context);
+
+  double _optionButtonHeight(BuildContext context) =>
+      _useCompactOptions(context) ? 44 : 52;
+
+  TextStyle _buttonLabelStyle(BuildContext context) => GoogleFonts.montserrat(
+        fontSize: _useCompactOptions(context) ? 11 : 13,
         fontWeight: FontWeight.w700,
-        letterSpacing: 1.1,
+        letterSpacing: _useCompactOptions(context) ? 0.9 : 1.0,
         color: _espresso,
       );
+
+  double _optionsMaxWidth(BuildContext context) {
+    if (_useCompactOptions(context)) return 340;
+    return double.infinity;
+  }
 
   void _answerQuestion(dynamic value) {
     setState(() {
@@ -185,16 +198,26 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final content = Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                  child:
+                      _result == null ? _buildQuestionnaire() : _buildResult(),
+                );
+                // On roomy web layouts, center the content vertically instead
+                // of leaving a large empty void below it.
+                final centerVertically = _useCompactOptions(context);
                 return SingleChildScrollView(
                   child: ConstrainedBox(
                     constraints:
                         BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-                      child: _result == null
-                          ? _buildQuestionnaire()
-                          : _buildResult(),
-                    ),
+                    child: centerVertically
+                        ? IntrinsicHeight(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [content],
+                            ),
+                          )
+                        : content,
                   ),
                 );
               },
@@ -238,16 +261,26 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             style: _stepTitleStyle,
           ),
         ),
-        Column(
-          children: (currentQ['options'] as List).map((option) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildOptionCard(
-                label: option['text'] as String,
-                onTap: () => _answerQuestion(option['value']),
-              ),
-            );
-          }).toList(),
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: _optionsMaxWidth(context),
+            ),
+            child: Column(
+              children: (currentQ['options'] as List).map((option) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: _useCompactOptions(context) ? 10 : 14,
+                  ),
+                  child: _buildOptionCard(
+                    context: context,
+                    label: option['text'] as String,
+                    onTap: () => _answerQuestion(option['value']),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ),
         if (_currentQuestion == 0) ...[
           const SizedBox(height: 4),
@@ -291,18 +324,18 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
     );
   }
 
-  static const double _optionButtonHeight = 58;
-
   Widget _buildOptionCard({
+    required BuildContext context,
     required String label,
     required VoidCallback onTap,
   }) {
+    final compact = _useCompactOptions(context);
     return Semantics(
       button: true,
       label: label,
       child: SizedBox(
         width: double.infinity,
-        height: _optionButtonHeight,
+        height: _optionButtonHeight(context),
         child: OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
@@ -312,9 +345,12 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
               color: _espresso.withValues(alpha: 0.35),
               width: 1,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 12 : 14,
+              vertical: compact ? 8 : 10,
+            ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(compact ? 24 : 4),
             ),
           ),
           child: Text(
@@ -322,7 +358,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: _buttonLabelStyle,
+            style: _buttonLabelStyle(context),
           ),
         ),
       ),
@@ -330,7 +366,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   }
 
   Widget _buildResult() {
-    return Column(
+    final column = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
@@ -382,6 +418,14 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
         const SizedBox(height: 12),
         _buildSecondaryButton('START OVER', _reset),
       ],
+    );
+    // Keep the result readable and buttons from stretching on wide web layouts.
+    if (!_useCompactOptions(context)) return column;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: column,
+      ),
     );
   }
 

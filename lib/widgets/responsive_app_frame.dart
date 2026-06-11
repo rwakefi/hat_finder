@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_breakpoints.dart';
 import '../utils/embed_mode.dart';
+import 'web_desktop_scroll_chrome.dart';
 import 'website_chrome.dart';
 
 /// Centers the app on wide viewports and adds website chrome on web.
@@ -30,12 +31,10 @@ class ResponsiveAppFrame extends StatelessWidget {
     if (kIsWeb) {
       final app = ColoredBox(color: _surface, child: child);
       if (WebsiteChrome.shouldShow(context)) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const WebsiteChrome(),
-            Expanded(child: app),
-          ],
+        return WebDesktopScrollChrome(
+          enabled: AppBreakpoints.isDesktop(context),
+          chrome: const WebsiteChrome(),
+          child: app,
         );
       }
       return app;
