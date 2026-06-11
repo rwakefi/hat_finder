@@ -1452,28 +1452,39 @@ class _HatInputScreenState extends State<HatInputScreen> {
       canPop: _allowRoutePop,
       onPopInvokedWithResult: (didPop, _) => _handleSystemBack(didPop),
       child: Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: _isWebDesktopWizard(context) ? 64.0 : 108.0,
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/Moon Ridge Header Logo.png',
-              height: _isWebDesktopWizard(context) ? 52.0 : 94.0,
+      extendBodyBehindAppBar: !_useWebCompactWizardHeader(context),
+      appBar: _useWebCompactWizardHeader(context)
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              toolbarHeight: 0,
+              automaticallyImplyLeading: false,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(3),
+                child: _buildProgressBar(),
+              ),
+            )
+          : AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 108.0,
+              title: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/Moon Ridge Header Logo.png',
+                    height: 94.0,
+                  ),
+                ],
+              ),
+              centerTitle: true,
+              automaticallyImplyLeading: false,
+              leading: null,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(3),
+                child: _buildProgressBar(),
+              ),
             ),
-          ],
-        ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: null,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(3),
-          child: _buildProgressBar(),
-        ),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           color: Colors.white, // Clean, airy background
@@ -1489,6 +1500,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
               child: Column(
                 children: [
+                  if (_useWebCompactWizardHeader(context))
+                    _buildWizardCenterLogo(context),
                   if (widget.headShapeProfile != null)
                     _buildHeadShapeProfileBanner(widget.headShapeProfile!),
                   if (widget.headMeasurementProfile != null)
@@ -1934,6 +1947,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   bool _isWebDesktopWizard(BuildContext context) =>
       kIsWeb && AppBreakpoints.isDesktop(context);
+
+  /// Web tablet+: logo lives in page body; header is text-only + progress bar.
+  bool _useWebCompactWizardHeader(BuildContext context) =>
+      kIsWeb && AppBreakpoints.isTablet(context);
+
+  Widget _buildWizardCenterLogo(BuildContext context) {
+    final height = AppBreakpoints.isDesktop(context) ? 76.0 : 60.0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      child: Center(
+        child: Image.asset(
+          'assets/images/Moon Ridge Header Logo.png',
+          height: height,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
 
   /// Four-across wizard grids on web when the content area is tablet-wide+.
   bool _isWebWizardFourUp(double layoutWidth) =>

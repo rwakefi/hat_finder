@@ -11,12 +11,9 @@ import '../utils/embed_mode.dart';
 class WebsiteChrome extends StatelessWidget {
   const WebsiteChrome({super.key});
 
-  static const _logoAsset = 'assets/images/moon_ridge_logo.png';
-
   // Palette aligned with moonridgecompany.com (Shopify theme).
   static const _brandBrown = Color(0xFF312110);
   static const _announcementTeal = Color(0xFF4A9E9A);
-  static const _brandGold = Color(0xFFC5A059);
   static const _headerBorder = Color(0xFFE0E0E0);
 
   static bool shouldShow(BuildContext context) {
@@ -29,52 +26,31 @@ class WebsiteChrome extends StatelessWidget {
     await launchUrl(uri, webOnlyWindowName: '_top');
   }
 
-  Widget _buildBrandLockup({required bool isDesktop, required double logoHeight}) {
-    final titleSize = isDesktop ? 13.0 : 11.0;
+  Widget _buildBrandTitle({required bool isDesktop}) {
+    final titleSize = isDesktop ? 14.0 : 12.0;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Image.asset(
-          _logoAsset,
-          height: logoHeight,
-          fit: BoxFit.contain,
-        ),
-        SizedBox(width: isDesktop ? 18 : 14),
-        Container(
-          width: 2,
-          height: logoHeight * 0.42,
-          decoration: BoxDecoration(
-            color: _brandGold.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(1),
+        Text(
+          'HAT FINDER',
+          style: GoogleFonts.montserrat(
+            fontSize: titleSize,
+            fontWeight: FontWeight.w600,
+            letterSpacing: isDesktop ? 2.4 : 2.0,
+            color: _brandBrown,
+            height: 1.0,
           ),
         ),
-        SizedBox(width: isDesktop ? 16 : 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'HAT FINDER',
-              style: GoogleFonts.montserrat(
-                fontSize: titleSize,
-                fontWeight: FontWeight.w600,
-                letterSpacing: isDesktop ? 2.2 : 1.8,
-                color: _brandBrown,
-                height: 1.0,
-              ),
-            ),
-            SizedBox(height: isDesktop ? 6 : 5),
-            Container(
-              height: 2,
-              width: isDesktop ? 72 : 60,
-              decoration: BoxDecoration(
-                color: _announcementTeal,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ],
+        SizedBox(height: isDesktop ? 6 : 5),
+        Container(
+          height: 2,
+          width: isDesktop ? 72 : 60,
+          decoration: BoxDecoration(
+            color: _announcementTeal,
+            borderRadius: BorderRadius.circular(1),
+          ),
         ),
       ],
     );
@@ -83,7 +59,6 @@ class WebsiteChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = AppBreakpoints.isDesktop(context);
-    final logoHeight = isDesktop ? 44.0 : 38.0;
 
     return ColoredBox(
       color: Colors.white,
@@ -129,10 +104,7 @@ class WebsiteChrome extends StatelessWidget {
                                   horizontal: 4,
                                   vertical: 2,
                                 ),
-                                child: _buildBrandLockup(
-                                  isDesktop: isDesktop,
-                                  logoHeight: logoHeight,
-                                ),
+                                child: _buildBrandTitle(isDesktop: isDesktop),
                               ),
                             ),
                           ),
