@@ -1777,34 +1777,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   Expanded(
                     child: Align(
-                      alignment: _isWebWide(context)
-                          ? Alignment.center
-                          : Alignment.topCenter,
+                      alignment: Alignment.topCenter,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          maxWidth: _isWebWide(context) ? 640 : double.infinity,
+                          maxWidth: _isWebWide(context) ? 1040 : double.infinity,
                         ),
                         child: LayoutBuilder(
                           builder: (context, c) {
                             final webWide = _isWebWide(context);
-                            double aspect;
-                            if (webWide) {
-                              final rows =
-                                  (_availableHatTypes.length / 2).ceil();
-                              final cardW = (c.maxWidth - 24 - 12) / 2;
-                              final availH = c.maxHeight.isFinite
-                                  ? c.maxHeight
-                                  : cardW * rows;
-                              final cardH =
-                                  ((availH - 24 - 12 * (rows - 1)) / rows)
-                                      .clamp(200.0, 380.0);
-                              aspect = (cardW / cardH).clamp(0.55, 1.0);
-                            } else {
-                              aspect =
-                                  _isProMaxLayout(context) ? 0.92 : 0.85;
-                            }
+                            final crossAxisCount = webWide ? 4 : 2;
+                            final aspect = webWide
+                                ? 0.72
+                                : (_isProMaxLayout(context) ? 0.92 : 0.85);
                             return GridView.count(
-                      crossAxisCount: 2,
+                      crossAxisCount: crossAxisCount,
                       shrinkWrap: webWide,
                       physics: webWide
                           ? const NeverScrollableScrollPhysics()
@@ -1813,7 +1799,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         12,
                         12,
                         12,
-                        _isProMaxLayout(context) ? 4 : 12,
+                        webWide ? 32 : (_isProMaxLayout(context) ? 4 : 12),
                       ),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -1860,8 +1846,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12.0),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: webWide ? 10.0 : 12.0,
+                                    horizontal: webWide ? 4.0 : 0,
+                                  ),
                                   color: Colors.white,
                                   child: Text(
                                     typeInfo.name.toUpperCase(),
@@ -1869,10 +1857,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.montserrat(
-                                      fontSize: 14,
+                                      fontSize: webWide ? 11 : 14,
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF2D2926),
-                                      letterSpacing: 2.0,
+                                      letterSpacing: webWide ? 1.2 : 2.0,
                                     ),
                                   ),
                                 ),
