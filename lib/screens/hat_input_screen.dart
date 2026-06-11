@@ -364,7 +364,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     for (final type in _availableHatTypes) {
       for (final product in products) {
-        if (ShopifyService.isBigalliProduct(product)) continue;
+        if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
         final imageUrl = product['featuredImage']?['url'];
         if (imageUrl == null || imageUrl.toString().isEmpty) continue;
         final url = imageUrl as String;
@@ -698,7 +698,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final materialTarget = selectedHatType?.name.toLowerCase();
 
     for (final product in _allProducts!) {
-      if (ShopifyService.isBigalliProduct(product)) continue;
+      if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
       if (product['featuredImage']?['url'] == null) continue;
 
       // Filter out products that don't match the selected hat type (Felt or Straw)
@@ -1973,7 +1973,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               if (snapshot.hasData) {
                 try {
                   var products = List<dynamic>.from(snapshot.data!)
-                      .where((p) => !ShopifyService.isBigalliProduct(p))
+                      .where((p) => !ShopifyService.isExcludedFromHatFinderExamples(p))
                       .toList();
                   if (selectedHatType != null) {
                     final target = selectedHatType!.name.toLowerCase();

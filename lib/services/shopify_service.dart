@@ -66,6 +66,12 @@ class ShopifyService {
     return '';
   }
 
+  /// Parses Shopify boolean metafields (`true` / `false` strings).
+  static bool parseBooleanMetafield(dynamic entry) {
+    final raw = parseMetafieldValue(entry).trim().toLowerCase();
+    return raw == 'true' || raw == '1';
+  }
+
   /// Whether a Shopify product belongs in Hat Finder (and future catalog UIs).
   ///
   /// Requires `custom.felt_straw_or_ballcap` to match a known hat category
@@ -189,6 +195,16 @@ class ShopifyService {
   static bool isBigalliProduct(dynamic product) {
     final vendor = (product?['vendor'] ?? '').toString().trim().toLowerCase();
     return vendor == 'bigalli hats usa';
+  }
+
+  /// Products opted out of wizard, shape-guide, and style example imagery via
+  /// `custom.hat_finder_exclude_from_examples`. Still eligible for results unless
+  /// removed by other catalog rules. Bigalli remains excluded until tagged in Shopify.
+  static bool isExcludedFromHatFinderExamples(dynamic product) {
+    if (parseBooleanMetafield(product['hatFinderExcludeFromExamples'])) {
+      return true;
+    }
+    return isBigalliProduct(product);
   }
 
   static List<dynamic> orderBigalliLast(Iterable<dynamic> products) {
@@ -381,6 +397,9 @@ class ShopifyService {
               case 'stetson_profile': meta['stetsonProfile'] = {'value': value}; break;
               case 'city': meta['city'] = {'value': value}; break;
               case 'outdoors': meta['outdoors'] = {'value': value}; break;
+              case 'hat_finder_exclude_from_examples':
+                meta['hatFinderExcludeFromExamples'] = {'value': value};
+                break;
             }
           }
           // Flatten first image for app compatibility (UI reads featuredImage).
@@ -470,7 +489,8 @@ class ShopifyService {
               {namespace: "custom", key: "brim_width"},
               {namespace: "custom", key: "stetson_profile"},
               {namespace: "custom", key: "city"},
-              {namespace: "custom", key: "outdoors"}
+              {namespace: "custom", key: "outdoors"},
+              {namespace: "custom", key: "hat_finder_exclude_from_examples"}
             ]) {
               key
               value

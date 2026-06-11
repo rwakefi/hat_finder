@@ -11,6 +11,34 @@ void main() {
     );
   });
 
+  test('parseBooleanMetafield reads Shopify true/false strings', () {
+    expect(ShopifyService.parseBooleanMetafield({'value': 'true'}), isTrue);
+    expect(ShopifyService.parseBooleanMetafield({'value': 'false'}), isFalse);
+    expect(ShopifyService.parseBooleanMetafield({'value': ''}), isFalse);
+  });
+
+  test('isExcludedFromHatFinderExamples respects metafield and Bigalli vendor', () {
+    expect(
+      ShopifyService.isExcludedFromHatFinderExamples({
+        'hatFinderExcludeFromExamples': {'value': 'true'},
+      }),
+      isTrue,
+    );
+    expect(
+      ShopifyService.isExcludedFromHatFinderExamples({
+        'hatFinderExcludeFromExamples': {'value': 'false'},
+        'vendor': 'Stetson',
+      }),
+      isFalse,
+    );
+    expect(
+      ShopifyService.isExcludedFromHatFinderExamples({
+        'vendor': 'Bigalli Hats USA',
+      }),
+      isTrue,
+    );
+  });
+
   test('filterProducts matches felt type and crown shape', () {
     final products = [
       {
