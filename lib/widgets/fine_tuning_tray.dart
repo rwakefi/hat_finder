@@ -196,9 +196,11 @@ class FineTuningTray extends StatefulWidget {
     required this.brimWidths,
     required this.onChanged,
     this.crownHeightOptions,
+    this.compact = false,
   });
 
   final List<double>? crownHeightOptions;
+  final bool compact;
 
   List<double> get _resolvedCrownHeightOptions =>
       crownHeightOptions ?? defaultCrownHeightOptions();
@@ -374,65 +376,149 @@ class _FineTuningTrayState extends State<FineTuningTray> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => widget.onExpandedChanged(!widget.expanded),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                color: widget.expanded
-                    ? _turquoise.withValues(alpha: 0.1)
-                    : _surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: widget.expanded ? _turquoise : _border,
-                  width: widget.expanded ? 1.5 : 1,
-                ),
+  Widget _toggleButton() {
+    if (widget.compact) {
+      final hasSelection =
+          widget.crownHeights.isNotEmpty || widget.brimWidths.isNotEmpty;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => widget.onExpandedChanged(!widget.expanded),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: widget.expanded || hasSelection
+                  ? _turquoise.withValues(alpha: 0.1)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: widget.expanded || hasSelection ? _turquoise : _border,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.tune_rounded,
-                    size: 15,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.tune_rounded,
+                  size: 14,
+                  color: widget.expanded || hasSelection
+                      ? _turquoise
+                      : _espresso.withValues(alpha: 0.65),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tune',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: widget.expanded || hasSelection
+                        ? _turquoise
+                        : _espresso,
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: widget.expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
                     color: widget.expanded
                         ? _turquoise
-                        : _espresso.withValues(alpha: 0.7),
+                        : _espresso.withValues(alpha: 0.45),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'FINE TUNING',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: widget.expanded ? _turquoise : _espresso,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  AnimatedRotation(
-                    turns: widget.expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 18,
-                      color: widget.expanded
-                          ? _turquoise
-                          : _espresso.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => widget.onExpandedChanged(!widget.expanded),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: widget.expanded
+                ? _turquoise.withValues(alpha: 0.1)
+                : _surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.expanded ? _turquoise : _border,
+              width: widget.expanded ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 15,
+                color: widget.expanded
+                    ? _turquoise
+                    : _espresso.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'FINE TUNING',
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                  color: widget.expanded ? _turquoise : _espresso,
+                ),
+              ),
+              const SizedBox(width: 4),
+              AnimatedRotation(
+                turns: widget.expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 220),
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: widget.expanded
+                      ? _turquoise
+                      : _espresso.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _toggleButton(),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: SizedBox(width: 320, child: _expandedPanel(context)),
+            ),
+            crossFadeState: widget.expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeInOut,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _toggleButton(),
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(

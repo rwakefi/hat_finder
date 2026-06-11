@@ -320,27 +320,35 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required T? selected,
     required String Function(T) labelFor,
     required ValueChanged<T?> onSelected,
+    bool compact = false,
   }) {
+    final chipHeight = compact ? 26.0 : 32.0;
+    final chipPaddingH = compact ? 10.0 : 14.0;
+    final chipPaddingV = compact ? 4.0 : 6.0;
+    final chipFontSize = compact ? 10.0 : 11.0;
+    final labelFontSize = compact ? 8.0 : 9.0;
+    final iconSize = compact ? 14.0 : 16.0;
+
     return Container(
       color: _white,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: EdgeInsets.fromLTRB(12, compact ? 4 : 8, 12, compact ? 4 : 8),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: _espresso.withValues(alpha: 0.4)),
+          Icon(icon, size: iconSize, color: _espresso.withValues(alpha: 0.4)),
           const SizedBox(width: 8),
           Text(
             label,
             style: GoogleFonts.montserrat(
-              fontSize: 9,
+              fontSize: labelFontSize,
               fontWeight: FontWeight.w700,
               color: _turquoise,
-              letterSpacing: 2.0,
+              letterSpacing: compact ? 1.4 : 2.0,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: SizedBox(
-              height: 32,
+              height: chipHeight,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
@@ -349,8 +357,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     child: GestureDetector(
                       onTap: () => onSelected(null),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: chipPaddingH,
+                          vertical: chipPaddingV,
+                        ),
                         decoration: BoxDecoration(
                           color: selected == null ? _turquoise : _white,
                           borderRadius: BorderRadius.circular(16),
@@ -361,7 +371,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         child: Text(
                           'All',
                           style: GoogleFonts.montserrat(
-                            fontSize: 11,
+                            fontSize: chipFontSize,
                             fontWeight: FontWeight.w600,
                             color: selected == null ? _white : _espresso,
                           ),
@@ -376,8 +386,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                       child: GestureDetector(
                         onTap: () => onSelected(option),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 6),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: chipPaddingH,
+                            vertical: chipPaddingV,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected ? _turquoise : _white,
                             borderRadius: BorderRadius.circular(16),
@@ -388,7 +400,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           child: Text(
                             labelFor(option),
                             style: GoogleFonts.montserrat(
-                              fontSize: 11,
+                              fontSize: chipFontSize,
                               fontWeight: FontWeight.w600,
                               color: isSelected ? _white : _espresso,
                             ),
@@ -681,6 +693,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         );
                       }).toList();
 
+                final compactChips = AppBreakpoints.isLaptop(context);
                 return Column(
                   children: [
                     if (sortedSizes.isNotEmpty)
@@ -692,8 +705,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         labelFor: (size) => size,
                         onSelected: (size) =>
                             setState(() => _selectedVariantSize = size),
+                        compact: compactChips,
                       ),
-                    if (sortedSizes.isNotEmpty)
+                    if (sortedSizes.isNotEmpty && !compactChips)
                       const Divider(height: 1, color: _borderGrey),
                     if (sortedColors.isNotEmpty)
                       _buildChipFilterBar<String>(
@@ -704,6 +718,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         labelFor: (color) => color,
                         onSelected: (color) =>
                             setState(() => _selectedColor = color),
+                        compact: compactChips,
                       ),
                     if (sortedColors.isNotEmpty)
                       const Divider(height: 1, color: _borderGrey),
@@ -1040,23 +1055,25 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   Widget _buildSearchSummary() {
+    final isLaptop = AppBreakpoints.isLaptop(context);
+
     return Container(
       color: _offWhite,
-      constraints: const BoxConstraints(maxHeight: 300),
+      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 300),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+        padding: EdgeInsets.fromLTRB(16, isLaptop ? 6 : 10, 16, isLaptop ? 4 : 8),
         child: Column(
           children: [
             if (widget.headShapeProfile != null) ...[
               _buildFitProfileSummary(widget.headShapeProfile!),
-              const SizedBox(height: 8),
+              SizedBox(height: isLaptop ? 4 : 8),
             ],
             if (widget.headMeasurementProfile != null) ...[
               _buildMeasurementSummary(widget.headMeasurementProfile!),
-              const SizedBox(height: 8),
+              SizedBox(height: isLaptop ? 4 : 8),
             ],
             _buildCollapsibleSummaryFilters(),
-            if (_showsFineTuningTray) ...[
+            if (_showsFineTuningTray && !isLaptop) ...[
               const SizedBox(height: 6),
               FineTuningTray(
                 expanded: _fineTuningExpanded,
@@ -1313,6 +1330,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   Widget _buildCollapsibleSummaryFilters() {
+    final isLaptop = AppBreakpoints.isLaptop(context);
+    if (isLaptop) {
+      return _buildLaptopFilterToolbar();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1389,7 +1411,61 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     );
   }
 
+  Widget _buildLaptopFilterToolbar() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _buildSummaryDropdowns()),
+        if (_showsFineTuningTray) ...[
+          const SizedBox(width: 6),
+          FineTuningTray(
+            compact: true,
+            expanded: _fineTuningExpanded,
+            onExpandedChanged: (open) =>
+                setState(() => _fineTuningExpanded = open),
+            crownHeights: _filterCrownHeights,
+            brimWidths: _filterBrimWidths,
+            crownHeightOptions: _crownHeightOptionsForFineTuning(),
+            onChanged: _onFineTuningChanged,
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildSummaryDropdowns() {
+    final isLaptop = AppBreakpoints.isLaptop(context);
+
+    if (isLaptop) {
+      return Row(
+        children: [
+          _buildSummaryDropdown(
+            label: 'Type',
+            value: _filterHatType ?? 'Any',
+            onTap: _pickHatType,
+          ),
+          if (_showsWesternStyleFilter)
+            _buildSummaryDropdown(
+              label: 'Style',
+              value: _filterWesternStyle ?? 'Any',
+              onTap: _pickWesternStyle,
+            ),
+          if (_showsFineTuningTray) ...[
+            _buildSummaryDropdown(
+              label: 'Crown',
+              value: _crownSummaryLabel(),
+              onTap: _pickCrownShape,
+            ),
+            _buildSummaryDropdown(
+              label: 'Brim',
+              value: _brimSummaryLabel(),
+              onTap: _pickBrimShape,
+            ),
+          ],
+        ],
+      );
+    }
+
     return Column(
       children: [
         Row(
@@ -1450,6 +1526,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required String value,
     required VoidCallback onTap,
   }) {
+    final isLaptop = AppBreakpoints.isLaptop(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1461,16 +1539,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                fontSize: 9,
+                fontSize: isLaptop ? 8 : 9,
                 color: _turquoise,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.6,
+                letterSpacing: isLaptop ? 1.2 : 1.6,
               ),
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: isLaptop ? 2 : 3),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              padding: EdgeInsets.symmetric(
+                horizontal: isLaptop ? 6 : 8,
+                vertical: isLaptop ? 4 : 5,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -1485,7 +1566,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                        fontSize: 12,
+                        fontSize: isLaptop ? 11 : 12,
                         fontWeight: FontWeight.w600,
                         color: _espresso,
                         height: 1.1,
