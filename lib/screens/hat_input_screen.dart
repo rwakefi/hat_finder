@@ -1071,31 +1071,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  String? _exampleProductTitleForCarousel({
-    required List<HatShapeInfo> shapes,
-    required int index,
-    required Map<String, List<Map<String, String>>> productsMap,
-  }) {
-    if (index < 0 || index >= shapes.length) return null;
-    final shape = shapes[index];
-    final photo = _pickShapeCardPhoto(
-      shapeName: shape.name,
-      shopifyProducts: productsMap[shape.name] ?? [],
-      shapeCarouselIndex: index,
-    );
-    return photo.productTitle;
-  }
-
-  Widget _buildShapeExampleBar(String? productTitle) {
-    if (productTitle == null || productTitle.isEmpty) {
-      return const SizedBox(height: 2);
-    }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
-      child: _buildExampleProductOverlay(productTitle),
-    );
-  }
-
   /// Shape name below the hat photo — compact type with a teal accent rule.
   Widget _buildShapeCardTitleBar(String name) {
     return Padding(
@@ -1207,6 +1182,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required BuildContext context,
     required HatShapeInfo shape,
     required String? imageUrl,
+    required String? featuredProductTitle,
     required bool isSelected,
     required VoidCallback onSelect,
     required VoidCallback onFlip,
@@ -1250,6 +1226,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
+            if (featuredProductTitle != null &&
+                featuredProductTitle.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+                child: _buildExampleProductOverlay(featuredProductTitle),
+              ),
             _buildShapeCardTitleBar(shape.name),
             _buildShapeCardFrontFooter(
               shape: shape,
@@ -2474,13 +2456,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
             _buildCrownGuideLink(),
-            _buildShapeExampleBar(
-              _exampleProductTitleForCarousel(
-                shapes: sortedShapes,
-                index: _currentCrownCarouselIndex,
-                productsMap: shopifyProductsMap,
-              ),
-            ),
             // Carousel — image fills the card edge-to-edge, with swipe hint arrows
             _buildShapeCarouselArea(
               stack: Stack(
@@ -2776,6 +2751,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         context: context,
                                         shape: shape,
                                         imageUrl: imageUrl,
+                                        featuredProductTitle: photo.productTitle,
                                         isSelected: isSelected,
                                         onSelect: () => _selectCrownAndAdvance(
                                             shape, index),
@@ -3007,13 +2983,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
             _buildBrimGuideLink(),
-            _buildShapeExampleBar(
-              _exampleProductTitleForCarousel(
-                shapes: sortedShapes,
-                index: _currentBrimCarouselIndex,
-                productsMap: shopifyProductsMap,
-              ),
-            ),
             // Carousel with swipe arrows
             _buildShapeCarouselArea(
               stack: Stack(
@@ -3296,6 +3265,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         context: context,
                                         shape: shape,
                                         imageUrl: imageUrl,
+                                        featuredProductTitle: photo.productTitle,
                                         isSelected: isSelected,
                                         onSelect: () =>
                                             _selectBrimAndAdvance(shape, index),
