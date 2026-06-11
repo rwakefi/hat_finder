@@ -17,7 +17,7 @@ void main() {
     expect(ShopifyService.parseBooleanMetafield({'value': ''}), isFalse);
   });
 
-  test('isExcludedFromHatFinderExamples respects metafield and Bigalli vendor', () {
+  test('isExcludedFromHatFinderExamples reads metafield only', () {
     expect(
       ShopifyService.isExcludedFromHatFinderExamples({
         'hatFinderExcludeFromExamples': {'value': 'true'},
@@ -35,7 +35,7 @@ void main() {
       ShopifyService.isExcludedFromHatFinderExamples({
         'vendor': 'Bigalli Hats USA',
       }),
-      isTrue,
+      isFalse,
     );
   });
 

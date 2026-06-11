@@ -190,22 +190,16 @@ class ShopifyService {
     return values.toList();
   }
 
-  /// Bigalli Hats USA stays in the catalog, but should trail other suppliers in
-  /// all product listings and never supply wizard/guide example imagery.
+  /// Bigalli Hats USA stays in the catalog but trails other suppliers in results.
   static bool isBigalliProduct(dynamic product) {
     final vendor = (product?['vendor'] ?? '').toString().trim().toLowerCase();
     return vendor == 'bigalli hats usa';
   }
 
   /// Products opted out of wizard, shape-guide, and style example imagery via
-  /// `custom.hat_finder_exclude_from_examples`. Still eligible for results unless
-  /// removed by other catalog rules. Bigalli remains excluded until tagged in Shopify.
-  static bool isExcludedFromHatFinderExamples(dynamic product) {
-    if (parseBooleanMetafield(product['hatFinderExcludeFromExamples'])) {
-      return true;
-    }
-    return isBigalliProduct(product);
-  }
+  /// `custom.hat_finder_exclude_from_examples` only. Still eligible for results.
+  static bool isExcludedFromHatFinderExamples(dynamic product) =>
+      parseBooleanMetafield(product['hatFinderExcludeFromExamples']);
 
   static List<dynamic> orderBigalliLast(Iterable<dynamic> products) {
     final primary = <dynamic>[];

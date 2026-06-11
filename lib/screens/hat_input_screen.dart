@@ -96,12 +96,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   bool _matchShape(String prod, String ui) =>
       ShopifyService.matchShape(prod, ui);
 
-  bool _isOpenRoadProduct(dynamic product) {
-    final title = (product['title'] ?? '').toString().toLowerCase();
-    final handle = (product['handle'] ?? '').toString().toLowerCase();
-    return title.contains('open road') || handle.contains('open-road');
-  }
-
   bool _isWizardCrownShape(HatShapeInfo shape) =>
       !shape.name.toLowerCase().contains('flat cap');
 
@@ -490,10 +484,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
       westernStyle: selectedWesternStyle,
       crownShape: selectedCrownShape!.name,
     );
-    if (selectedCrownShape!.name.toLowerCase().contains('cattleman')) {
-      products =
-          products.where((p) => !_isOpenRoadProduct(p)).toList(growable: false);
-    }
     _crownFilteredProducts = products;
   }
 
@@ -715,11 +705,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
       for (final shape in shapes) {
         if (!_matchShape(meta, shape.name)) continue;
-        if (isCrown &&
-            shape.name.toLowerCase().contains('cattleman') &&
-            _isOpenRoadProduct(product)) {
-          continue;
-        }
         final url = product['featuredImage']['url'] as String;
         if (!seenUrls[shape.name]!.add(url)) continue;
         map[shape.name]!.add({

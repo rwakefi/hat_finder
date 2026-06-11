@@ -13,7 +13,7 @@ Only show Shopify products that qualify as **hats** for this app.
 2. **Size variants** (if present) must include at least one **hat head size** (e.g. `6 3/4`, `7`) — exclude apparel sizes (`0-3 Month`, etc.) via `ShopifyService.isHatHeadSize`.
 3. **Titles** that are clearly non-hat apparel (romper, onesie, dress, etc.) are excluded even if mis-tagged.
 4. Apply centrally in `ShopifyService` (`isHatFinderCatalogProduct`, `_eligibleCatalogProducts`) — not per screen.
-5. **`custom.hat_finder_exclude_from_examples`** (boolean): when true, skip wizard/shape-guide example imagery only — still eligible for results. Checked via `isExcludedFromHatFinderExamples`.
+5. **`custom.hat_finder_exclude_from_examples`** (boolean): when true, skip wizard/shape-guide example imagery only — still eligible for results. Metafield only (no vendor/title hardcodes). Checked via `isExcludedFromHatFinderExamples`.
 6. Cached lite/full catalogs must already be filtered. After rule changes, users need a **full app restart** (`R`) to clear in-memory cache.
 
 ## Implementation reference
