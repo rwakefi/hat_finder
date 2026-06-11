@@ -1994,19 +1994,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       ];
                       foundUrl = products.firstWhere((p) {
                         final profile = _metaValue(p['stetsonProfile']);
-                        final title =
-                            (p['title'] ?? '').toString().toLowerCase();
-                        final handle =
-                            (p['handle'] ?? '').toString().toLowerCase();
                         final url = p['featuredImage']?['url'] as String?;
-
-                        final isOpenRoad = title.contains('open road') ||
-                            handle.contains('open-road');
-
                         return westernProfiles.contains(profile) &&
                             url != null &&
-                            !usedUrls.contains(url) &&
-                            !isOpenRoad;
+                            !usedUrls.contains(url);
                       }, orElse: () => null)?['featuredImage']?['url'];
                     } else if (styleName == 'City') {
                       foundUrl = products.firstWhere((p) {
