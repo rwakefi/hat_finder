@@ -1,5 +1,28 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+/// When true, site chrome stays visible (e.g. home tab where wheel gestures
+/// and nested panel scrolls should not collapse the header).
+class ScrollChromeLock extends InheritedWidget {
+  const ScrollChromeLock({
+    super.key,
+    required this.lockVisible,
+    required super.child,
+  });
+
+  final bool lockVisible;
+
+  static bool lockVisibleOf(BuildContext context) {
+    return context
+            .dependOnInheritedWidgetOfExactType<ScrollChromeLock>()
+            ?.lockVisible ??
+        false;
+  }
+
+  @override
+  bool updateShouldNotify(ScrollChromeLock oldWidget) {
+    return lockVisible != oldWidget.lockVisible;
+  }
+}
 
 /// Desktop web: hide site chrome while scrolling down; reveal on scroll up.
 class WebDesktopScrollChrome extends StatefulWidget {
@@ -40,16 +63,15 @@ class WebDesktopScrollChromeVisibility extends InheritedWidget {
 }
 
 class _WebDesktopScrollChromeState extends State<WebDesktopScrollChrome> {
-  static const _animationDuration = Duration(milliseconds: 220);
+  static const _animationDuration = Duration(milliseconds: 280);
 
-  // Always keep the chrome shown within this many pixels of the top so it
-  // never vanishes on a tiny scroll, and accumulate scroll deltas so small
-  // trackpad/momentum oscillations don't flicker the header.
   static const double _revealNearTop = 28;
-  static const double _toggleThreshold = 18;
+  static const double _toggleThreshold = 24;
 
   bool _chromeVisible = true;
   double _accumulatedDelta = 0;
+
+  bool get _lockVisible => ScrollChromeLock.lockVisibleOf(context);
 
   void _setChromeVisible(bool visible) {
     if (_chromeVisible == visible) return;
@@ -58,7 +80,6 @@ class _WebDesktopScrollChromeState extends State<WebDesktopScrollChrome> {
   }
 
   void _handleScrollDelta(double delta) {
-    // Reset the accumulator whenever the scroll direction reverses.
     if (delta.sign != _accumulatedDelta.sign) {
       _accumulatedDelta = 0;
     }
@@ -71,6 +92,16 @@ class _WebDesktopScrollChromeState extends State<WebDesktopScrollChrome> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    if (_lockVisible) return false;
+
+    // Ignore nested scrollables (e.g. home actions panel) — only react to
+    // page-level scroll so inner panels don't collapse the site header.
+    if (notification.depth > 0) return false;
+
+    // Only vertical page scrolling should toggle the chrome. Horizontal
+    // scrollables (wizard PageView, crown/brim carousels) must not collapse it.
+    if (notification.metrics.axis != Axis.vertical) return false;
+
     if (notification is ScrollUpdateNotification) {
       if (notification.metrics.pixels <= _revealNearTop) {
         _setChromeVisible(true);
@@ -84,45 +115,42 @@ class _WebDesktopScrollChromeState extends State<WebDesktopScrollChrome> {
     return false;
   }
 
-  void _handlePointerSignal(PointerSignalEvent event) {
-    if (event is PointerScrollEvent) {
-      _handleScrollDelta(event.scrollDelta.dy);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!widget.enabled) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          widget.chrome,
-          Expanded(child: widget.child),
-        ],
+    final lockVisible = _lockVisible;
+    final chromeVisible = lockVisible || !widget.enabled || _chromeVisible;
+
+    if (!widget.enabled || lockVisible) {
+      return WebDesktopScrollChromeVisibility(
+        chromeVisible: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            widget.chrome,
+            Expanded(child: widget.child),
+          ],
+        ),
       );
     }
 
     return WebDesktopScrollChromeVisibility(
-      chromeVisible: _chromeVisible,
+      chromeVisible: chromeVisible,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ClipRect(
             child: AnimatedAlign(
               alignment: Alignment.topCenter,
-              heightFactor: _chromeVisible ? 1 : 0,
+              heightFactor: chromeVisible ? 1 : 0,
               duration: _animationDuration,
-              curve: Curves.easeInOut,
+              curve: Curves.easeInOutCubic,
               child: widget.chrome,
             ),
           ),
           Expanded(
-            child: Listener(
-              onPointerSignal: _handlePointerSignal,
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _handleScrollNotification,
-                child: widget.child,
-              ),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleScrollNotification,
+              child: widget.child,
             ),
           ),
         ],

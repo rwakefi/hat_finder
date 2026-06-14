@@ -39,8 +39,6 @@ class _ShapeCardPhoto {
 
 class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _pageController = PageController();
-  final PageController _hatTypeCarouselController =
-      PageController(viewportFraction: 0.76);
   final PageController _styleCarouselController =
       PageController(viewportFraction: 0.76);
   final PageController _crownCarouselController =
@@ -48,7 +46,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   final PageController _brimCarouselController =
       PageController(viewportFraction: 0.76);
   int _currentPageIndex = 0;
-  int _currentHatTypeCarouselIndex = 0;
   int _currentStyleCarouselIndex = 0;
   int _currentCrownCarouselIndex = 0;
   int _currentBrimCarouselIndex = 0;
@@ -840,9 +837,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 8, 16, 0);
+  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 14, 16, 0);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 0, bottom: 0);
+  static const _webWizardGridMaxWidth = 1040.0;
+  static const _webWizardGridColumns = 4;
 
   /// Pro Max class (~932pt logical height). Adjustments below this threshold
   /// are left alone so iPhone 17 / Air layouts stay unchanged.
@@ -1271,7 +1270,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   void _selectHatTypeAndAdvance(HatShapeInfo typeInfo, int index) {
     setState(() {
       selectedHatType = typeInfo;
-      _currentHatTypeCarouselIndex = index;
       selectedWesternStyle = null;
       selectedCrownShape = null;
       selectedBrimShape = null;
@@ -1282,59 +1280,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     } else {
       _nextPage();
     }
-  }
-
-  Widget _buildHatTypeWebCarousel() {
-    final types = _availableHatTypes;
-    return Column(
-      children: [
-        _buildWizardCarouselArea(
-          controller: _hatTypeCarouselController,
-          currentIndex: _currentHatTypeCarouselIndex,
-          itemCount: types.length,
-          pageView: PageView.builder(
-            controller: _hatTypeCarouselController,
-            clipBehavior: Clip.hardEdge,
-            onPageChanged: (index) {
-              setState(() {
-                _currentHatTypeCarouselIndex = index;
-                if (index < types.length) {
-                  selectedHatType = types[index];
-                }
-              });
-            },
-            itemCount: types.length,
-            itemBuilder: (context, index) {
-              final typeInfo = types[index];
-              final isSelected = selectedHatType == typeInfo ||
-                  index == _currentHatTypeCarouselIndex;
-              final imageUrl = _materialExampleUrls[typeInfo.name];
-
-              return Padding(
-                padding: _shapeCardPagePadding,
-                child: _buildWizardSelectionCard(
-                  title: typeInfo.name,
-                  image: _buildHatTypeCardImage(
-                    imageUrl: imageUrl,
-                    imagePath: typeInfo.imagePath,
-                  ),
-                  isSelected: isSelected,
-                  onSelect: () => _selectHatTypeAndAdvance(typeInfo, index),
-                  selectLabel: 'SELECT THIS TYPE',
-                ),
-              );
-            },
-          ),
-        ),
-        _buildWizardCarouselFooter(
-          itemCount: types.length,
-          currentIndex: _currentHatTypeCarouselIndex,
-          nextLabel: _currentHatTypeCarouselIndex + 1 < types.length
-              ? types[_currentHatTypeCarouselIndex + 1].name
-              : '',
-        ),
-      ],
-    );
   }
 
   Widget _buildStyleCardImage({
@@ -1474,6 +1419,74 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _nextPage();
   }
 
+  Widget _buildStyleWizardCard({
+    required Map<String, String> style,
+    required int index,
+    required Map<String, String?> imageUrls,
+    bool carouselActive = false,
+  }) {
+    final name = style['name']!;
+    final title = style['title'] ?? name;
+    final isSelected = selectedWesternStyle == name ||
+        (carouselActive && index == _currentStyleCarouselIndex);
+    final imageUrl = imageUrls[name];
+
+    return _buildWizardSelectionCard(
+      title: title,
+      description: style['desc'],
+      image: _buildStyleCardImage(
+        imageUrl: imageUrl,
+        fallbackAsset: style['fallback'],
+        compact: true,
+      ),
+      isSelected: isSelected,
+      onSelect: () => _selectWesternStyleAndAdvance(name, index),
+      selectLabel: 'SELECT THIS STYLE',
+    );
+  }
+
+  Widget _buildWizardRowPager({
+    required int itemCount,
+    required Widget Function(BuildContext context, int index) itemBuilder,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var cardHeight = _shapeCarouselCardHeight(
+          maxExpandedHeight: constraints.maxHeight,
+        );
+        if (_isWebDesktopWizard(context)) {
+          cardHeight = cardHeight.clamp(0, _webShapeCardMaxHeight);
+        }
+        final maxBlockWidth =
+            min(constraints.maxWidth - 24, _webWizardGridMaxWidth);
+        return Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+            child: _WizardRowPager(
+              itemCount: itemCount,
+              maxBlockWidth: maxBlockWidth,
+              cardHeight: cardHeight,
+              itemBuilder: itemBuilder,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStyleWebRowPager(Map<String, String?> imageUrls) {
+    final styles = _westernStyleOptions;
+    return _buildWizardRowPager(
+      itemCount: styles.length,
+      itemBuilder: (context, index) => _buildStyleWizardCard(
+        style: styles[index],
+        index: index,
+        imageUrls: imageUrls,
+      ),
+    );
+  }
+
   Widget _buildStyleWebCarousel(Map<String, String?> imageUrls) {
     final styles = _westernStyleOptions;
     return Column(
@@ -1496,25 +1509,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
             itemCount: styles.length,
             itemBuilder: (context, index) {
               final style = styles[index];
-              final name = style['name']!;
-              final title = style['title'] ?? name;
-              final isSelected = selectedWesternStyle == name ||
-                  index == _currentStyleCarouselIndex;
-              final imageUrl = imageUrls[name];
 
               return Padding(
                 padding: _shapeCardPagePadding,
-                child: _buildWizardSelectionCard(
-                  title: title,
-                  description: style['desc'],
-                  image: _buildStyleCardImage(
-                    imageUrl: imageUrl,
-                    fallbackAsset: style['fallback'],
-                    compact: true,
-                  ),
-                  isSelected: isSelected,
-                  onSelect: () => _selectWesternStyleAndAdvance(name, index),
-                  selectLabel: 'SELECT THIS STYLE',
+                child: _buildStyleWizardCard(
+                  style: style,
+                  index: index,
+                  imageUrls: imageUrls,
+                  carouselActive: true,
                 ),
               );
             },
@@ -1558,6 +1560,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String label,
     required WidgetBuilder builder,
   }) {
+    // Compact subtitle directly under the step title — minimal vertical
+    // footprint so the cards keep the same height as the Hat Type step.
     return Center(
       child: TextButton.icon(
         onPressed: () {
@@ -1567,10 +1571,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
         },
         style: TextButton.styleFrom(
           foregroundColor: const Color(0xFF559C99),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
-        icon: const Icon(Icons.menu_book_outlined, size: 16),
+        icon: const Icon(Icons.menu_book_outlined, size: 14),
         label: Text(
           label,
           style: GoogleFonts.montserrat(
@@ -1886,7 +1892,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    _hatTypeCarouselController.dispose();
     _styleCarouselController.dispose();
     _crownCarouselController.dispose();
     _brimCarouselController.dispose();
@@ -1940,6 +1945,44 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _pageController.previousPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
+    );
+  }
+
+  /// Discrete top-left back button. Overlaid so it never shifts the layout:
+  /// goes to the previous wizard step, or exits the wizard from step one.
+  Widget _buildDiscreteBackButton(BuildContext context) {
+    const espresso = Color(0xFF2D2926);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10, top: 6),
+        child: Semantics(
+          button: true,
+          label: 'Back',
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => _handleSystemBack(false),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: espresso.withValues(alpha: 0.12),
+                  ),
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 19,
+                  color: espresso.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -2042,53 +2085,63 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 child: _buildProgressBar(),
               ),
             ),
-      body: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white, // Clean, airy background
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: kIsWeb
-                    ? AppBreakpoints.webAppMaxWidth(context)
-                    : 1040,
-              ),
-              child: Column(
-                children: [
-                  if (_useWebCompactWizardHeader(context))
-                    _buildWizardCenterLogo(context),
-                  if (widget.headShapeProfile != null)
-                    _buildHeadShapeProfileBanner(widget.headShapeProfile!),
-                  if (widget.headMeasurementProfile != null)
-                    _buildHeadMeasurementBanner(widget.headMeasurementProfile!),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics:
-                          const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentPageIndex = index;
-                          _flippedCardIndex = null;
-                          _flippedBrimCardIndex = null;
-                          if (index == 0) {
-                            _materialExampleUrls =
-                                _computeMaterialExampleImages();
-                          }
-                        });
-                      },
-                      children: _pages,
-                    ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white, // Clean, airy background
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: kIsWeb
+                        ? AppBreakpoints.webAppMaxWidth(context)
+                        : 1040,
                   ),
-                  if (_useInlineWizardFooter(context))
-                    _buildBottomNav(includeBottomSafeArea: false),
-                ],
+                  child: Column(
+                    children: [
+                      if (_useWebCompactWizardHeader(context))
+                        _buildWizardCenterLogo(context),
+                      if (widget.headShapeProfile != null)
+                        _buildHeadShapeProfileBanner(widget.headShapeProfile!),
+                      if (widget.headMeasurementProfile != null)
+                        _buildHeadMeasurementBanner(
+                            widget.headMeasurementProfile!),
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          physics:
+                              const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentPageIndex = index;
+                              _flippedCardIndex = null;
+                              _flippedBrimCardIndex = null;
+                              if (index == 0) {
+                                _materialExampleUrls =
+                                    _computeMaterialExampleImages();
+                              }
+                            });
+                          },
+                          children: _pages,
+                        ),
+                      ),
+                      if (_useInlineWizardFooter(context))
+                        _buildBottomNav(includeBottomSafeArea: false),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            left: 0,
+            child: _buildDiscreteBackButton(context),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildScaffoldFooter(context),
       ),
@@ -2342,7 +2395,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       children: [
         _buildWizardStepTitle('Select a Hat Type:'),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: OutlinedButton(
             onPressed: () {
               setState(() => selectedHatType = null);
@@ -2383,78 +2436,167 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   Expanded(
                     child: LayoutBuilder(
                           builder: (context, c) {
-                            if (_useWebWizardCarousel(c.maxWidth)) {
-                              return _buildHatTypeWebCarousel();
+                            final fourUp = _isWebWizardFourUp(c.maxWidth);
+                            final crossAxisCount =
+                                fourUp ? _webWizardGridColumns : 2;
+                            final aspect = fourUp
+                                ? 0.72
+                                : (_isProMaxLayout(context) ? 0.92 : 0.85);
+
+                            Widget buildGrid({required EdgeInsets padding}) {
+                              return GridView.count(
+                                crossAxisCount: crossAxisCount,
+                                shrinkWrap: fourUp,
+                                physics: fourUp
+                                    ? const NeverScrollableScrollPhysics()
+                                    : null,
+                                padding: padding,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: aspect,
+                                children:
+                                    _availableHatTypes.map((typeInfo) {
+                                  final isSelected =
+                                      selectedHatType == typeInfo;
+                                  final imageUrl =
+                                      _materialExampleUrls[typeInfo.name];
+                                  final index =
+                                      _availableHatTypes.indexOf(typeInfo);
+
+                                  return Card(
+                                    elevation: 0,
+                                    clipBehavior: Clip.antiAlias,
+                                    color: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? const Color(0xFF559C99)
+                                            : const Color(0xFF559C99)
+                                                .withValues(alpha: 0.35),
+                                        width: isSelected ? 3 : 1,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      onTap: () => _selectHatTypeAndAdvance(
+                                        typeInfo,
+                                        index,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Expanded(
+                                            child: _buildHatTypeCardImage(
+                                              imageUrl: imageUrl,
+                                              imagePath: typeInfo.imagePath,
+                                              compact: fourUp,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical:
+                                                  fourUp ? 10.0 : 12.0,
+                                              horizontal: fourUp ? 4.0 : 0,
+                                            ),
+                                            color: Colors.white,
+                                            child: Text(
+                                              typeInfo.name.toUpperCase(),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: fourUp ? 11 : 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF2D2926),
+                                                letterSpacing:
+                                                    fourUp ? 1.2 : 2.0,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
                             }
-                            return GridView.count(
-                              crossAxisCount: 2,
+
+                            if (fourUp) {
+                              return _buildWizardRowPager(
+                                itemCount: _availableHatTypes.length,
+                                itemBuilder: (context, index) {
+                                  final typeInfo =
+                                      _availableHatTypes[index];
+                                  final isSelected =
+                                      selectedHatType == typeInfo;
+                                  final imageUrl =
+                                      _materialExampleUrls[typeInfo.name];
+                                  return Card(
+                                    elevation: 0,
+                                    clipBehavior: Clip.antiAlias,
+                                    color: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? const Color(0xFF559C99)
+                                            : const Color(0xFF559C99)
+                                                .withValues(alpha: 0.35),
+                                        width: isSelected ? 3 : 1,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      onTap: () => _selectHatTypeAndAdvance(
+                                        typeInfo,
+                                        index,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Expanded(
+                                            child: _buildHatTypeCardImage(
+                                              imageUrl: imageUrl,
+                                              imagePath: typeInfo.imagePath,
+                                              compact: true,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets
+                                                .symmetric(
+                                              vertical: 10.0,
+                                              horizontal: 4.0,
+                                            ),
+                                            color: Colors.white,
+                                            child: Text(
+                                              typeInfo.name.toUpperCase(),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF2D2926),
+                                                letterSpacing: 1.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }
+
+                            return buildGrid(
                               padding: EdgeInsets.fromLTRB(
                                 12,
                                 12,
                                 12,
                                 _isProMaxLayout(context) ? 4 : 12,
                               ),
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio:
-                                  _isProMaxLayout(context) ? 0.92 : 0.85,
-                              children: _availableHatTypes.map((typeInfo) {
-                                final isSelected = selectedHatType == typeInfo;
-                                final imageUrl =
-                                    _materialExampleUrls[typeInfo.name];
-
-                                return Card(
-                                  elevation: 0,
-                                  clipBehavior: Clip.antiAlias,
-                                  color: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? const Color(0xFF559C99)
-                                          : const Color(0xFF559C99)
-                                              .withValues(alpha: 0.35),
-                                      width: isSelected ? 3 : 1,
-                                    ),
-                                  ),
-                                  child: InkWell(
-                                    onTap: () => _selectHatTypeAndAdvance(
-                                      typeInfo,
-                                      _availableHatTypes.indexOf(typeInfo),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(
-                                          child: _buildHatTypeCardImage(
-                                            imageUrl: imageUrl,
-                                            imagePath: typeInfo.imagePath,
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12.0,
-                                          ),
-                                          color: Colors.white,
-                                          child: Text(
-                                            typeInfo.name.toUpperCase(),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF2D2926),
-                                              letterSpacing: 2.0,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
                             );
                           },
                     ),
@@ -2489,7 +2631,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  /// Web tablet+: hat type / style use the crown-sized carousel.
+  /// Web laptop+: hat type / style show four cards in one row.
+  bool _isWebWizardFourUp(double layoutWidth) =>
+      kIsWeb && layoutWidth >= AppBreakpoints.laptop;
+
+  /// Web tablet+: style step uses the crown-sized carousel.
   bool _useWebWizardCarousel(double layoutWidth) =>
       kIsWeb && layoutWidth >= AppBreakpoints.tablet;
 
@@ -2498,7 +2644,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       children: [
         _buildWizardStepTitle('Select Style:'),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: OutlinedButton(
             onPressed: () {
               setState(() => selectedWesternStyle = null);
@@ -2533,6 +2679,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
               return LayoutBuilder(
                 builder: (context, constraints) {
+                  if (_isWebWizardFourUp(constraints.maxWidth)) {
+                    return _buildStyleWebRowPager(imageUrls);
+                  }
                   if (_useWebWizardCarousel(constraints.maxWidth)) {
                     return _buildStyleWebCarousel(imageUrls);
                   }
@@ -2831,6 +2980,86 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  Widget _buildShapeFourUpCard({
+    required HatShapeInfo shape,
+    required String? imageUrl,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected
+              ? const Color(0xFF559C99)
+              : const Color(0xFF559C99).withValues(alpha: 0.35),
+          width: isSelected ? 3 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              // Match the Hat Type card's photo rendering (white backing,
+              // same insets/scale/framing) so all wizard cards look alike.
+              child: _buildHatTypeCardImage(
+                imageUrl: imageUrl,
+                imagePath: shape.imagePath,
+                compact: true,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+              child: Text(
+                shape.name.toUpperCase(),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: const Color(0xFF2D2926),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWizardShapeRowPager({
+    required List<HatShapeInfo> shapes,
+    required Map<String, List<Map<String, String>>> productsMap,
+    required HatShapeInfo? selectedShape,
+    required void Function(HatShapeInfo shape, int index) onSelect,
+  }) {
+    return _buildWizardRowPager(
+      itemCount: shapes.length,
+      itemBuilder: (context, index) {
+        final shape = shapes[index];
+        final shopifyProducts = productsMap[shape.name] ?? [];
+        final photo = _pickShapeCardPhoto(
+          shapeName: shape.name,
+          shopifyProducts: shopifyProducts,
+          shapeCarouselIndex: index,
+        );
+        return _buildShapeFourUpCard(
+          shape: shape,
+          imageUrl: photo.imageUrl,
+          isSelected: selectedShape?.name == shape.name,
+          onTap: () => onSelect(shape, index),
+        );
+      },
+    );
+  }
+
   Widget _buildVisualCrownSelection() {
     return FutureBuilder<List<dynamic>>(
       future: _allProductsFuture,
@@ -2851,8 +3080,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Crown Shape:'),
             _buildCrownGuideLink(),
-            // Carousel — image fills the card edge-to-edge, with side nav arrows
-            _buildWizardCarouselArea(
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (_isWebWizardFourUp(constraints.maxWidth)) {
+                    return _buildWizardShapeRowPager(
+                      shapes: sortedShapes,
+                      productsMap: shopifyProductsMap,
+                      selectedShape: selectedCrownShape,
+                      onSelect: _selectCrownAndAdvance,
+                    );
+                  }
+                  return Column(
+                    children: [
+                      _buildWizardCarouselArea(
               controller: _crownCarouselController,
               currentIndex: _currentCrownCarouselIndex,
               itemCount: sortedShapes.length,
@@ -3174,6 +3415,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   : '',
               maxDots: 8,
             ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         );
       },
@@ -3252,8 +3498,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             _buildWizardStepTitle('Select Brim Shape:'),
             _buildBrimGuideLink(),
-            // Carousel with side nav arrows
-            _buildWizardCarouselArea(
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (_isWebWizardFourUp(constraints.maxWidth)) {
+                    return _buildWizardShapeRowPager(
+                      shapes: sortedShapes,
+                      productsMap: shopifyProductsMap,
+                      selectedShape: selectedBrimShape,
+                      onSelect: _selectBrimAndAdvance,
+                    );
+                  }
+                  return Column(
+                    children: [
+                      _buildWizardCarouselArea(
               controller: _brimCarouselController,
               currentIndex: _currentBrimCarouselIndex,
               itemCount: sortedShapes.length,
@@ -3561,9 +3819,196 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   ? sortedShapes[_currentBrimCarouselIndex + 1].name
                   : '',
             ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Laptop/desktop wizard picker: one row per page (max 4 cards), side arrows,
+/// and a peek of the next page when there are more than four options.
+class _WizardRowPager extends StatefulWidget {
+  const _WizardRowPager({
+    required this.itemCount,
+    required this.maxBlockWidth,
+    required this.cardHeight,
+    required this.itemBuilder,
+  });
+
+  static const int cardsPerPage = 4;
+  static const double spacing = 12.0;
+  static const double peekViewportFraction = 0.9;
+
+  final int itemCount;
+  final double maxBlockWidth;
+  final double cardHeight;
+  final Widget Function(BuildContext context, int index) itemBuilder;
+
+  @override
+  State<_WizardRowPager> createState() => _WizardRowPagerState();
+}
+
+class _WizardRowPagerState extends State<_WizardRowPager> {
+  static const _navGutter = 44.0;
+
+  late final PageController _pageController;
+  int _pageIndex = 0;
+
+  int get _pageCount =>
+      (widget.itemCount + _WizardRowPager.cardsPerPage - 1) ~/
+      _WizardRowPager.cardsPerPage;
+
+  bool get _multiPage => _pageCount > 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      viewportFraction:
+          _multiPage ? _WizardRowPager.peekViewportFraction : 1.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  double _cardWidthForPage(int countOnPage, double contentWidth) {
+    if (countOnPage <= 0 || contentWidth <= 0) return 0;
+    if (_multiPage) {
+      return (contentWidth -
+              _WizardRowPager.spacing * (_WizardRowPager.cardsPerPage - 1)) /
+          _WizardRowPager.cardsPerPage;
+    }
+    return (contentWidth -
+            _WizardRowPager.spacing * (countOnPage - 1)) /
+        countOnPage;
+  }
+
+  Widget _buildPage(int pageIndex, double contentWidth) {
+    final start = pageIndex * _WizardRowPager.cardsPerPage;
+    final end = min(
+      start + _WizardRowPager.cardsPerPage,
+      widget.itemCount,
+    );
+    final countOnPage = end - start;
+    final cardWidth = _cardWidthForPage(countOnPage, contentWidth);
+
+    return SizedBox(
+      width: contentWidth,
+      height: widget.cardHeight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = start; i < end; i++) ...[
+            if (i > start) const SizedBox(width: _WizardRowPager.spacing),
+            SizedBox(
+              width: cardWidth,
+              child: widget.itemBuilder(context, i),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageArea() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportWidth = constraints.maxWidth;
+        if (!_multiPage) {
+          return _buildPage(0, viewportWidth);
+        }
+        // PageView gives each page only `viewportFraction` of the viewport
+        // (the remainder is the peek). Size content to that slot so the row
+        // of cards fits exactly instead of overflowing the page.
+        final pageExtent =
+            viewportWidth * _WizardRowPager.peekViewportFraction;
+        return PageView.builder(
+          controller: _pageController,
+          clipBehavior: Clip.hardEdge,
+          onPageChanged: (index) => setState(() => _pageIndex = index),
+          itemCount: _pageCount,
+          itemBuilder: (context, page) => Align(
+            alignment: Alignment.center,
+            child: _buildPage(page, pageExtent),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _navButton({
+    required bool visible,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    if (!visible) return const SizedBox.shrink();
+    return SizedBox(
+      width: _navGutter,
+      child: Center(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 18, color: Colors.grey.shade700),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.maxBlockWidth,
+      height: widget.cardHeight,
+      child: ClipRect(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _navButton(
+              visible: _multiPage && _pageIndex > 0,
+              icon: Icons.chevron_left_rounded,
+              onTap: () => _pageController.previousPage(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOut,
+              ),
+            ),
+            Expanded(child: _buildPageArea()),
+            _navButton(
+              visible: _multiPage && _pageIndex < _pageCount - 1,
+              icon: Icons.chevron_right_rounded,
+              onTap: () => _pageController.nextPage(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOut,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

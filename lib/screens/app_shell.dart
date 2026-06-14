@@ -95,7 +95,9 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final useTopNav = AppBreakpoints.useWebTopNavigation(context);
-    final topNavVisible = !useTopNav ||
+    final lockChrome = ScrollChromeLock.lockVisibleOf(context);
+    final topNavVisible = lockChrome ||
+        !useTopNav ||
         WebDesktopScrollChromeVisibility.chromeVisibleOf(context);
     final nav = MoonRidgeBottomNav(
       selectedIndex: _selectedIndex,
@@ -118,23 +120,26 @@ class _AppShellState extends State<AppShell> {
       ),
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF8F5),
-      body: Column(
-        children: [
-          if (useTopNav)
-            ClipRect(
-              child: AnimatedAlign(
-                alignment: Alignment.topCenter,
-                heightFactor: topNavVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                child: nav,
+    return ScrollChromeLock(
+      lockVisible: _selectedIndex == 0,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFAF8F5),
+        body: Column(
+          children: [
+            if (useTopNav)
+              ClipRect(
+                child: AnimatedAlign(
+                  alignment: Alignment.topCenter,
+                  heightFactor: topNavVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOutCubic,
+                  child: nav,
+                ),
               ),
-            ),
-          Expanded(child: content),
-          if (!useTopNav) nav,
-        ],
+            Expanded(child: content),
+            if (!useTopNav) nav,
+          ],
+        ),
       ),
     );
   }

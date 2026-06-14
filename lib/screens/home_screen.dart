@@ -520,33 +520,24 @@ class _RotatingPhotos extends StatefulWidget {
 }
 
 class _RotatingPhotosState extends State<_RotatingPhotos> {
-  final PageController _pageController = PageController();
   Timer? _autoAdvance;
   int _index = 0;
 
   @override
   void initState() {
     super.initState();
-    _autoAdvance = Timer.periodic(const Duration(seconds: 5), (_) => _advance());
+    _autoAdvance = Timer.periodic(const Duration(seconds: 7), (_) => _advance());
   }
 
   @override
   void dispose() {
     _autoAdvance?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
   void _advance() {
-    if (!mounted || !_pageController.hasClients || widget.photos.isEmpty) {
-      return;
-    }
-    final next = (_index + 1) % widget.photos.length;
-    _pageController.animateToPage(
-      next,
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeInOut,
-    );
+    if (!mounted || widget.photos.isEmpty) return;
+    setState(() => _index = (_index + 1) % widget.photos.length);
   }
 
   Widget _photoImage(_HomePhoto photo, BoxConstraints constraints) {
@@ -576,20 +567,32 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
 
   @override
   Widget build(BuildContext context) {
+    final photo = widget.photos[_index];
     return Stack(
       fit: StackFit.expand,
       children: [
-        PageView.builder(
-          controller: _pageController,
-          onPageChanged: (i) => setState(() => _index = i),
-          itemCount: widget.photos.length,
-          itemBuilder: (context, index) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return _photoImage(widget.photos[index], constraints);
-              },
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 1400),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
             );
           },
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: LayoutBuilder(
+            key: ValueKey(_index),
+            builder: (context, constraints) {
+              return _photoImage(photo, constraints);
+            },
+          ),
         ),
         Positioned(
           left: 0,
@@ -600,7 +603,8 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
             children: List.generate(widget.photos.length, (i) {
               final active = i == _index;
               return AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 width: active ? 18 : 6,
                 height: 6,
