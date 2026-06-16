@@ -208,6 +208,43 @@ class ShopifyService {
     return true;
   }
 
+  /// Shopify tag used to surface top picks on wizard example cards.
+  static bool isBestSellerProduct(dynamic product) {
+    final tags = product['tags'];
+    if (tags is! List) return false;
+    return tags.any(
+      (tag) => tag.toString().trim().toLowerCase() == 'best seller',
+    );
+  }
+
+  /// Storefront [totalInventory], when present; otherwise zero.
+  static int productTotalInventory(dynamic product) {
+    final direct = product['totalInventory'];
+    if (direct is num) return direct.toInt();
+    return 0;
+  }
+
+  /// Best Seller tag first, then higher in-stock count, then title for stability.
+  static int comparePickerExampleProducts(dynamic a, dynamic b) {
+    final aBest = isBestSellerProduct(a) ? 1 : 0;
+    final bBest = isBestSellerProduct(b) ? 1 : 0;
+    if (aBest != bBest) return bBest.compareTo(aBest);
+
+    final inventoryCompare = productTotalInventory(b).compareTo(
+      productTotalInventory(a),
+    );
+    if (inventoryCompare != 0) return inventoryCompare;
+
+    return (a['title'] ?? '')
+        .toString()
+        .toLowerCase()
+        .compareTo((b['title'] ?? '').toString().toLowerCase());
+  }
+
+  static List<dynamic> sortPickerExampleProducts(Iterable<dynamic> products) {
+    return List<dynamic>.from(products)..sort(comparePickerExampleProducts);
+  }
+
   static List<dynamic> orderBigalliLast(Iterable<dynamic> products) {
     final primary = <dynamic>[];
     final bigalli = <dynamic>[];
@@ -290,6 +327,7 @@ class ShopifyService {
 
   /// Curated wizard/guide photos — Shopify product title substring per UI label.
   static const Map<String, String> preferredShapeExampleTitleTerms = {
+    'Brick/Rounded Brick/Minnick/CHL': 'amberwood',
     'Brick/Rounded Brick/Minnick': 'amberwood',
   };
 
@@ -312,6 +350,7 @@ class ShopifyService {
       required bool requireShapeMatch,
       String? material,
     }) {
+      final eligible = <dynamic>[];
       for (final product in products) {
         if (!isEligibleForPickerExample(product)) continue;
         final title = (product['title'] ?? '').toString().toLowerCase();
@@ -332,12 +371,17 @@ class ShopifyService {
 
         final url = product['featuredImage']?['url'];
         if (url == null || url.toString().isEmpty) continue;
-        return {
-          'url': url.toString(),
-          'title': (product['title'] ?? '').toString(),
-        };
+        eligible.add(product);
       }
-      return null;
+
+      if (eligible.isEmpty) return null;
+      final product = sortPickerExampleProducts(eligible).first;
+      final url = product['featuredImage']?['url'];
+      if (url == null || url.toString().isEmpty) return null;
+      return {
+        'url': url.toString(),
+        'title': (product['title'] ?? '').toString(),
+      };
     }
 
     if (materialContains != null) {
@@ -385,13 +429,7 @@ class ShopifyService {
 
       if (eligible.isEmpty) return null;
 
-      final sorted = List<dynamic>.from(eligible)
-        ..sort((a, b) => (a['title'] ?? '')
-            .toString()
-            .toLowerCase()
-            .compareTo((b['title'] ?? '').toString().toLowerCase()));
-
-      final list = sorted.toList();
+      final list = sortPickerExampleProducts(eligible);
       final pickIndex =
           (shapeName.hashCode.abs() + shapeCarouselIndex) % list.length;
       final product = list[pickIndex];
@@ -553,6 +591,7 @@ class ShopifyService {
             handle
             onlineStoreUrl
             tags
+            totalInventory
             priceRange {
               minVariantPrice { amount currencyCode }
             }
@@ -586,6 +625,7 @@ class ShopifyService {
             handle
             onlineStoreUrl
             tags
+            totalInventory
             priceRange {
               minVariantPrice { amount currencyCode }
             }
@@ -1054,7 +1094,8 @@ class ShopifyService {
     };
   }
 
-  /// Keeps Shopify admin order for wizard options; appends unseen API values.
+  /// Keeps Shopify admin validation order for wizard options; appends unseen
+  /// API values alphabetically. Fallback [canonicalNames] in hat.dart mirror admin.
   static List<String> _orderedValidationChoices({
     required Set<String> apiValues,
     required Iterable<String> canonicalNames,

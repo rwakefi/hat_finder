@@ -105,11 +105,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
 
   /// Deterministically map each shape to a representative catalog image.
   Map<String, String> _computeExampleImages(List<dynamic> products) {
-    final sorted = List<dynamic>.from(products)
-      ..sort((a, b) => (a['title'] ?? '')
-          .toString()
-          .toLowerCase()
-          .compareTo((b['title'] ?? '').toString().toLowerCase()));
+    final sorted = ShopifyService.sortPickerExampleProducts(products);
 
     final used = <String>{};
     final result = <String, String>{};

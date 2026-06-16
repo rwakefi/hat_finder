@@ -206,7 +206,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               lookup.contains('west texas')) {
             lookup = 'texas punch';
           } else if (lookup.contains('cool hand') || lookup == 'chl') {
-            lookup = 'cool hand luke';
+            lookup = 'brick';
           } else if (lookup.contains('pinch')) {
             lookup = 'pinch front';
           } else if (lookup.contains('rounded brick')) {
@@ -350,11 +350,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Map<String, String> _computeMaterialExampleImages() {
     if (_allProducts == null) return {};
 
-    final products = List<dynamic>.from(_allProducts!)
-      ..sort((a, b) => (a['title'] ?? '')
-          .toString()
-          .toLowerCase()
-          .compareTo((b['title'] ?? '').toString().toLowerCase()));
+    final products = ShopifyService.sortPickerExampleProducts(_allProducts!);
 
     final usedUrls = <String>{};
     final urls = <String, String>{};
@@ -400,38 +396,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (_allProducts == null) return;
 
     final crownShapes = List<HatShapeInfo>.from(_currentCrownShapes);
-    final brimShapeList = _sortedBrimShapes ?? _orderedWizardBrimShapes();
+    final brimShapeList = _orderedWizardBrimShapes();
 
     _crownProductsMap = _buildShapeProductMap(crownShapes, isCrown: true);
     _brimProductsMap = _buildShapeProductMap(brimShapeList, isCrown: false);
 
-    final sortedCrown = List<HatShapeInfo>.from(crownShapes);
-    if (widget.headShapeProfile != null) {
-      sortedCrown.sort((a, b) {
-        final profilePriority = _compareByHeadShapePriority(
-          a,
-          b,
-          isCrown: true,
-        );
-        if (profilePriority != 0) return profilePriority;
-        return crownShapes.indexOf(a).compareTo(crownShapes.indexOf(b));
-      });
-    }
-    _sortedCrownShapes = sortedCrown;
-
-    final sortedBrim = List<HatShapeInfo>.from(brimShapeList);
-    if (widget.headShapeProfile != null) {
-      sortedBrim.sort((a, b) {
-        final profilePriority = _compareByHeadShapePriority(
-          a,
-          b,
-          isCrown: false,
-        );
-        if (profilePriority != 0) return profilePriority;
-        return brimShapeList.indexOf(a).compareTo(brimShapeList.indexOf(b));
-      });
-    }
-    _sortedBrimShapes = sortedBrim;
+    _sortedCrownShapes = List<HatShapeInfo>.from(crownShapes);
+    _sortedBrimShapes = List<HatShapeInfo>.from(brimShapeList);
     if (selectedCrownShape != null &&
         !_isWizardCrownShape(selectedCrownShape!)) {
       selectedCrownShape = null;
@@ -471,42 +442,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
       return false;
     }).toList(growable: false);
-  }
-
-  int _compareByHeadShapePriority(
-    HatShapeInfo a,
-    HatShapeInfo b, {
-    required bool isCrown,
-  }) {
-    final profile = widget.headShapeProfile;
-    if (profile == null) return 0;
-
-    final priorities =
-        isCrown ? profile.crownPriorities : profile.brimPriorities;
-    return _compareByStylePriority(a.name, b.name, priorities);
-  }
-
-  int _compareByStylePriority(
-    String aName,
-    String bName,
-    List<String> priorities,
-  ) {
-    final aLower = aName.toLowerCase();
-    final bLower = bName.toLowerCase();
-    final aPriorityIndex = priorities.indexWhere(
-      (p) => aLower.contains(p) || p.contains(aLower),
-    );
-    final bPriorityIndex = priorities.indexWhere(
-      (p) => bLower.contains(p) || p.contains(bLower),
-    );
-    if (aPriorityIndex != -1 && bPriorityIndex != -1) {
-      return aPriorityIndex.compareTo(bPriorityIndex);
-    } else if (aPriorityIndex != -1) {
-      return -1;
-    } else if (bPriorityIndex != -1) {
-      return 1;
-    }
-    return 0;
   }
 
   List<HatShapeInfo> get _allBrimShapeOptions =>
@@ -683,11 +618,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
         entries.sort((a, b) {
           final aMatches = a['matchesMaterial'] == 'true' ? 1 : 0;
           final bMatches = b['matchesMaterial'] == 'true' ? 1 : 0;
-          return bMatches.compareTo(aMatches);
+          if (aMatches != bMatches) return bMatches.compareTo(aMatches);
+          return _compareShapeExampleEntries(a, b);
         });
+      }
+    } else {
+      for (final entries in map.values) {
+        entries.sort(_compareShapeExampleEntries);
       }
     }
     return map;
+  }
+
+  dynamic? _productForExampleTitle(String? title) {
+    if (_allProducts == null || title == null || title.isEmpty) return null;
+    for (final product in _allProducts!) {
+      if ((product['title'] ?? '').toString() == title) return product;
+    }
+    return null;
+  }
+
+  int _compareShapeExampleEntries(
+    Map<String, String> a,
+    Map<String, String> b,
+  ) {
+    final productA = _productForExampleTitle(a['title']);
+    final productB = _productForExampleTitle(b['title']);
+    if (productA == null && productB == null) return 0;
+    if (productA == null) return 1;
+    if (productB == null) return -1;
+    return ShopifyService.comparePickerExampleProducts(productA, productB);
   }
 
   /// Generic hat product photo (background removed) when Shopify has no match.
@@ -861,14 +821,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
       MediaQuery.sizeOf(context).height >= 920;
 
   /// Shopify slash-separated names (e.g. Gambler/Telescope) as separate lines.
+  /// When there are more than three segments, extras join the third line (e.g.
+  /// Brick/Rounded Brick/Minnick/CHL → MINNICK/CHL).
   List<String> _shapeCardTitleParts(String name) {
     if (!name.contains('/')) return [name.toUpperCase()];
-    return name
+    final rawParts = name
         .split('/')
-        .map((part) => part.trim().toUpperCase())
+        .map((part) => part.trim())
         .where((part) => part.isNotEmpty)
-        .take(3)
         .toList();
+    if (rawParts.length <= 3) {
+      return rawParts.map((part) => part.toUpperCase()).toList();
+    }
+    return [
+      rawParts[0].toUpperCase(),
+      rawParts[1].toUpperCase(),
+      rawParts.sublist(2).join('/').toUpperCase(),
+    ];
   }
 
   /// Title size scales down for long Shopify validation names (e.g. brim CHL).
@@ -891,8 +860,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   double _shapeCardImageScale(BuildContext context) {
-    if (_isProMaxLayout(context)) return 1.21;
-    return 1.16;
+    const mobileReduction = 0.95;
+    if (_isProMaxLayout(context)) return 1.21 * mobileReduction;
+    return 1.16 * mobileReduction;
   }
 
   Widget _buildStackedShapeTitle({
@@ -1410,9 +1380,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (products == null) return imageUrls;
 
     try {
-      var filtered = List<dynamic>.from(products)
-          .where((p) => ShopifyService.isEligibleForPickerExample(p))
-          .toList();
+      var filtered = ShopifyService.sortPickerExampleProducts(
+        products.where(
+          (p) =>
+              ShopifyService.isEligibleForPickerExample(p) &&
+              ShopifyService.isHatFinderCatalogProduct(p),
+        ),
+      );
       if (selectedHatType != null) {
         final target = selectedHatType!.name.toLowerCase();
         filtered = filtered.where((p) {
@@ -1444,27 +1418,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
             '94',
             '9G',
           ];
-          foundUrl = filtered.firstWhere((p) {
-            final profile = _metaValue(p['stetsonProfile']);
-            final url = p['featuredImage']?['url'] as String?;
-            return westernProfiles.contains(profile) &&
+          for (final product in filtered) {
+            final profile = _metaValue(product['stetsonProfile']);
+            final url = product['featuredImage']?['url'] as String?;
+            if (westernProfiles.contains(profile) &&
                 url != null &&
-                !usedUrls.contains(url);
-          }, orElse: () => null)?['featuredImage']?['url'];
+                !usedUrls.contains(url)) {
+              foundUrl = url;
+              break;
+            }
+          }
         } else if (styleName == 'City') {
-          foundUrl = filtered.firstWhere((p) {
-            final url = p['featuredImage']?['url'] as String?;
-            return _metaValue(p['city']).toLowerCase() == 'true' &&
+          for (final product in filtered) {
+            final url = product['featuredImage']?['url'] as String?;
+            if (_metaValue(product['city']).toLowerCase() == 'true' &&
                 url != null &&
-                !usedUrls.contains(url);
-          }, orElse: () => null)?['featuredImage']?['url'];
+                !usedUrls.contains(url)) {
+              foundUrl = url;
+              break;
+            }
+          }
         } else if (styleName == 'Outdoor') {
-          foundUrl = filtered.firstWhere((p) {
-            final url = p['featuredImage']?['url'] as String?;
-            return _metaValue(p['outdoors']).toLowerCase() == 'true' &&
+          for (final product in filtered) {
+            final url = product['featuredImage']?['url'] as String?;
+            if (_metaValue(product['outdoors']).toLowerCase() == 'true' &&
                 url != null &&
-                !usedUrls.contains(url);
-          }, orElse: () => null)?['featuredImage']?['url'];
+                !usedUrls.contains(url)) {
+              foundUrl = url;
+              break;
+            }
+          }
         }
 
         if (foundUrl != null) {
@@ -1623,58 +1606,68 @@ class _HatInputScreenState extends State<HatInputScreen> {
     bool showFindHats = false,
   }) {
     return Expanded(
-      child: Center(
+      child: Align(
+        alignment: const Alignment(0, -0.12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 15,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
-              ),
-              if (showFindHats) ...[
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  onPressed: _submitSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D2926),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'FIND HATS WITH YOUR SELECTIONS',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
+          padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  'Brim shape stays open — refine filters on the results page.',
+                  message,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    height: 1.4,
+                    fontSize: 15,
+                    color: Colors.grey[700],
+                    height: 1.55,
                   ),
                 ),
+                if (showFindHats) ...[
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _submitSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF559C99),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        minimumSize: const Size(0, 52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Find Hats With As Many of Your Choices As Possible',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.15,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Brim shape stays open — refine filters on the results page.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      height: 1.45,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -2140,24 +2133,41 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final cached = ShopifyService.peekValidationChoices();
     if (cached != null) {
       _applyChoicesFromApi(cached);
-      return;
     }
 
     try {
-      final choices = await ShopifyService.fetchValidationChoices();
+      // Always refresh from Shopify admin so crown/brim order stays current
+      // (splash may have preloaded an older cached list).
+      final choices =
+          await ShopifyService.fetchValidationChoices(forceRefresh: true);
+      if (!mounted) return;
       _applyChoicesFromApi(choices);
     } catch (e) {
       debugPrint('Error loading dynamic validation choices: $e');
-      if (mounted) {
+      if (cached == null && mounted) {
         setState(_applyFallbackChoices);
       }
     }
+  }
+
+  void _syncCrownCarouselToSelection() {
+    if (selectedCrownShape == null) return;
+    final shapes = _currentCrownShapes;
+    final index = shapes.indexWhere((s) => s.name == selectedCrownShape!.name);
+    if (index < 0) return;
+    _currentCrownCarouselIndex = index;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_crownCarouselController.hasClients) return;
+      _crownCarouselController.jumpToPage(index);
+    });
   }
 
   void _applyChoicesFromApi(Map<String, List<String>> choices) {
     final crownStrings = choices['crown_shapes'] ?? [];
     final brimStrings = choices['brim_shapes'] ?? [];
     final materialStrings = choices['material_types'] ?? [];
+    final previousCrown = selectedCrownShape?.name;
+    final previousBrim = selectedBrimShape?.name;
 
     if (!mounted) return;
     setState(() {
@@ -2172,12 +2182,33 @@ class _HatInputScreenState extends State<HatInputScreen> {
       if (_allProducts != null) {
         _materialExampleUrls = _computeMaterialExampleImages();
       }
+
+      if (previousCrown != null) {
+        final match = _rawCrownShapes
+            .where((shape) => shape.name == previousCrown)
+            .firstOrNull;
+        if (match != null) {
+          selectedCrownShape = match;
+        }
+      }
+      if (previousBrim != null) {
+        final match =
+            _rawBrimShapes.where((s) => s.name == previousBrim).firstOrNull;
+        if (match != null) {
+          selectedBrimShape = match;
+        }
+      }
     });
     if (_allProducts != null) {
       Future.microtask(() {
         if (!mounted) return;
-        setState(_refreshShapeProductMaps);
+        setState(() {
+          _refreshShapeProductMaps();
+          _syncCrownCarouselToSelection();
+        });
       });
+    } else {
+      _syncCrownCarouselToSelection();
     }
   }
 
@@ -3834,7 +3865,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               _buildWizardEmptyState(
                 message: selectedCrownShape == null
                     ? 'Select a crown shape first.'
-                    : 'No brim shapes in stock for ${selectedCrownShape!.name} with your current selections.',
+                    : 'No brim shapes in stock for\n${selectedCrownShape!.name}\nwith your current selections.',
                 showFindHats: selectedCrownShape != null,
               ),
             ],

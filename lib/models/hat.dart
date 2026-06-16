@@ -76,13 +76,6 @@ const List<HatShapeInfo> crownShapes = [
         'The backbone of western hat making. A clean center crease runs straight from front to back, flanked by two long, parallel side dents. As classic and dependable as it gets.',
   ),
   HatShapeInfo(
-    'Brick/Rounded Brick/Minnick',
-    'assets/images/crowns/brick.png',
-    'A flattened, widened Cattleman with a boxy, commanding presence.',
-    physicalDescription:
-        'A bolder take on the Cattleman. The top is flattened and broadened rather than creased, with deep side dents that push outward — giving the crown a wide, squared-off presence.',
-  ),
-  HatShapeInfo(
     'Pinch Front/Teardrop/Diamond',
     'assets/images/crowns/pinch_front.png',
     'A V-shaped front pinch for a narrow, tapered, face-framing look.',
@@ -90,18 +83,11 @@ const List<HatShapeInfo> crownShapes = [
         'Defined by a sharp V-shaped pinch at the front. The top can be finished soft and rounded like a teardrop or cut clean with geometric angles like a diamond — either way, it tapers in and frames the face closely.',
   ),
   HatShapeInfo(
-    'Texas Punch',
-    'assets/images/crowns/texas_punch.png',
-    'A deep, aggressive crease favored in working ranch country.',
-    famousWearers: [
-      {
-        'name': 'West Texas Ranchers',
-        'context':
-            'A regional signature shape born in the Permian Basin, built for function in extreme heat.'
-      },
-    ],
+    'Brick/Rounded Brick/Minnick/CHL',
+    'assets/images/crowns/brick.png',
+    'A flattened, widened Cattleman with a boxy, commanding presence.',
     physicalDescription:
-        'Built for the ranch. A deep, assertive crease with a taller crown and sharp, well-defined side dents. No frills — just a hard-working shape with serious character.',
+        'A bolder take on the Cattleman. The top is flattened and broadened rather than creased, with deep side dents that push outward — giving the crown a wide, squared-off presence.',
   ),
   HatShapeInfo(
     'Gus/Tom Mix',
@@ -118,13 +104,6 @@ const List<HatShapeInfo> crownShapes = [
         'Straight out of the Old West. The crown climbs high in the back and drops toward the front, with a pronounced front pinch and deep side indents that give it that unmistakable trail-worn silhouette.',
   ),
   HatShapeInfo(
-    'Cutter',
-    'assets/images/crowns/square_top.png',
-    'Popped-out side dents for a squarer, aggressive performance profile.',
-    physicalDescription:
-        'A performance-minded evolution of the Cattleman. The side dents are bumped out and popped, widening the crown from the front for a squarer, more aggressive stance.',
-  ),
-  HatShapeInfo(
     'Gambler/Telescope/Buckaroo',
     'assets/images/crowns/gambler.png',
     'A flat circular top with a continuous gutter around the crown.',
@@ -132,18 +111,25 @@ const List<HatShapeInfo> crownShapes = [
         'Clean and unconventional. A flat, circular top with a continuous gutter running all the way around the outer edge — no pinch, no crease, just a bold, unbroken line. The Buckaroo shares this low, flat profile with a working-ranch attitude.',
   ),
   HatShapeInfo(
-    'CHL (Cool Hand Luke)',
-    'assets/images/crowns/cool_hand_luke.png',
-    'A clean, low-profile, flat-topped variation squared off for a no-nonsense look.',
+    'Texas Punch',
+    'assets/images/crowns/texas_punch.png',
+    'A deep, aggressive crease favored in working ranch country.',
     famousWearers: [
       {
-        'name': 'Paul Newman',
+        'name': 'West Texas Ranchers',
         'context':
-            'Defined the look in the 1967 film "Cool Hand Luke" — a symbol of effortless rebellion.'
+            'A regional signature shape born in the Permian Basin, built for function in extreme heat.'
       },
     ],
     physicalDescription:
-        'Flat on top, squared off, and stripped down. A low-profile shape that keeps things sharp without any fuss.',
+        'Built for the ranch. A deep, assertive crease with a taller crown and sharp, well-defined side dents. No frills — just a hard-working shape with serious character.',
+  ),
+  HatShapeInfo(
+    'Cutter',
+    'assets/images/crowns/square_top.png',
+    'Popped-out side dents for a squarer, aggressive performance profile.',
+    physicalDescription:
+        'A performance-minded evolution of the Cattleman. The side dents are bumped out and popped, widening the crown from the front for a squarer, more aggressive stance.',
   ),
   HatShapeInfo(
     'The Walker',

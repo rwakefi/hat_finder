@@ -368,14 +368,13 @@ async def _resolve_validation(*, force_refresh: bool = False) -> dict:
             expires_at, payload = _validation_cache
             if time.time() < expires_at:
                 return payload
-        db_cached = await _db_cache_get_async("validation_choices")
-        if db_cached is not None:
-            _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, db_cached)
-            return db_cached
+    else:
+        _validation_cache = None
 
+    # Always fetch from Shopify admin — list order must match validation UI.
+    # Skip long-lived DB cache so reordering in admin is not stale for an hour.
     payload = await _build_validation_payload()
     _validation_cache = (time.time() + SHOPIFY_CACHE_TTL_SECONDS, payload)
-    await _db_cache_set_async("validation_choices", payload)
     return payload
 
 

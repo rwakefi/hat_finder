@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hat_finder/models/hat.dart';
 import 'package:hat_finder/services/shopify_service.dart';
 
 void main() {
@@ -63,6 +64,41 @@ void main() {
     );
   });
 
+  test('isBestSellerProduct reads Shopify Best Seller tag', () {
+    expect(
+      ShopifyService.isBestSellerProduct({
+        'tags': ['Best Seller', 'spinimages=51'],
+      }),
+      isTrue,
+    );
+    expect(
+      ShopifyService.isBestSellerProduct({'tags': ['Western']}),
+      isFalse,
+    );
+  });
+
+  test('comparePickerExampleProducts ranks Best Seller before other hats', () {
+    final bestSeller = {
+      'title': 'Zeta Hat',
+      'tags': ['Best Seller'],
+      'totalInventory': 1,
+    };
+    final highStock = {
+      'title': 'Alpha Hat',
+      'tags': [],
+      'totalInventory': 50,
+    };
+
+    expect(
+      ShopifyService.comparePickerExampleProducts(bestSeller, highStock),
+      lessThan(0),
+    );
+    expect(
+      ShopifyService.sortPickerExampleProducts([highStock, bestSeller]).first,
+      bestSeller,
+    );
+  });
+
   test('pickPreferredShapeExample prefers Amberwood for Brick crown', () {
     final products = [
       {
@@ -80,7 +116,7 @@ void main() {
     ];
 
     final picked = ShopifyService.pickPreferredShapeExample(
-      shapeName: 'Brick/Rounded Brick/Minnick',
+      shapeName: 'Brick/Rounded Brick/Minnick/CHL',
       products: products,
       shapeMetaKey: 'crownShape',
       materialContains: 'felt',
@@ -119,7 +155,7 @@ void main() {
     ];
 
     final picked = ShopifyService.pickShapeExamplePhoto(
-      shapeName: 'Brick/Rounded Brick/Minnick',
+      shapeName: 'Brick/Rounded Brick/Minnick/CHL',
       products: products,
       shapeMetaKey: 'crownShape',
       materialContains: 'felt',
@@ -156,7 +192,7 @@ void main() {
     ];
 
     final picked = ShopifyService.pickShapeExamplePhoto(
-      shapeName: 'Brick/Rounded Brick/Minnick',
+      shapeName: 'Brick/Rounded Brick/Minnick/CHL',
       products: products,
       shapeMetaKey: 'crownShape',
       materialContains: 'felt',
@@ -629,6 +665,42 @@ void main() {
     expect(parsed['crown_shapes'], ['Open Crown']);
     expect(parsed['brim_shapes'], isEmpty);
     expect(parsed['material_types'], isEmpty);
+  });
+
+  test('fallback crown and brim catalogs mirror Shopify admin order', () {
+    const shopifyCrownOrder = [
+      "Cattleman's",
+      'Pinch Front/Teardrop/Diamond',
+      'Brick/Rounded Brick/Minnick/CHL',
+      'Gus/Tom Mix',
+      'Gambler/Telescope/Buckaroo',
+      'Texas Punch',
+      'Cutter',
+      'The Walker',
+      'Mule Kick/Horseshoe',
+      'Open Crown',
+    ];
+    const shopifyBrimOrder = [
+      'Flat/Pencil Curl',
+      'Snap Brim/Flanged Brim',
+      'RD (Round)',
+      'J (George Strait, Medium Curved)',
+      'JB (Bullrider)',
+      'CHL (Cool Hand Luke, Shovel, Reiner Low Sides)',
+      'U (Reiner High Sides)',
+      'WTP (West Texas Punch, Rancher)',
+      'SC (Showmanship)',
+    ];
+    const shopifyMaterialOrder = [
+      'Felt',
+      'Straw',
+      'Ballcap',
+      'Beanie/Flat Cap',
+    ];
+
+    expect(crownShapes.map((shape) => shape.name).toList(), shopifyCrownOrder);
+    expect(brimShapes.map((shape) => shape.name).toList(), shopifyBrimOrder);
+    expect(hatTypes.map((type) => type.name).toList(), shopifyMaterialOrder);
   });
 
   test('fetch caches reuse in-flight request', () async {
