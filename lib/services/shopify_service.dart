@@ -201,6 +201,13 @@ class ShopifyService {
   static bool isExcludedFromHatFinderExamples(dynamic product) =>
       parseBooleanMetafield(product['hatFinderExcludeFromExamples']);
 
+  /// Wizard picker cards (hat type, style, crown, brim) never use Bigalli photos.
+  static bool isEligibleForPickerExample(dynamic product) {
+    if (isExcludedFromHatFinderExamples(product)) return false;
+    if (isBigalliProduct(product)) return false;
+    return true;
+  }
+
   static List<dynamic> orderBigalliLast(Iterable<dynamic> products) {
     final primary = <dynamic>[];
     final bigalli = <dynamic>[];
@@ -290,7 +297,8 @@ class ShopifyService {
       preferredShapeExampleTitleTerms[shapeName]?.toLowerCase();
 
   /// Picks a curated example product when configured for [shapeName].
-  /// Tries shape metafield match first, then title + material only.
+  /// Used after an exact shape match is unavailable; tries shape metafield
+  /// match first, then title + material only.
   static Map<String, String>? pickPreferredShapeExample({
     required String shapeName,
     required Iterable<dynamic> products,
@@ -300,16 +308,19 @@ class ShopifyService {
     final term = preferredExampleTitleTerm(shapeName);
     if (term == null) return null;
 
-    Map<String, String>? scan({required bool requireShapeMatch}) {
+    Map<String, String>? scan({
+      required bool requireShapeMatch,
+      String? material,
+    }) {
       for (final product in products) {
-        if (isExcludedFromHatFinderExamples(product)) continue;
+        if (!isEligibleForPickerExample(product)) continue;
         final title = (product['title'] ?? '').toString().toLowerCase();
         if (!title.contains(term)) continue;
 
-        if (materialContains != null) {
-          final material =
+        if (material != null) {
+          final prodMaterial =
               parseMetafieldValue(product['feltStrawOrBallcap']).toLowerCase();
-          if (material.isNotEmpty && !material.contains(materialContains)) {
+          if (prodMaterial.isNotEmpty && !prodMaterial.contains(material)) {
             continue;
           }
         }
@@ -329,54 +340,73 @@ class ShopifyService {
       return null;
     }
 
-    return scan(requireShapeMatch: true) ?? scan(requireShapeMatch: false);
+    if (materialContains != null) {
+      return scan(requireShapeMatch: true, material: materialContains) ??
+          scan(requireShapeMatch: true, material: null) ??
+          scan(requireShapeMatch: false, material: materialContains) ??
+          scan(requireShapeMatch: false, material: null);
+    }
+    return scan(requireShapeMatch: true, material: null) ??
+        scan(requireShapeMatch: false, material: null);
   }
 
-  /// When a crown shape has no tagged catalog photo, pick any eligible product
-  /// image (same hat type when possible) before showing an asset placeholder.
-  static Map<String, String>? pickAnyCatalogExamplePhoto({
+  /// Picks a catalog photo for [shapeName], preferring [materialContains] when
+  /// set. Falls back to the same crown/brim shape in another hat type (e.g.
+  /// straw brick when no felt brick) before the wizard uses a placeholder.
+  static Map<String, String>? pickShapeExamplePhoto({
     required Iterable<dynamic> products,
     required String shapeName,
+    required String shapeMetaKey,
     int shapeCarouselIndex = 0,
     String? materialContains,
     Set<String> avoidUrls = const {},
   }) {
-    final eligible = <dynamic>[];
-    for (final product in products) {
-      if (isExcludedFromHatFinderExamples(product)) continue;
-      if (!isHatFinderCatalogProduct(product)) continue;
-      final url = product['featuredImage']?['url'];
-      if (url == null || url.toString().isEmpty) continue;
-      if (avoidUrls.contains(url.toString())) continue;
+    Map<String, String>? scan({String? material}) {
+      final eligible = <dynamic>[];
+      for (final product in products) {
+        if (!isEligibleForPickerExample(product)) continue;
+        if (!isHatFinderCatalogProduct(product)) continue;
+        final url = product['featuredImage']?['url'];
+        if (url == null || url.toString().isEmpty) continue;
+        if (avoidUrls.contains(url.toString())) continue;
 
-      if (materialContains != null) {
-        final material =
-            parseMetafieldValue(product['feltStrawOrBallcap']).toLowerCase();
-        if (material.isNotEmpty && !material.contains(materialContains)) {
-          continue;
+        final meta = parseMetafieldValue(product[shapeMetaKey]);
+        if (meta.isEmpty || !matchShape(meta, shapeName)) continue;
+
+        if (material != null) {
+          final prodMaterial =
+              parseMetafieldValue(product['feltStrawOrBallcap']).toLowerCase();
+          if (prodMaterial.isNotEmpty && !prodMaterial.contains(material)) {
+            continue;
+          }
         }
+        eligible.add(product);
       }
-      eligible.add(product);
+
+      if (eligible.isEmpty) return null;
+
+      final sorted = List<dynamic>.from(eligible)
+        ..sort((a, b) => (a['title'] ?? '')
+            .toString()
+            .toLowerCase()
+            .compareTo((b['title'] ?? '').toString().toLowerCase()));
+
+      final list = sorted.toList();
+      final pickIndex =
+          (shapeName.hashCode.abs() + shapeCarouselIndex) % list.length;
+      final product = list[pickIndex];
+      final pickedUrl = product['featuredImage']?['url'];
+      if (pickedUrl == null || pickedUrl.toString().isEmpty) return null;
+      return {
+        'url': pickedUrl.toString(),
+        'title': (product['title'] ?? '').toString(),
+      };
     }
 
-    if (eligible.isEmpty) return null;
-
-    final sorted = orderBigalliLast(eligible)
-      ..sort((a, b) => (a['title'] ?? '')
-          .toString()
-          .toLowerCase()
-          .compareTo((b['title'] ?? '').toString().toLowerCase()));
-
-    final list = sorted.toList();
-    final pickIndex =
-        (shapeName.hashCode.abs() + shapeCarouselIndex) % list.length;
-    final product = list[pickIndex];
-    final url = product['featuredImage']?['url'];
-    if (url == null || url.toString().isEmpty) return null;
-    return {
-      'url': url.toString(),
-      'title': (product['title'] ?? '').toString(),
-    };
+    if (materialContains != null) {
+      return scan(material: materialContains) ?? scan(material: null);
+    }
+    return scan(material: null);
   }
 
   /// Returns cached full catalog if splash/home preload already finished.

@@ -361,7 +361,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     for (final type in _availableHatTypes) {
       for (final product in products) {
-        if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
+        if (!ShopifyService.isEligibleForPickerExample(product)) continue;
         final imageUrl = product['featuredImage']?['url'];
         if (imageUrl == null || imageUrl.toString().isEmpty) continue;
         final url = imageUrl as String;
@@ -691,7 +691,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final materialTarget = selectedHatType?.name.toLowerCase();
 
     for (final product in _allProducts!) {
-      if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
+      if (!ShopifyService.isEligibleForPickerExample(product)) continue;
       if (product['featuredImage']?['url'] == null) continue;
 
       // Filter out products that don't match the selected hat type (Felt or Straw)
@@ -733,45 +733,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
   /// Generic hat product photo (background removed) when Shopify has no match.
   static const _hatPhotoPlaceholderAsset = 'assets/images/placeholder.png';
 
-  /// Shape-tagged catalog photo when available; crown shapes fall back to any
-  /// eligible product image before the asset placeholder.
+  /// Shape-tagged catalog photo when available.
+  ///
+  /// Priority: exact shape + hat type, curated example, same shape in another
+  /// hat type, then asset placeholder.
   _ShapeCardPhoto _pickShapeCardPhoto({
     required String shapeName,
     required List<Map<String, String>> shopifyProducts,
     required int shapeCarouselIndex,
     required bool isCrown,
   }) {
-    final preferredTerm =
-        ShopifyService.preferredExampleTitleTerm(shapeName);
-    if (preferredTerm != null) {
-      for (final pick in shopifyProducts) {
-        final title = (pick['title'] ?? '').toString().toLowerCase();
-        if (!title.contains(preferredTerm)) continue;
-        final url = pick['url'];
-        if (url != null && url.isNotEmpty) {
-          return _ShapeCardPhoto(
-            imageUrl: url,
-            productTitle: pick['title'],
-          );
-        }
-      }
+    final shapeMetaKey = isCrown ? 'crownShape' : 'brimShape';
+    final material = selectedHatType?.name.toLowerCase();
 
-      if (_allProducts != null) {
-        final preferred = ShopifyService.pickPreferredShapeExample(
-          shapeName: shapeName,
-          products: _allProducts!,
-          shapeMetaKey: isCrown ? 'crownShape' : 'brimShape',
-          materialContains: selectedHatType?.name.toLowerCase(),
-        );
-        if (preferred != null) {
-          return _ShapeCardPhoto(
-            imageUrl: preferred['url'],
-            productTitle: preferred['title'],
-          );
-        }
-      }
-    }
-
+    // 1. Exact match — same shape and selected hat type (felt/straw/etc.).
     if (shopifyProducts.isNotEmpty) {
       final pickIndex = (shapeName.hashCode.abs() + shapeCarouselIndex) %
           shopifyProducts.length;
@@ -785,12 +760,31 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
     }
 
-    if (isCrown && _allProducts != null) {
-      final fallback = ShopifyService.pickAnyCatalogExamplePhoto(
+    // 2. Curated example (e.g. Amberwood for Brick).
+    if (_allProducts != null &&
+        ShopifyService.preferredExampleTitleTerm(shapeName) != null) {
+      final preferred = ShopifyService.pickPreferredShapeExample(
+        shapeName: shapeName,
+        products: _allProducts!,
+        shapeMetaKey: shapeMetaKey,
+        materialContains: material,
+      );
+      if (preferred != null) {
+        return _ShapeCardPhoto(
+          imageUrl: preferred['url'],
+          productTitle: preferred['title'],
+        );
+      }
+    }
+
+    // 3. Same shape in another hat type, then placeholder.
+    if (_allProducts != null) {
+      final fallback = ShopifyService.pickShapeExamplePhoto(
         products: _allProducts!,
         shapeName: shapeName,
+        shapeMetaKey: shapeMetaKey,
         shapeCarouselIndex: shapeCarouselIndex,
-        materialContains: selectedHatType?.name.toLowerCase(),
+        materialContains: material,
       );
       if (fallback != null) {
         return _ShapeCardPhoto(
@@ -1392,7 +1386,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     try {
       var filtered = List<dynamic>.from(products)
-          .where((p) => !ShopifyService.isExcludedFromHatFinderExamples(p))
+          .where((p) => ShopifyService.isEligibleForPickerExample(p))
           .toList();
       if (selectedHatType != null) {
         final target = selectedHatType!.name.toLowerCase();

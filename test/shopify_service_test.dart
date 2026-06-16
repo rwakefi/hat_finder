@@ -39,6 +39,30 @@ void main() {
     );
   });
 
+  test('isEligibleForPickerExample excludes Bigalli and metafield opt-outs', () {
+    expect(
+      ShopifyService.isEligibleForPickerExample({
+        'vendor': 'Bigalli Hats USA',
+        'hatFinderExcludeFromExamples': {'value': 'false'},
+      }),
+      isFalse,
+    );
+    expect(
+      ShopifyService.isEligibleForPickerExample({
+        'vendor': 'Stetson',
+        'hatFinderExcludeFromExamples': {'value': 'true'},
+      }),
+      isFalse,
+    );
+    expect(
+      ShopifyService.isEligibleForPickerExample({
+        'vendor': 'Stetson',
+        'hatFinderExcludeFromExamples': {'value': 'false'},
+      }),
+      isTrue,
+    );
+  });
+
   test('pickPreferredShapeExample prefers Amberwood for Brick crown', () {
     final products = [
       {
@@ -66,14 +90,14 @@ void main() {
     expect(picked?['title'], 'Amberwood Felt Hat');
   });
 
-  test('pickAnyCatalogExamplePhoto uses a real product when shape has no match',
-      () {
+  test('pickShapeExamplePhoto skips Bigalli products', () {
     final products = [
       {
-        'title': 'Zulu Felt',
+        'title': 'Bigalli Brick',
+        'vendor': 'Bigalli Hats USA',
         'feltStrawOrBallcap': {'value': '["Felt"]'},
-        'crownShape': {'value': '["Cattleman"]'},
-        'featuredImage': {'url': 'https://example.com/zulu.png'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'featuredImage': {'url': 'https://example.com/bigalli.png'},
         'variants': {
           'edges': [
             {'node': {'title': '7', 'availableForSale': true}},
@@ -81,10 +105,11 @@ void main() {
         },
       },
       {
-        'title': 'Open Road',
-        'feltStrawOrBallcap': {'value': '["Felt"]'},
-        'crownShape': {'value': '["Gus"]'},
-        'featuredImage': {'url': 'https://example.com/open-road.png'},
+        'title': 'Straw Brick Hat',
+        'vendor': 'Moon Ridge',
+        'feltStrawOrBallcap': {'value': '["Straw"]'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'featuredImage': {'url': 'https://example.com/straw-brick.png'},
         'variants': {
           'edges': [
             {'node': {'title': '7 1/8', 'availableForSale': true}},
@@ -93,13 +118,113 @@ void main() {
       },
     ];
 
-    final picked = ShopifyService.pickAnyCatalogExamplePhoto(
-      shapeName: 'Open Crown',
+    final picked = ShopifyService.pickShapeExamplePhoto(
+      shapeName: 'Brick/Rounded Brick/Minnick',
       products: products,
+      shapeMetaKey: 'crownShape',
+      materialContains: 'felt',
     );
 
-    expect(picked, isNotNull);
-    expect(picked!['url'], isNotEmpty);
+    expect(picked?['url'], 'https://example.com/straw-brick.png');
+  });
+
+  test('pickShapeExamplePhoto falls back to another material for same crown shape',
+      () {
+    final products = [
+      {
+        'title': 'Straw Brick Hat',
+        'feltStrawOrBallcap': {'value': '["Straw"]'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'featuredImage': {'url': 'https://example.com/straw-brick.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'title': 'Cattleman Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Cattleman"]'},
+        'featuredImage': {'url': 'https://example.com/cattleman.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/8', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final picked = ShopifyService.pickShapeExamplePhoto(
+      shapeName: 'Brick/Rounded Brick/Minnick',
+      products: products,
+      shapeMetaKey: 'crownShape',
+      materialContains: 'felt',
+    );
+
+    expect(picked?['url'], 'https://example.com/straw-brick.png');
+    expect(picked?['title'], 'Straw Brick Hat');
+  });
+
+  test('pickShapeExamplePhoto falls back to another material for same brim shape',
+      () {
+    final products = [
+      {
+        'title': 'Straw Flat Brim',
+        'feltStrawOrBallcap': {'value': '["Straw"]'},
+        'brimShape': {'value': '["Flat/Pencil Curl"]'},
+        'featuredImage': {'url': 'https://example.com/straw-brim.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'title': 'Cattleman Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'brimShape': {'value': '["J (George Strait, Medium Curved)"]'},
+        'featuredImage': {'url': 'https://example.com/j-brim.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/8', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final picked = ShopifyService.pickShapeExamplePhoto(
+      shapeName: 'Flat/Pencil Curl',
+      products: products,
+      shapeMetaKey: 'brimShape',
+      materialContains: 'felt',
+    );
+
+    expect(picked?['url'], 'https://example.com/straw-brim.png');
+  });
+
+  test('pickShapeExamplePhoto returns null when no shape match exists', () {
+    final products = [
+      {
+        'title': 'Cattleman Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Cattleman"]'},
+        'featuredImage': {'url': 'https://example.com/cattleman.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final picked = ShopifyService.pickShapeExamplePhoto(
+      shapeName: 'Open Crown',
+      products: products,
+      shapeMetaKey: 'crownShape',
+    );
+
+    expect(picked, isNull);
   });
 
   test('filterProducts matches felt type and crown shape', () {
