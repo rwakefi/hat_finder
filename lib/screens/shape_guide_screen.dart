@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../config/app_breakpoints.dart';
 import '../models/hat.dart';
 import '../services/shopify_service.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
+import '../theme/section_title_style.dart';
+import '../theme/wizard_header_spacing.dart';
 import '../widgets/web_content_scope.dart';
 
 /// A visual glossary of hat shapes (brim or crown) carried in the catalog.
@@ -166,7 +169,9 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       foregroundColor: _espresso,
-      toolbarHeight: 88,
+      toolbarHeight: MoonRidgeLogoSizes.secondaryAppBar +
+          WizardHeaderSpacing.gap +
+          18,
       centerTitle: true,
       leading: Navigator.of(context).canPop()
           ? IconButton(
@@ -179,9 +184,9 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
         children: [
           Image.asset(
             'assets/images/Moon Ridge Header Logo.png',
-            height: 48,
+            height: MoonRidgeLogoSizes.secondaryAppBar,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: WizardHeaderSpacing.gap),
           Text(
             widget.appBarLabel,
             style: GoogleFonts.montserrat(
@@ -205,7 +210,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
       appBar: _buildAppBar(),
       body: WebContentScope(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+          padding: const EdgeInsets.fromLTRB(20, WizardHeaderSpacing.gap, 20, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -219,18 +224,16 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
                   color: _accent,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: WizardHeaderSpacing.gap),
               Text(
                 widget.title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: _espresso,
+                style: SectionTitleStyle.playfairBold(
+                  fontSize: SectionTitleStyle.guide,
                   height: 1.15,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: WizardHeaderSpacing.gap),
               Text(
                 widget.intro,
                 textAlign: TextAlign.center,

@@ -604,6 +604,33 @@ void main() {
     );
   });
 
+  test('parseValidationChoicesPayload reads Shopify admin lists', () {
+    final parsed = ShopifyService.parseValidationChoicesPayload({
+      'crown_shapes': ["Cattleman's", 'Pinch Front/Teardrop/Diamond'],
+      'brim_shapes': ['Flat/Pencil Curl'],
+      'material_types': ['Felt', 'Straw'],
+    });
+
+    expect(parsed['crown_shapes'], [
+      "Cattleman's",
+      'Pinch Front/Teardrop/Diamond',
+    ]);
+    expect(parsed['brim_shapes'], ['Flat/Pencil Curl']);
+    expect(parsed['material_types'], ['Felt', 'Straw']);
+  });
+
+  test('parseValidationChoicesPayload trims and skips blank entries', () {
+    final parsed = ShopifyService.parseValidationChoicesPayload({
+      'crown_shapes': ['  Open Crown ', '', '  '],
+      'brim_shapes': null,
+      'material_types': [],
+    });
+
+    expect(parsed['crown_shapes'], ['Open Crown']);
+    expect(parsed['brim_shapes'], isEmpty);
+    expect(parsed['material_types'], isEmpty);
+  });
+
   test('fetch caches reuse in-flight request', () async {
     ShopifyService.clearCache();
     // Cache layer is exercised indirectly; ensure clearCache resets state.

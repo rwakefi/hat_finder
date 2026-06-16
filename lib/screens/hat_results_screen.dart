@@ -6,6 +6,8 @@ import '../services/database_service.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
+import '../theme/wizard_header_spacing.dart';
 import '../utils/storefront_links.dart';
 import '../widgets/fine_tuning_tray.dart';
 import '../widgets/shell_tab_bar_footer.dart';
@@ -573,7 +575,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         backgroundColor: _offWhite,
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 90,
+        toolbarHeight: MoonRidgeLogoSizes.resultsToolbar,
         leading: IconButton(
           icon:
               const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
@@ -588,9 +590,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           children: [
             Image.asset(
               'assets/images/Moon Ridge Header Logo.png',
-              height: 45.0,
+              height: MoonRidgeLogoSizes.results,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: WizardHeaderSpacing.gap),
             Text(
               'RESULTS',
               style: GoogleFonts.montserrat(
@@ -612,6 +614,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             children: [
               // Turquoise progress accent line
               Container(height: 3, color: _turquoise),
+              const SizedBox(height: WizardHeaderSpacing.gap),
               _buildSearchSummary(),
               if (_showingClosestMatches) _buildClosestMatchesBanner(),
               const Divider(height: 1, color: _borderGrey),

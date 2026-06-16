@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'database_service.dart'; // To reuse the baseUrl
+import '../config/app_config.dart';
 
 class AgentService {
   static const Duration _requestTimeout = Duration(seconds: 15);
@@ -9,7 +9,7 @@ class AgentService {
     try {
       final response = await http
           .post(
-            Uri.parse('${DatabaseService.baseUrl}/api/chat'),
+            Uri.parse('${AppConfig.hatFinderApiBaseUrl}/api/chat'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'query': query}),
           )

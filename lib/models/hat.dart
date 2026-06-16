@@ -57,11 +57,9 @@ const List<HatShapeInfo> hatTypes = [
   ),
 ];
 
-/// Fallback catalog — names align with Shopify `custom.crown_shape` validation choices.
-/// Crown shapes — names align with Shopify `custom.crown_shape` validation
-/// choices (and ordering). `description` is the short summary; the full
-/// definition lives in `physicalDescription` for the Crown Shape Guide and the
-/// wizard flip cards.
+/// Fallback enrichment for wizard cards — images, copy, and history keyed by
+/// Shopify `custom.crown_shape` validation labels. The live card list and order
+/// come from Shopify admin via the Hat Finder backend.
 const List<HatShapeInfo> crownShapes = [
   HatShapeInfo(
     'Cattleman\'s',
@@ -177,10 +175,9 @@ const List<HatShapeInfo> crownShapes = [
   ),
 ];
 
-/// Fallback catalog — names align with Shopify `custom.brim_shape` validation choices.
-/// Brim shapes — names align with Shopify `custom.brim_shape` validation choices.
-/// `description` is the short definition; `physicalDescription` carries the full
-/// definition used by the Brim Shape Guide and the wizard flip cards.
+/// Fallback enrichment for wizard cards — images and copy keyed by Shopify
+/// `custom.brim_shape` validation labels. The live card list and order come
+/// from Shopify admin via the Hat Finder backend.
 const List<HatShapeInfo> brimShapes = [
   HatShapeInfo(
     'Flat/Pencil Curl',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/moon_ridge_logo_sizes.dart';
 import '../widgets/home_social_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,7 +29,7 @@ class ConnectScreen extends StatelessWidget {
               Center(
                 child: Image.asset(
                   'assets/images/Moon Ridge Header Logo.png',
-                  height: 96,
+                  height: MoonRidgeLogoSizes.connect,
                   fit: BoxFit.contain,
                 ),
               ),

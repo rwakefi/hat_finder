@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/hat.dart';
+import '../theme/section_title_style.dart';
 
 const _sheetEspresso = Color(0xFF2D2926);
 const _sheetTurquoise = Color(0xFF559C99);
 const _sheetBorder = Color(0xFFE8E5E1);
 
-TextStyle _filterSheetTitleStyle() => GoogleFonts.playfairDisplay(
-      fontSize: 26,
-      fontWeight: FontWeight.bold,
-      color: _sheetEspresso,
+TextStyle _filterSheetTitleStyle() => SectionTitleStyle.playfairBold(
+      fontSize: SectionTitleStyle.wizard,
     );
 
 Widget _filterSheetTile({

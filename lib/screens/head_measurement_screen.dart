@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
+import '../theme/section_title_style.dart';
+import '../theme/wizard_header_spacing.dart';
 import '../widgets/shell_tab_bar_footer.dart';
 import '../widgets/web_content_scope.dart';
 
@@ -31,11 +34,8 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
   final TextEditingController _inchesController = TextEditingController();
   final TextEditingController _hatSizeController = TextEditingController();
 
-  TextStyle get _stepTitleStyle => GoogleFonts.playfairDisplay(
-        fontSize: 26,
-        fontWeight: FontWeight.bold,
-        color: _espresso,
-        height: 1.2,
+  TextStyle get _stepTitleStyle => SectionTitleStyle.playfairBold(
+        fontSize: SectionTitleStyle.wizard,
       );
 
   @override
@@ -106,7 +106,9 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       foregroundColor: _espresso,
-      toolbarHeight: 88,
+      toolbarHeight: MoonRidgeLogoSizes.secondaryAppBar +
+          WizardHeaderSpacing.gap +
+          18,
       centerTitle: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
@@ -117,9 +119,9 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
         children: [
           Image.asset(
             'assets/images/Moon Ridge Header Logo.png',
-            height: 48,
+            height: MoonRidgeLogoSizes.secondaryAppBar,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: WizardHeaderSpacing.gap),
           Text(
             'LEARN YOUR HEAD SHAPE',
             style: GoogleFonts.montserrat(
@@ -145,7 +147,7 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
           selectedIndex: 2,
           child: WebContentScope(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+              padding: WizardHeaderSpacing.screenBody,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -159,10 +161,12 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
                       color: _espresso.withValues(alpha: 0.55),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: WizardHeaderSpacing.gap),
                   _buildGuidanceNote(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: WizardHeaderSpacing.gap,
+                    ),
                     child: Text(
                       'What is your head size?',
                       textAlign: TextAlign.center,

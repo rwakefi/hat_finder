@@ -90,7 +90,9 @@ void main() {
   }
 
   Future<void> tapSelectCrown(WidgetTester tester) async {
-    await tester.tap(find.text('SELECT THIS CROWN').first);
+    final description = find.textContaining('industry standard');
+    await tester.ensureVisible(description.first);
+    await tester.tap(description.first);
     await pumpPageTransition(tester);
   }
 

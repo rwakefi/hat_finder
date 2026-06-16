@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_breakpoints.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
+import '../theme/section_title_style.dart';
+import '../theme/wizard_header_spacing.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
@@ -104,23 +107,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<HatShapeInfo> _wizardCrownShapes(Iterable<HatShapeInfo> shapes) =>
       shapes.where(_isWizardCrownShape).toList();
 
-  /// Full wizard crown catalog in Shopify validation order (11 shapes).
+  /// Wizard crown catalog in Shopify admin validation order.
   List<HatShapeInfo> _orderedWizardCrownShapes() {
-    final extras = <HatShapeInfo>[];
-    for (final raw in _rawCrownShapes) {
-      final alreadyListed = crownShapes.any(
-        (canonical) => ShopifyService.matchShape(canonical.name, raw.name),
-      );
-      if (!alreadyListed && _isWizardCrownShape(raw)) {
-        extras.add(raw);
-      }
-    }
-    return _wizardCrownShapes([...crownShapes, ...extras]);
+    final source =
+        _rawCrownShapes.isNotEmpty ? _rawCrownShapes : crownShapes;
+    return _wizardCrownShapes(source);
   }
 
+  /// Wizard brim catalog in Shopify admin validation order.
+  List<HatShapeInfo> _orderedWizardBrimShapes() =>
+      _rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes;
+
   List<HatShapeInfo> _crownShapesForHatType(String? typeName) {
+    final shapes = _orderedWizardCrownShapes();
     if (typeName == 'Straw') {
-      return _wizardCrownShapes(crownShapes.map((shape) {
+      return shapes.map((shape) {
         final normalized = shape.name.toLowerCase().trim();
         String path = shape.imagePath;
         if (normalized.contains('cattleman')) {
@@ -139,9 +140,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
           physicalDescription: shape.physicalDescription,
           galleryImages: shape.galleryImages,
         );
-      }));
+      }).toList();
     }
-    return _orderedWizardCrownShapes();
+    return shapes;
   }
 
   /// Returns the correct crown shape list based on the selected hat type.
@@ -399,44 +400,37 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (_allProducts == null) return;
 
     final crownShapes = List<HatShapeInfo>.from(_currentCrownShapes);
-    final brimShapeList = _sortedBrimShapes ??
-        (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
+    final brimShapeList = _sortedBrimShapes ?? _orderedWizardBrimShapes();
 
     _crownProductsMap = _buildShapeProductMap(crownShapes, isCrown: true);
     _brimProductsMap = _buildShapeProductMap(brimShapeList, isCrown: false);
 
     final sortedCrown = List<HatShapeInfo>.from(crownShapes);
-    sortedCrown.sort((a, b) {
-      final aCount = (_crownProductsMap[a.name] ?? []).length;
-      final bCount = (_crownProductsMap[b.name] ?? []).length;
-      if (aCount != bCount) return bCount.compareTo(aCount);
-
-      final profilePriority = _compareByHeadShapePriority(
-        a,
-        b,
-        isCrown: true,
-      );
-      if (profilePriority != 0) return profilePriority;
-
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+    if (widget.headShapeProfile != null) {
+      sortedCrown.sort((a, b) {
+        final profilePriority = _compareByHeadShapePriority(
+          a,
+          b,
+          isCrown: true,
+        );
+        if (profilePriority != 0) return profilePriority;
+        return crownShapes.indexOf(a).compareTo(crownShapes.indexOf(b));
+      });
+    }
     _sortedCrownShapes = sortedCrown;
 
     final sortedBrim = List<HatShapeInfo>.from(brimShapeList);
-    sortedBrim.sort((a, b) {
-      final aCount = (_brimProductsMap[a.name] ?? []).length;
-      final bCount = (_brimProductsMap[b.name] ?? []).length;
-      if (aCount != bCount) return bCount.compareTo(aCount);
-
-      final profilePriority = _compareByHeadShapePriority(
-        a,
-        b,
-        isCrown: false,
-      );
-      if (profilePriority != 0) return profilePriority;
-
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+    if (widget.headShapeProfile != null) {
+      sortedBrim.sort((a, b) {
+        final profilePriority = _compareByHeadShapePriority(
+          a,
+          b,
+          isCrown: false,
+        );
+        if (profilePriority != 0) return profilePriority;
+        return brimShapeList.indexOf(a).compareTo(brimShapeList.indexOf(b));
+      });
+    }
     _sortedBrimShapes = sortedBrim;
     if (selectedCrownShape != null &&
         !_isWizardCrownShape(selectedCrownShape!)) {
@@ -516,8 +510,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   List<HatShapeInfo> get _allBrimShapeOptions =>
-      _sortedBrimShapes ??
-      (_rawBrimShapes.isNotEmpty ? _rawBrimShapes : brimShapes);
+      _sortedBrimShapes ?? _orderedWizardBrimShapes();
 
   /// Brim shapes that have at least one catalog product for the selected crown.
   List<HatShapeInfo> get _availableBrimShapes =>
@@ -843,11 +836,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  static const _wizardStepTitlePadding = EdgeInsets.fromLTRB(16, 14, 16, 0);
   static const _shapeCardPagePadding =
       EdgeInsets.only(left: 4, right: 4, top: 0, bottom: 0);
   static const _webWizardGridMaxWidth = 1040.0;
   static const _webWizardGridColumns = 4;
+  static const int _shapeCardTitleMaxLines = 3;
+  static const double _shapeCardTitlePrimarySize = 17;
+  static const double _shapeCardTitleAliasSize = 14;
+  static const double _shapeCardTitleLineHeight = 1.15;
+  static const double _shapeCardTitleLineGap = 1;
+  static const double _shapeCardFeaturedBlockHeight = 44;
+  static const double _shapeCardTextLift = 10;
+
+  double get _shapeCardTitleBlockHeight =>
+      _shapeCardTitlePrimarySize * _shapeCardTitleLineHeight +
+      _shapeCardTitleLineGap +
+      _shapeCardTitleAliasSize * _shapeCardTitleLineHeight +
+      _shapeCardTitleLineGap +
+      _shapeCardTitleAliasSize * _shapeCardTitleLineHeight;
 
   /// Pro Max class (~932pt logical height). Adjustments below this threshold
   /// are left alone so iPhone 17 / Air layouts stay unchanged.
@@ -885,16 +891,62 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   double _shapeCardImageScale(BuildContext context) {
-    if (_isProMaxLayout(context)) return 1.48;
-    return 1.42;
+    if (_isProMaxLayout(context)) return 1.21;
+    return 1.16;
   }
 
   Widget _buildStackedShapeTitle({
     required String name,
     required Color primaryColor,
     required Color aliasColor,
+    bool fixedThreeLineSlot = false,
   }) {
     final parts = _shapeCardTitleParts(name);
+    if (fixedThreeLineSlot) {
+      const lineBoxPrimary =
+          _shapeCardTitlePrimarySize * _shapeCardTitleLineHeight;
+      const lineBoxAlias = _shapeCardTitleAliasSize * _shapeCardTitleLineHeight;
+      return SizedBox(
+        height: _shapeCardTitleBlockHeight,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            for (var i = 0; i < _shapeCardTitleMaxLines; i++)
+              Padding(
+                padding: EdgeInsets.only(
+                  top: i == 0 ? 0 : _shapeCardTitleLineGap,
+                ),
+                child: SizedBox(
+                  height: i == 0 ? lineBoxPrimary : lineBoxAlias,
+                  width: double.infinity,
+                  child: i < parts.length
+                      ? Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            parts[i],
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.montserrat(
+                              fontSize: i == 0
+                                  ? _shapeCardTitlePrimarySize
+                                  : _shapeCardTitleAliasSize,
+                              fontWeight:
+                                  i == 0 ? FontWeight.w800 : FontWeight.w600,
+                              color: i == 0 ? primaryColor : aliasColor,
+                              letterSpacing: i == 0 ? 1.0 : 0.65,
+                              height: _shapeCardTitleLineHeight,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
     final baseSize = _shapeCardTitleFontSize(name);
     final baseSpacing = _shapeCardTitleLetterSpacing(name);
 
@@ -1545,23 +1597,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  TextStyle get _wizardStepTitleStyle => GoogleFonts.playfairDisplay(
-        fontSize: 26,
-        fontWeight: FontWeight.bold,
-        color: const Color(0xFF2D2926),
-      );
+  TextStyle get _wizardStepTitleStyle =>
+      SectionTitleStyle.playfairBold(fontSize: SectionTitleStyle.wizard);
 
   Widget _buildWizardStepTitle(String title) {
     final compactWeb = _isWebDesktopWizard(context);
     return Padding(
       padding: compactWeb
-          ? const EdgeInsets.fromLTRB(16, 2, 16, 0)
-          : _wizardStepTitlePadding,
+          ? WizardHeaderSpacing.stepTitleWeb
+          : WizardHeaderSpacing.stepTitle,
       child: Text(
         title,
         textAlign: TextAlign.center,
         style: compactWeb
-            ? _wizardStepTitleStyle.copyWith(fontSize: 22)
+            ? _wizardStepTitleStyle.copyWith(
+                fontSize: SectionTitleStyle.wizardCompactWeb,
+              )
             : _wizardStepTitleStyle,
       ),
     );
@@ -1636,8 +1687,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }) {
     // Compact subtitle directly under the step title — minimal vertical
     // footprint so the cards keep the same height as the Hat Type step.
-    return Center(
-      child: TextButton.icon(
+    final compactWeb = _isWebDesktopWizard(context);
+    return Padding(
+      padding: compactWeb
+          ? const EdgeInsets.only(bottom: WizardHeaderSpacing.gap)
+          : WizardHeaderSpacing.guideLink,
+      child: Center(
+        child: TextButton.icon(
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: builder),
@@ -1657,6 +1713,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
+        ),
         ),
       ),
     );
@@ -1706,17 +1763,34 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  /// Shape name below the hat photo — compact type with a teal accent rule.
+  Widget _buildShapeCardFeaturedSection(String? productTitle) {
+    final hasTitle = productTitle != null && productTitle.isNotEmpty;
+    return SizedBox(
+      height: _shapeCardFeaturedBlockHeight,
+      child: hasTitle
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildExampleProductOverlay(productTitle),
+              ),
+            )
+          : null,
+    );
+  }
+
+  /// Shape name below the hat photo — primary line plus muted alias lines and a teal accent rule.
   Widget _buildShapeCardTitleBar(String name) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildStackedShapeTitle(
             name: name,
             primaryColor: const Color(0xFF2D2926),
-            aliasColor: const Color(0xFF559C99),
+            aliasColor: const Color(0xFF5A5551),
+            fixedThreeLineSlot: true,
           ),
           const SizedBox(height: 6),
           Container(
@@ -1731,9 +1805,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   Widget _buildShapeCardFrontFooter({
     required HatShapeInfo shape,
-    required VoidCallback onSelect,
     required VoidCallback onFlip,
-    required String selectLabel,
   }) {
     final compactWeb = _isWebDesktopWizard(context);
     return Padding(
@@ -1749,7 +1821,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           Text(
             shape.description,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: compactWeb ? 10 : 11,
@@ -1759,30 +1831,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
           ),
           SizedBox(height: compactWeb ? 6 : 8),
-          _wrapWebShapeActionButton(
-            context,
-            ElevatedButton(
-              onPressed: onSelect,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF559C99),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: compactWeb ? 7 : 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                selectLabel,
-                style: GoogleFonts.montserrat(
-                  fontSize: compactWeb ? 9 : 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: compactWeb ? 0.8 : 1.2,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: compactWeb ? 4 : 5),
           _wrapWebShapeActionButton(
             context,
             OutlinedButton(
@@ -1817,9 +1865,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required BuildContext context,
     required HatShapeInfo shape,
     required bool isSelected,
-    required VoidCallback onSelect,
     required VoidCallback onUnflip,
-    required String selectLabel,
     bool compact = false,
     double borderRadius = 14,
   }) {
@@ -1832,7 +1878,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final infoLabelSize = compact ? 7.0 : 10.0;
     final infoButtonPadding =
         compact ? const EdgeInsets.symmetric(vertical: 8) : const EdgeInsets.symmetric(vertical: 14);
-    final selectFontSize = compact ? 9.0 : 12.0;
     final flipBackFontSize = compact ? 7.0 : 8.0;
 
     return Card(
@@ -1943,30 +1988,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ],
             ),
             SizedBox(height: compact ? 6 : 10),
-            _wrapWebShapeActionButton(
-              context,
-              ElevatedButton(
-                onPressed: onSelect,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF559C99),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: compact ? 8 : 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  selectLabel,
-                  style: GoogleFonts.montserrat(
-                    fontSize: selectFontSize,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: compact ? 0.8 : 1.5,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: compact ? 2 : 4),
             TextButton(
               onPressed: onUnflip,
               style: TextButton.styleFrom(
@@ -2002,7 +2023,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           Text(
             shape.description,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.montserrat(
               fontSize: 8,
@@ -2046,9 +2067,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required String? imageUrl,
     required String? featuredProductTitle,
     required bool isSelected,
-    required VoidCallback onSelect,
     required VoidCallback onFlip,
-    required String selectLabel,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -2074,6 +2093,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildShapeCardFeaturedSection(featuredProductTitle),
             Expanded(
               child: ClipRect(
                 child: Align(
@@ -2088,18 +2108,18 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 ),
               ),
             ),
-            if (featuredProductTitle != null &&
-                featuredProductTitle.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
-                child: _buildExampleProductOverlay(featuredProductTitle),
+            Transform.translate(
+              offset: const Offset(0, -_shapeCardTextLift),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildShapeCardTitleBar(shape.name),
+                  _buildShapeCardFrontFooter(
+                    shape: shape,
+                    onFlip: onFlip,
+                  ),
+                ],
               ),
-            _buildShapeCardTitleBar(shape.name),
-            _buildShapeCardFrontFooter(
-              shape: shape,
-              onSelect: onSelect,
-              onFlip: onFlip,
-              selectLabel: selectLabel,
             ),
           ],
         ),
@@ -2365,14 +2385,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
           : AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              toolbarHeight: 108.0,
+              toolbarHeight:
+                  MoonRidgeLogoSizes.wizardAppBar + WizardHeaderSpacing.gap,
               title: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(
                     'assets/images/Moon Ridge Header Logo.png',
-                    height: 94.0,
+                    height: MoonRidgeLogoSizes.wizardAppBar,
                   ),
+                  const SizedBox(height: WizardHeaderSpacing.gap),
                 ],
               ),
               centerTitle: true,
@@ -2693,7 +2715,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       children: [
         _buildWizardStepTitle('Select a Hat Type:'),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          padding: WizardHeaderSpacing.actionRow,
           child: OutlinedButton(
             onPressed: () {
               setState(() => selectedHatType = null);
@@ -2797,10 +2819,19 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                             CrossAxisAlignment.stretch,
                                         children: [
                                           Expanded(
-                                            child: _buildHatTypeCardImage(
-                                              imageUrl: imageUrl,
-                                              imagePath: typeInfo.imagePath,
-                                              compact: fourUp,
+                                            child: ClipRect(
+                                              child: Align(
+                                                alignment: Alignment.center,
+                                                child: Transform.scale(
+                                                  scale: 1.1,
+                                                  child: _buildHatTypeCardImage(
+                                                    imageUrl: imageUrl,
+                                                    imagePath:
+                                                        typeInfo.imagePath,
+                                                    compact: fourUp,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                           Container(
@@ -2877,9 +2908,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
       kIsWeb && AppBreakpoints.isTablet(context);
 
   Widget _buildWizardCenterLogo(BuildContext context) {
-    final height = AppBreakpoints.isDesktop(context) ? 76.0 : 60.0;
+    final height = AppBreakpoints.isDesktop(context)
+        ? MoonRidgeLogoSizes.wizardWebDesktop
+        : MoonRidgeLogoSizes.wizardWebTablet;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+      padding: WizardHeaderSpacing.webLogo,
       child: Center(
         child: Image.asset(
           'assets/images/Moon Ridge Header Logo.png',
@@ -2903,7 +2936,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       children: [
         _buildWizardStepTitle('Select Style:'),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          padding: WizardHeaderSpacing.actionRow,
           child: OutlinedButton(
             onPressed: () {
               setState(() => selectedWesternStyle = null);
@@ -3248,7 +3281,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required VoidCallback onSelect,
     required VoidCallback onFlip,
     required VoidCallback onUnflip,
-    required String selectLabel,
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -3272,9 +3304,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       context: context,
                       shape: shape,
                       isSelected: isSelected,
-                      onSelect: onSelect,
                       onUnflip: onUnflip,
-                      selectLabel: selectLabel,
                       compact: true,
                       borderRadius: 12,
                     ),
@@ -3378,8 +3408,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               }
             });
           },
-          selectLabel:
-              isCrown ? 'SELECT THIS CROWN' : 'SELECT THIS BRIM',
         );
       },
     );
@@ -3431,8 +3459,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
               }
             });
           },
-          selectLabel:
-              isCrown ? 'SELECT THIS CROWN' : 'SELECT THIS BRIM',
         );
       },
     );
@@ -3701,45 +3727,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   ],
                                                 ),
                                                 const SizedBox(height: 10),
-                                                // ── Select button ──
-                                                _wrapWebShapeActionButton(
-                                                  context,
-                                                  ElevatedButton(
-                                                    onPressed: () {
-                                                      _selectCrownAndAdvance(
-                                                          shape, index);
-                                                    },
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFF559C99),
-                                                      foregroundColor:
-                                                          Colors.white,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 12),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(30),
-                                                      ),
-                                                      elevation: 0,
-                                                    ),
-                                                    child: Text(
-                                                      'SELECT THIS CROWN',
-                                                      style: GoogleFonts
-                                                          .montserrat(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        letterSpacing: 1.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
                                                 TextButton(
                                                   onPressed: () {
                                                     setState(() {
@@ -3770,14 +3757,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         imageUrl: imageUrl,
                                         featuredProductTitle: photo.productTitle,
                                         isSelected: isSelected,
-                                        onSelect: () => _selectCrownAndAdvance(
-                                            shape, index),
                                         onFlip: () {
                                           setState(() {
                                             _flippedCardIndex = index;
                                           });
                                         },
-                                        selectLabel: 'SELECT THIS CROWN',
                                       ),
                               );
                             },
@@ -4105,45 +4089,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                   ],
                                                 ),
                                                 const SizedBox(height: 10),
-                                                // ── Select button ──
-                                                _wrapWebShapeActionButton(
-                                                  context,
-                                                  ElevatedButton(
-                                                    onPressed: () {
-                                                      _selectBrimAndAdvance(
-                                                          shape, index);
-                                                    },
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFF559C99),
-                                                      foregroundColor:
-                                                          Colors.white,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 12),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(30),
-                                                      ),
-                                                      elevation: 0,
-                                                    ),
-                                                    child: Text(
-                                                      'SELECT THIS BRIM',
-                                                      style: GoogleFonts
-                                                          .montserrat(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        letterSpacing: 1.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
                                                 Text(
                                                   'TAP TO FLIP BACK',
                                                   style: GoogleFonts.montserrat(
@@ -4165,14 +4110,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                         imageUrl: imageUrl,
                                         featuredProductTitle: photo.productTitle,
                                         isSelected: isSelected,
-                                        onSelect: () =>
-                                            _selectBrimAndAdvance(shape, index),
                                         onFlip: () {
                                           setState(() {
                                             _flippedBrimCardIndex = index;
                                           });
                                         },
-                                        selectLabel: 'SELECT THIS BRIM',
                                       ),
                               );
                             },

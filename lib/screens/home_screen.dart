@@ -9,6 +9,7 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../config/app_breakpoints.dart';
 import '../services/shopify_service.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -43,7 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ? double.infinity
         : (screenHeight * (compact ? 0.30 : 0.36))
             .clamp(compact ? 200.0 : 240.0, compact ? 270.0 : 320.0);
-    final logoHeight = compact ? 88.0 : (isWideDesktop ? 128.0 : 118.0);
+    final logoHeight = compact
+        ? MoonRidgeLogoSizes.homeCompact
+        : (isWideDesktop
+            ? MoonRidgeLogoSizes.homeWide
+            : MoonRidgeLogoSizes.homeDefault);
     final buttonGap = compact ? 12.0 : (isWideDesktop ? 18.0 : 16.0);
     final heroFlex = isWideDesktop ? 12 : 11;
     final actionsFlex = isWideDesktop ? 10 : 9;

@@ -964,6 +964,57 @@ class ShopifyService {
   static Future<Map<String, List<String>>> _downloadValidationChoices({
     bool forceRefresh = false,
   }) async {
+    try {
+      final adminChoices = await _downloadAdminValidationChoices();
+      if (_hasValidationChoices(adminChoices)) {
+        return adminChoices;
+      }
+    } catch (e) {
+      debugPrint('Shopify admin validation choices unavailable: $e');
+    }
+    return _downloadProductValidationChoices(forceRefresh: forceRefresh);
+  }
+
+  static Future<Map<String, List<String>>> _downloadAdminValidationChoices() async {
+    final uri = Uri.parse('${AppConfig.hatFinderApiBaseUrl}/api/validation_choices');
+    final response = await http.get(uri).timeout(_requestTimeout);
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load validation choices: HTTP ${response.statusCode}',
+      );
+    }
+    return parseValidationChoicesPayload(jsonDecode(response.body));
+  }
+
+  @visibleForTesting
+  static Map<String, List<String>> parseValidationChoicesPayload(dynamic body) {
+    if (body is! Map) {
+      throw const FormatException('validation_choices payload must be a map');
+    }
+    return {
+      'crown_shapes': _parseValidationChoiceList(body['crown_shapes']),
+      'brim_shapes': _parseValidationChoiceList(body['brim_shapes']),
+      'material_types': _parseValidationChoiceList(body['material_types']),
+    };
+  }
+
+  static List<String> _parseValidationChoiceList(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toList();
+  }
+
+  static bool _hasValidationChoices(Map<String, List<String>> choices) {
+    return (choices['crown_shapes']?.isNotEmpty ?? false) ||
+        (choices['brim_shapes']?.isNotEmpty ?? false) ||
+        (choices['material_types']?.isNotEmpty ?? false);
+  }
+
+  static Future<Map<String, List<String>>> _downloadProductValidationChoices({
+    bool forceRefresh = false,
+  }) async {
     final products = await fetchFullProducts(forceRefresh: forceRefresh);
     final apiCrownValues = <String>{};
     final apiBrimValues = <String>{};
@@ -995,7 +1046,10 @@ class ShopifyService {
         apiValues: apiCrownValues,
         canonicalNames: crownShapes.map((shape) => shape.name),
       ),
-      'brim_shapes': apiBrimValues.toList()..sort(),
+      'brim_shapes': _orderedValidationChoices(
+        apiValues: apiBrimValues,
+        canonicalNames: brimShapes.map((shape) => shape.name),
+      ),
       'material_types': sortedMaterials,
     };
   }

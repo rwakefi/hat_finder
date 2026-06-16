@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../config/app_breakpoints.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
+import '../theme/moon_ridge_logo_sizes.dart';
+import '../theme/section_title_style.dart';
+import '../theme/wizard_header_spacing.dart';
 import 'head_measurement_screen.dart';
 import 'hat_input_screen.dart';
 
@@ -55,11 +58,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
     }
   ];
 
-  TextStyle get _stepTitleStyle => GoogleFonts.playfairDisplay(
-        fontSize: 26,
-        fontWeight: FontWeight.bold,
-        color: _espresso,
-        height: 1.2,
+  TextStyle get _stepTitleStyle => SectionTitleStyle.playfairBold(
+        fontSize: SectionTitleStyle.wizard,
       );
 
   bool _useCompactOptions(BuildContext context) =>
@@ -162,16 +162,18 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       foregroundColor: _espresso,
-      toolbarHeight: 88,
+      toolbarHeight: MoonRidgeLogoSizes.secondaryAppBar +
+          WizardHeaderSpacing.gap +
+          18,
       centerTitle: true,
       title: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.asset(
             'assets/images/Moon Ridge Header Logo.png',
-            height: 48,
+            height: MoonRidgeLogoSizes.secondaryAppBar,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: WizardHeaderSpacing.gap),
           Text(
             'LEARN YOUR HEAD SHAPE',
             style: GoogleFonts.montserrat(
@@ -199,7 +201,7 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final content = Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                  padding: WizardHeaderSpacing.screenBody,
                   child:
                       _result == null ? _buildQuestionnaire() : _buildResult(),
                 );
