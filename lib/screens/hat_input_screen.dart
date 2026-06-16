@@ -1155,12 +1155,45 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
+  Widget _buildWizardCardTitleSection(
+    String title, {
+    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(14, 10, 14, 4),
+  }) {
+    final compactWeb = _isWebDesktopWizard(context);
+    return Padding(
+      padding: padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title.toUpperCase(),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.montserrat(
+              fontSize: compactWeb ? 15 : 17,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF2D2926),
+              letterSpacing: compactWeb ? 1.0 : 1.2,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 40,
+            height: 2,
+            color: const Color(0xFF559C99),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWizardSelectionCard({
     required String title,
     required Widget image,
     required bool isSelected,
     required VoidCallback onSelect,
-    required String selectLabel,
     String? description,
   }) {
     final compactWeb = _isWebDesktopWizard(context);
@@ -1191,36 +1224,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: image),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title.toUpperCase(),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        fontSize: compactWeb ? 15 : 17,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF2D2926),
-                        letterSpacing: compactWeb ? 1.0 : 1.2,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 40,
-                      height: 2,
-                      color: const Color(0xFF559C99),
-                    ),
-                  ],
+              _buildWizardCardTitleSection(
+                title,
+                padding: EdgeInsets.fromLTRB(
+                  14,
+                  10,
+                  14,
+                  description == null || description.isEmpty ? 12 : 4,
                 ),
               ),
               if (description != null && description.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+                  padding: EdgeInsets.fromLTRB(
+                    14,
+                    0,
+                    14,
+                    compactWeb ? 10 : 12,
+                  ),
                   child: Text(
                     description,
                     textAlign: TextAlign.center,
@@ -1234,38 +1254,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   ),
                 ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  compactWeb ? 12 : 14,
-                  compactWeb ? 4 : 6,
-                  compactWeb ? 12 : 14,
-                  compactWeb ? 8 : 10,
-                ),
-                child: _wrapWebShapeActionButton(
-                  context,
-                  ElevatedButton(
-                    onPressed: onSelect,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF559C99),
-                      foregroundColor: Colors.white,
-                      padding:
-                          EdgeInsets.symmetric(vertical: compactWeb ? 7 : 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      selectLabel,
-                      style: GoogleFonts.montserrat(
-                        fontSize: compactWeb ? 9 : 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: compactWeb ? 0.8 : 1.2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -1286,6 +1274,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
     } else {
       _nextPage();
     }
+  }
+
+  Widget _buildHatTypeWizardCard({
+    required HatShapeInfo typeInfo,
+    required int index,
+    required String? imageUrl,
+  }) {
+    return _buildWizardSelectionCard(
+      title: typeInfo.name,
+      description: typeInfo.description,
+      image: _buildHatTypeCardImage(
+        imageUrl: imageUrl,
+        imagePath: typeInfo.imagePath,
+        compact: true,
+      ),
+      isSelected: selectedHatType == typeInfo,
+      onSelect: () => _selectHatTypeAndAdvance(typeInfo, index),
+    );
   }
 
   Widget _buildStyleCardImage({
@@ -1447,7 +1453,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
       ),
       isSelected: isSelected,
       onSelect: () => _selectWesternStyleAndAdvance(name, index),
-      selectLabel: 'SELECT THIS STYLE',
     );
   }
 
@@ -1799,6 +1804,233 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   fontSize: compactWeb ? 8 : 9,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShapeCardBackFace({
+    required BuildContext context,
+    required HatShapeInfo shape,
+    required bool isSelected,
+    required VoidCallback onSelect,
+    required VoidCallback onUnflip,
+    required String selectLabel,
+    bool compact = false,
+    double borderRadius = 14,
+  }) {
+    final padding = compact
+        ? const EdgeInsets.fromLTRB(10, 8, 10, 6)
+        : const EdgeInsets.fromLTRB(20, 16, 20, 12);
+    final historyLabelSize = compact ? 8.0 : 10.0;
+    final historyBodySize = compact ? 11.0 : 16.0;
+    final infoIconSize = compact ? 14.0 : 18.0;
+    final infoLabelSize = compact ? 7.0 : 10.0;
+    final infoButtonPadding =
+        compact ? const EdgeInsets.symmetric(vertical: 8) : const EdgeInsets.symmetric(vertical: 14);
+    final selectFontSize = compact ? 9.0 : 12.0;
+    final flipBackFontSize = compact ? 7.0 : 8.0;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: const Color(0xFF2D2926),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+        side: BorderSide(
+          color: isSelected
+              ? const Color(0xFF559C99)
+              : const Color(0xFF3D3936),
+          width: isSelected ? 3 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: padding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildShapeCardBackTitle(shape.name),
+            SizedBox(height: compact ? 4 : 6),
+            Container(
+              width: 40,
+              height: 2,
+              color: const Color(0xFF559C99),
+            ),
+            SizedBox(height: compact ? 8 : 14),
+            Text(
+              'THE HISTORY',
+              style: GoogleFonts.montserrat(
+                fontSize: historyLabelSize,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF559C99),
+                letterSpacing: compact ? 2.0 : 3.0,
+              ),
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  shape.history.isNotEmpty ? shape.history : shape.description,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: historyBodySize,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    height: 1.5,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _showShapeDetailSheet(context, shape, 'wearers'),
+                    icon: Icon(Icons.people_outline, size: infoIconSize),
+                    label: Text(
+                      'FAMOUS\nWEARERS',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: infoLabelSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: compact ? 1.0 : 1.5,
+                        height: 1.3,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: infoButtonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: compact ? 6 : 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _showShapeDetailSheet(context, shape, 'physical'),
+                    icon: Icon(Icons.straighten, size: infoIconSize),
+                    label: Text(
+                      'THE\nSHAPE',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        fontSize: infoLabelSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: compact ? 1.0 : 1.5,
+                        height: 1.3,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: infoButtonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            _wrapWebShapeActionButton(
+              context,
+              ElevatedButton(
+                onPressed: onSelect,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF559C99),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: compact ? 8 : 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  selectLabel,
+                  style: GoogleFonts.montserrat(
+                    fontSize: selectFontSize,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: compact ? 0.8 : 1.5,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: compact ? 2 : 4),
+            TextButton(
+              onPressed: onUnflip,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'TAP TO FLIP BACK',
+                style: GoogleFonts.montserrat(
+                  fontSize: flipBackFontSize,
+                  color: Colors.white30,
+                  letterSpacing: compact ? 1.5 : 2.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShapeFourUpFlipFooter({
+    required HatShapeInfo shape,
+    required VoidCallback onFlip,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            shape.description,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.montserrat(
+              fontSize: 8,
+              color: const Color(0xFF4A4541),
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            height: 26,
+            child: OutlinedButton(
+              onPressed: onFlip,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF559C99),
+                side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Text(
+                'FLIP FOR MORE INFO',
+                style: GoogleFonts.montserrat(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
                 ),
               ),
             ),
@@ -2505,9 +2737,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             final fourUp = _isWebWizardFourUp(c.maxWidth);
                             final crossAxisCount =
                                 fourUp ? _webWizardGridColumns : 2;
+                            const useStyleCards = kIsWeb;
                             final aspect = fourUp
                                 ? 0.72
-                                : (_isProMaxLayout(context) ? 0.92 : 0.85);
+                                : useStyleCards
+                                    ? 0.58
+                                    : (_isProMaxLayout(context) ? 0.92 : 0.85);
 
                             Widget buildGrid({required EdgeInsets padding}) {
                               return GridView.count(
@@ -2522,12 +2757,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 childAspectRatio: aspect,
                                 children:
                                     _availableHatTypes.map((typeInfo) {
-                                  final isSelected =
-                                      selectedHatType == typeInfo;
                                   final imageUrl =
                                       _materialExampleUrls[typeInfo.name];
                                   final index =
                                       _availableHatTypes.indexOf(typeInfo);
+
+                                  if (useStyleCards) {
+                                    return _buildHatTypeWizardCard(
+                                      typeInfo: typeInfo,
+                                      index: index,
+                                      imageUrl: imageUrl,
+                                    );
+                                  }
+
+                                  final isSelected =
+                                      selectedHatType == typeInfo;
 
                                   return Card(
                                     elevation: 0,
@@ -2594,63 +2838,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                 itemBuilder: (context, index) {
                                   final typeInfo =
                                       _availableHatTypes[index];
-                                  final isSelected =
-                                      selectedHatType == typeInfo;
                                   final imageUrl =
                                       _materialExampleUrls[typeInfo.name];
-                                  return Card(
-                                    elevation: 0,
-                                    clipBehavior: Clip.antiAlias,
-                                    color: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? const Color(0xFF559C99)
-                                            : const Color(0xFF559C99)
-                                                .withValues(alpha: 0.35),
-                                        width: isSelected ? 3 : 1,
-                                      ),
-                                    ),
-                                    child: InkWell(
-                                      onTap: () => _selectHatTypeAndAdvance(
-                                        typeInfo,
-                                        index,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: _buildHatTypeCardImage(
-                                              imageUrl: imageUrl,
-                                              imagePath: typeInfo.imagePath,
-                                              compact: true,
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets
-                                                .symmetric(
-                                              vertical: 10.0,
-                                              horizontal: 4.0,
-                                            ),
-                                            color: Colors.white,
-                                            child: Text(
-                                              typeInfo.name.toUpperCase(),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
-                                                color: const Color(0xFF2D2926),
-                                                letterSpacing: 1.2,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                  return _buildHatTypeWizardCard(
+                                    typeInfo: typeInfo,
+                                    index: index,
+                                    imageUrl: imageUrl,
                                   );
                                 },
                               );
@@ -3046,56 +3239,88 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildShapeFourUpCard({
+  Widget _buildWebWizardShapeCard({
+    required BuildContext context,
     required HatShapeInfo shape,
     required String? imageUrl,
     required bool isSelected,
-    required VoidCallback onTap,
+    required bool isFlipped,
+    required VoidCallback onSelect,
+    required VoidCallback onFlip,
+    required VoidCallback onUnflip,
+    required String selectLabel,
   }) {
-    return Card(
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected
-              ? const Color(0xFF559C99)
-              : const Color(0xFF559C99).withValues(alpha: 0.35),
-          width: isSelected ? 3 : 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              // Match the Hat Type card's photo rendering (white backing,
-              // same insets/scale/framing) so all wizard cards look alike.
-              child: _buildHatTypeCardImage(
-                imageUrl: imageUrl,
-                imagePath: shape.imagePath,
-                compact: true,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
-              child: Text(
-                shape.name.toUpperCase(),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: const Color(0xFF2D2926),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: isFlipped ? onUnflip : null,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: isFlipped ? pi : 0),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        builder: (context, angle, _) {
+          final showBack = angle > pi / 2;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: showBack
+                ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..rotateY(pi),
+                    child: _buildShapeCardBackFace(
+                      context: context,
+                      shape: shape,
+                      isSelected: isSelected,
+                      onSelect: onSelect,
+                      onUnflip: onUnflip,
+                      selectLabel: selectLabel,
+                      compact: true,
+                      borderRadius: 12,
+                    ),
+                  )
+                : Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected
+                            ? const Color(0xFF559C99)
+                            : const Color(0xFF559C99).withValues(alpha: 0.35),
+                        width: isSelected ? 3 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: onSelect,
+                            child: _buildHatTypeCardImage(
+                              imageUrl: imageUrl,
+                              imagePath: shape.imagePath,
+                              compact: true,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: onSelect,
+                          child: _buildWizardCardTitleSection(
+                            shape.name,
+                            padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+                          ),
+                        ),
+                        _buildShapeFourUpFlipFooter(
+                          shape: shape,
+                          onFlip: onFlip,
+                        ),
+                      ],
+                    ),
+                  ),
+          );
+        },
       ),
     );
   }
@@ -3113,7 +3338,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         crossAxisCount: _webWizardGridColumns,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.60,
       ),
       itemCount: shapes.length,
       itemBuilder: (context, index) {
@@ -3125,11 +3350,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
           shapeCarouselIndex: index,
           isCrown: isCrown,
         );
-        return _buildShapeFourUpCard(
+        final isFlipped = isCrown
+            ? _flippedCardIndex == index
+            : _flippedBrimCardIndex == index;
+        return _buildWebWizardShapeCard(
+          context: context,
           shape: shape,
           imageUrl: photo.imageUrl,
           isSelected: selectedShape?.name == shape.name,
-          onTap: () => onSelect(shape, index),
+          isFlipped: isFlipped,
+          onSelect: () => onSelect(shape, index),
+          onFlip: () {
+            setState(() {
+              if (isCrown) {
+                _flippedCardIndex = index;
+              } else {
+                _flippedBrimCardIndex = index;
+              }
+            });
+          },
+          onUnflip: () {
+            setState(() {
+              if (isCrown) {
+                _flippedCardIndex = null;
+              } else {
+                _flippedBrimCardIndex = null;
+              }
+            });
+          },
+          selectLabel:
+              isCrown ? 'SELECT THIS CROWN' : 'SELECT THIS BRIM',
         );
       },
     );
@@ -3153,11 +3403,36 @@ class _HatInputScreenState extends State<HatInputScreen> {
           shapeCarouselIndex: index,
           isCrown: isCrown,
         );
-        return _buildShapeFourUpCard(
+        final isFlipped = isCrown
+            ? _flippedCardIndex == index
+            : _flippedBrimCardIndex == index;
+        return _buildWebWizardShapeCard(
+          context: context,
           shape: shape,
           imageUrl: photo.imageUrl,
           isSelected: selectedShape?.name == shape.name,
-          onTap: () => onSelect(shape, index),
+          isFlipped: isFlipped,
+          onSelect: () => onSelect(shape, index),
+          onFlip: () {
+            setState(() {
+              if (isCrown) {
+                _flippedCardIndex = index;
+              } else {
+                _flippedBrimCardIndex = index;
+              }
+            });
+          },
+          onUnflip: () {
+            setState(() {
+              if (isCrown) {
+                _flippedCardIndex = null;
+              } else {
+                _flippedBrimCardIndex = null;
+              }
+            });
+          },
+          selectLabel:
+              isCrown ? 'SELECT THIS CROWN' : 'SELECT THIS BRIM',
         );
       },
     );
