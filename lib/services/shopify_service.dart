@@ -695,29 +695,14 @@ class ShopifyService {
       }
 
       if (westernStyle != null && westernStyle.isNotEmpty) {
-        final lowerHatType = meta.hatType.toLowerCase();
-        final isClassicHat = lowerHatType.contains('felt') || lowerHatType.contains('straw');
-
-        var matchesStyle = false;
-        if (isClassicHat) {
-          final isCity = meta.city.toLowerCase() == 'true';
-          final isOutdoor = meta.outdoors.toLowerCase() == 'true';
-
-          if (westernStyle == 'Western') {
-            if (!isCity && !isOutdoor) {
-              matchesStyle = true;
-            }
-          } else if (westernStyle == 'City') {
-            if (isCity) {
-              matchesStyle = true;
-            }
-          } else if (westernStyle == 'Outdoor') {
-            if (isOutdoor) {
-              matchesStyle = true;
-            }
-          }
+        if (!matchesWesternStyle(
+          hatType: meta.hatType,
+          city: meta.city,
+          outdoors: meta.outdoors,
+          westernStyle: westernStyle,
+        )) {
+          return false;
         }
-        if (!matchesStyle) return false;
       }
 
       if (crownShape == null &&
@@ -755,6 +740,145 @@ class ShopifyService {
       return matches;
     }).toList();
     return orderBigalliLast(filtered);
+  }
+
+  static const int closestMatchMinimum = 4;
+
+  /// Western / City / Outdoor classification for felt and straw hats.
+  static bool matchesWesternStyle({
+    required String hatType,
+    required String city,
+    required String outdoors,
+    required String westernStyle,
+  }) {
+    final lowerHatType = hatType.toLowerCase();
+    final isClassicHat =
+        lowerHatType.contains('felt') || lowerHatType.contains('straw');
+    if (!isClassicHat) return false;
+
+    final isCity = city.toLowerCase() == 'true';
+    final isOutdoor = outdoors.toLowerCase() == 'true';
+    return switch (westernStyle) {
+      'Western' => !isCity && !isOutdoor,
+      'City' => isCity,
+      'Outdoor' => isOutdoor,
+      _ => false,
+    };
+  }
+
+  /// Higher scores rank closer to the active wizard / filter selections.
+  static int productMatchScore(
+    dynamic product, {
+    String? hatType,
+    String? westernStyle,
+    String? crownShape,
+    List<double>? crownHeights,
+    String? brimShape,
+    List<String>? brimWidths,
+  }) {
+    final meta = _productMeta(product);
+
+    final typeFilter = _isActiveHatTypeFilter(hatType);
+    if (typeFilter && !_matchesHatType(meta.hatType, hatType!)) {
+      return 0;
+    }
+
+    var score = 0;
+    if (typeFilter) score += 16;
+
+    if (westernStyle != null && westernStyle.isNotEmpty) {
+      if (matchesWesternStyle(
+        hatType: meta.hatType,
+        city: meta.city,
+        outdoors: meta.outdoors,
+        westernStyle: westernStyle,
+      )) {
+        score += 4;
+      }
+    }
+
+    if (crownShape != null && crownShape.isNotEmpty) {
+      if (_matchShape(meta.crownShape, crownShape)) score += 8;
+    }
+    if (brimShape != null && brimShape.isNotEmpty) {
+      if (_matchShape(meta.brimShape, brimShape)) score += 8;
+    }
+    if (crownHeights != null && crownHeights.isNotEmpty) {
+      final productHeights = parseCrownHeightValues(product['crownHeight']);
+      if (_inchesMatchList(productHeights, crownHeights)) score += 2;
+    }
+    if (brimWidths != null && brimWidths.isNotEmpty) {
+      final productWidths = parseBrimWidthValues(product['brimWidth']);
+      final selectedWidths =
+          brimWidths.map(parseInchesFromText).whereType<double>().toList();
+      if (_inchesMatchList(productWidths, selectedWidths)) score += 2;
+    }
+
+    return score;
+  }
+
+  /// When [filterProducts] finds nothing, return up to [minimum] nearest matches.
+  static List<dynamic> closestMatchProducts(
+    List<dynamic> allProducts, {
+    int minimum = closestMatchMinimum,
+    String? hatType,
+    String? westernStyle,
+    String? crownShape,
+    List<double>? crownHeights,
+    String? brimShape,
+    List<String>? brimWidths,
+  }) {
+    final catalog = _eligibleCatalogProducts(allProducts);
+    if (catalog.isEmpty) return [];
+
+    final scored = <MapEntry<dynamic, int>>[];
+    for (final product in catalog) {
+      final score = productMatchScore(
+        product,
+        hatType: hatType,
+        westernStyle: westernStyle,
+        crownShape: crownShape,
+        crownHeights: crownHeights,
+        brimShape: brimShape,
+        brimWidths: brimWidths,
+      );
+      if (score > 0) scored.add(MapEntry(product, score));
+    }
+
+    scored.sort((a, b) {
+      final byScore = b.value.compareTo(a.value);
+      if (byScore != 0) return byScore;
+      final aTitle = (a.key['title'] ?? '').toString().toLowerCase();
+      final bTitle = (b.key['title'] ?? '').toString().toLowerCase();
+      return aTitle.compareTo(bTitle);
+    });
+
+    Iterable<dynamic> picks;
+    if (scored.isNotEmpty) {
+      picks = scored.map((e) => e.key);
+    } else if (_isActiveHatTypeFilter(hatType)) {
+      picks = catalog.where((product) {
+        final meta = _productMeta(product);
+        return _matchesHatType(meta.hatType, hatType!);
+      });
+    } else {
+      picks = catalog;
+    }
+
+    final sorted = picks.toList()
+      ..sort((a, b) => (a['title'] ?? '')
+          .toString()
+          .toLowerCase()
+          .compareTo((b['title'] ?? '').toString().toLowerCase()));
+
+    final count = minimum < sorted.length ? minimum : sorted.length;
+    return orderBigalliLast(sorted.take(count));
+  }
+
+  static bool _isActiveHatTypeFilter(String? hatType) {
+    if (hatType == null || hatType.isEmpty) return false;
+    final lower = hatType.toLowerCase();
+    return lower != 'any' && lower != 'any type';
   }
 
   /// Public: does a product's `felt_straw_or_ballcap` value match a UI hat type
@@ -841,16 +965,16 @@ class ShopifyService {
     bool forceRefresh = false,
   }) async {
     final products = await fetchFullProducts(forceRefresh: forceRefresh);
-    final crownShapes = <String>{};
-    final brimShapes = <String>{};
+    final apiCrownValues = <String>{};
+    final apiBrimValues = <String>{};
     final materialTypes = <String>{};
 
     for (final product in products) {
       final crown = parseMetafieldValue(product['crownShape'] ?? '').trim();
       final brim = parseMetafieldValue(product['brimShape'] ?? '').trim();
       final material = parseMetafieldValue(product['feltStrawOrBallcap'] ?? '').trim();
-      if (crown.isNotEmpty) crownShapes.add(crown);
-      if (brim.isNotEmpty) brimShapes.add(brim);
+      if (crown.isNotEmpty) apiCrownValues.add(crown);
+      if (brim.isNotEmpty) apiBrimValues.add(brim);
       if (material.isNotEmpty) materialTypes.add(material);
     }
 
@@ -867,10 +991,44 @@ class ShopifyService {
       });
 
     return {
-      'crown_shapes': crownShapes.toList()..sort(),
-      'brim_shapes': brimShapes.toList()..sort(),
+      'crown_shapes': _orderedValidationChoices(
+        apiValues: apiCrownValues,
+        canonicalNames: crownShapes.map((shape) => shape.name),
+      ),
+      'brim_shapes': apiBrimValues.toList()..sort(),
       'material_types': sortedMaterials,
     };
+  }
+
+  /// Keeps Shopify admin order for wizard options; appends unseen API values.
+  static List<String> _orderedValidationChoices({
+    required Set<String> apiValues,
+    required Iterable<String> canonicalNames,
+  }) {
+    final ordered = <String>[];
+    final usedApi = <String>{};
+
+    for (final canonical in canonicalNames) {
+      String? match;
+      for (final api in apiValues) {
+        if (usedApi.contains(api)) continue;
+        if (matchShape(api, canonical)) {
+          match = api;
+          break;
+        }
+      }
+      if (match != null) {
+        ordered.add(match);
+        usedApi.add(match);
+      } else {
+        ordered.add(canonical);
+      }
+    }
+
+    final extras = apiValues.where((api) => !usedApi.contains(api)).toList()
+      ..sort();
+    ordered.addAll(extras);
+    return ordered;
   }
 
   /// Call during splash so the hat wizard opens with catalog already in memory.

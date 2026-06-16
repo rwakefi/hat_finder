@@ -64,6 +64,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   late List<String> _filterBrimWidths;
 
   static const _westernStyleOptions = ['Western', 'City', 'Outdoor'];
+  bool _showingClosestMatches = false;
 
   // Brand colors — consistent with the rest of the app & moonridgecompany.com
   static const Color _espresso = Color(0xFF2D2926);
@@ -134,8 +135,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   List<dynamic> _filterCatalog(List<dynamic> catalog) {
-    final filtered = ShopifyService.filterProducts(
-      catalog,
+    final filterArgs = (
       hatType: _filterHatType,
       westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
       crownShape: _filterCrownShape,
@@ -144,6 +144,31 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       brimShape: _filterBrimShape,
       brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
     );
+
+    var filtered = ShopifyService.filterProducts(
+      catalog,
+      hatType: filterArgs.hatType,
+      westernStyle: filterArgs.westernStyle,
+      crownShape: filterArgs.crownShape,
+      crownHeights: filterArgs.crownHeights,
+      brimShape: filterArgs.brimShape,
+      brimWidths: filterArgs.brimWidths,
+    );
+
+    if (filtered.isEmpty) {
+      _showingClosestMatches = true;
+      filtered = ShopifyService.closestMatchProducts(
+        catalog,
+        hatType: filterArgs.hatType,
+        westernStyle: filterArgs.westernStyle,
+        crownShape: filterArgs.crownShape,
+        crownHeights: filterArgs.crownHeights,
+        brimShape: filterArgs.brimShape,
+        brimWidths: filterArgs.brimWidths,
+      );
+    } else {
+      _showingClosestMatches = false;
+    }
 
     // If showing all hat types (i.e. hatType is null, empty, or Any),
     // ensure at least one of the top 4 results is a Ball Cap for testing/preview.
@@ -588,6 +613,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               // Turquoise progress accent line
               Container(height: 3, color: _turquoise),
               _buildSearchSummary(),
+              if (_showingClosestMatches) _buildClosestMatchesBanner(),
               const Divider(height: 1, color: _borderGrey),
               Expanded(
                 child: FutureBuilder<List<dynamic>>(
@@ -1087,6 +1113,33 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildClosestMatchesBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: _turquoise.withValues(alpha: 0.12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.tune_rounded, size: 18, color: _turquoise),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'No exact matches — showing the closest options we found. '
+              'Adjust filters above to narrow further.',
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _espresso.withValues(alpha: 0.82),
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

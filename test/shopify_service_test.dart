@@ -227,6 +227,90 @@ void main() {
     expect(picked, isNull);
   });
 
+  test('closestMatchProducts returns nearest felt hats when exact combo is empty',
+      () {
+    final products = [
+      {
+        'id': '1',
+        'title': 'Alpha City Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'city': {'value': 'true'},
+        'crownShape': {'value': '["Cattleman"]'},
+        'brimShape': {'value': '["Medium Curved"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'id': '2',
+        'title': 'Beta City Felt Brick',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'city': {'value': 'true'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'brimShape': {'value': '["Medium Curved"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/8', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'id': '3',
+        'title': 'Gamma Western Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'city': {'value': 'false'},
+        'outdoors': {'value': 'false'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'brimShape': {'value': '["Medium Curved"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/4', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'id': '4',
+        'title': 'Delta Straw City',
+        'feltStrawOrBallcap': {'value': '["Straw"]'},
+        'city': {'value': 'true'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final exact = ShopifyService.filterProducts(
+      products,
+      hatType: 'Felt',
+      westernStyle: 'City',
+      crownShape: 'Open Crown',
+    );
+    expect(exact, isEmpty);
+
+    final closest = ShopifyService.closestMatchProducts(
+      products,
+      minimum: 4,
+      hatType: 'Felt',
+      westernStyle: 'City',
+      crownShape: 'Open Crown',
+    );
+
+    expect(closest.length, 3);
+    expect(
+      closest.every((p) {
+        final type = ShopifyService.parseMetafieldValue(p['feltStrawOrBallcap']);
+        return type.toLowerCase().contains('felt');
+      }),
+      isTrue,
+    );
+    expect(closest.first['title'], 'Alpha City Felt');
+  });
+
   test('filterProducts matches felt type and crown shape', () {
     final products = [
       {
