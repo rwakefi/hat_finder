@@ -111,6 +111,20 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
     final used = <String>{};
     final result = <String, String>{};
     for (final shape in widget.shapes) {
+      final preferred = ShopifyService.pickPreferredShapeExample(
+        shapeName: shape.name,
+        products: sorted,
+        shapeMetaKey: widget.metaField,
+      );
+      if (preferred != null) {
+        final url = preferred['url']!;
+        if (!used.contains(url)) {
+          result[shape.name] = url;
+          used.add(url);
+          continue;
+        }
+      }
+
       for (final product in sorted) {
         if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
         if (!ShopifyService.isHatFinderCatalogProduct(product)) continue;
@@ -125,6 +139,20 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
           result[shape.name] = url;
           used.add(url);
           break;
+        }
+      }
+
+      if (result.containsKey(shape.name)) continue;
+
+      if (widget.metaField == 'crownShape') {
+        final fallback = ShopifyService.pickAnyCatalogExamplePhoto(
+          products: sorted,
+          shapeName: shape.name,
+          avoidUrls: used,
+        );
+        if (fallback != null) {
+          result[shape.name] = fallback['url']!;
+          used.add(fallback['url']!);
         }
       }
     }

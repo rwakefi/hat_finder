@@ -733,29 +733,74 @@ class _HatInputScreenState extends State<HatInputScreen> {
   /// Generic hat product photo (background removed) when Shopify has no match.
   static const _hatPhotoPlaceholderAsset = 'assets/images/placeholder.png';
 
-  /// Only uses catalog products already matched to this shape (see [_buildShapeProductMap]).
-  /// Otherwise shows the generic cutout placeholder — never a random unrelated hat.
+  /// Shape-tagged catalog photo when available; crown shapes fall back to any
+  /// eligible product image before the asset placeholder.
   _ShapeCardPhoto _pickShapeCardPhoto({
     required String shapeName,
     required List<Map<String, String>> shopifyProducts,
     required int shapeCarouselIndex,
+    required bool isCrown,
   }) {
-    if (shopifyProducts.isEmpty) {
-      return const _ShapeCardPhoto();
+    final preferredTerm =
+        ShopifyService.preferredExampleTitleTerm(shapeName);
+    if (preferredTerm != null) {
+      for (final pick in shopifyProducts) {
+        final title = (pick['title'] ?? '').toString().toLowerCase();
+        if (!title.contains(preferredTerm)) continue;
+        final url = pick['url'];
+        if (url != null && url.isNotEmpty) {
+          return _ShapeCardPhoto(
+            imageUrl: url,
+            productTitle: pick['title'],
+          );
+        }
+      }
+
+      if (_allProducts != null) {
+        final preferred = ShopifyService.pickPreferredShapeExample(
+          shapeName: shapeName,
+          products: _allProducts!,
+          shapeMetaKey: isCrown ? 'crownShape' : 'brimShape',
+          materialContains: selectedHatType?.name.toLowerCase(),
+        );
+        if (preferred != null) {
+          return _ShapeCardPhoto(
+            imageUrl: preferred['url'],
+            productTitle: preferred['title'],
+          );
+        }
+      }
     }
 
-    final pickIndex = (shapeName.hashCode.abs() + shapeCarouselIndex) %
-        shopifyProducts.length;
-    final pick = shopifyProducts[pickIndex];
-    final url = pick['url'];
-    if (url == null || url.isEmpty) {
-      return const _ShapeCardPhoto();
+    if (shopifyProducts.isNotEmpty) {
+      final pickIndex = (shapeName.hashCode.abs() + shapeCarouselIndex) %
+          shopifyProducts.length;
+      final pick = shopifyProducts[pickIndex];
+      final url = pick['url'];
+      if (url != null && url.isNotEmpty) {
+        return _ShapeCardPhoto(
+          imageUrl: url,
+          productTitle: pick['title'],
+        );
+      }
     }
 
-    return _ShapeCardPhoto(
-      imageUrl: url,
-      productTitle: pick['title'],
-    );
+    if (isCrown && _allProducts != null) {
+      final fallback = ShopifyService.pickAnyCatalogExamplePhoto(
+        products: _allProducts!,
+        shapeName: shapeName,
+        shapeCarouselIndex: shapeCarouselIndex,
+        materialContains: selectedHatType?.name.toLowerCase(),
+      );
+      if (fallback != null) {
+        return _ShapeCardPhoto(
+          imageUrl: fallback['url'],
+          productTitle: fallback['title'],
+        );
+      }
+    }
+
+    return const _ShapeCardPhoto();
   }
 
   Widget _buildShapeCardHatImage(String? imageUrl, {String? fallbackAsset}) {
@@ -3039,6 +3084,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     required Map<String, List<Map<String, String>>> productsMap,
     required HatShapeInfo? selectedShape,
     required void Function(HatShapeInfo shape, int index) onSelect,
+    required bool isCrown,
   }) {
     return _buildWizardRowPager(
       itemCount: shapes.length,
@@ -3049,6 +3095,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           shapeName: shape.name,
           shopifyProducts: shopifyProducts,
           shapeCarouselIndex: index,
+          isCrown: isCrown,
         );
         return _buildShapeFourUpCard(
           shape: shape,
@@ -3089,6 +3136,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       productsMap: shopifyProductsMap,
                       selectedShape: selectedCrownShape,
                       onSelect: _selectCrownAndAdvance,
+                      isCrown: true,
                     );
                   }
                   return Column(
@@ -3124,6 +3172,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         shapeName: shape.name,
                         shopifyProducts: shopifyProducts,
                         shapeCarouselIndex: index,
+                        isCrown: true,
                       );
                       final imageUrl = photo.imageUrl;
                       final bool isFlipped = _flippedCardIndex == index;
@@ -3507,6 +3556,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       productsMap: shopifyProductsMap,
                       selectedShape: selectedBrimShape,
                       onSelect: _selectBrimAndAdvance,
+                      isCrown: false,
                     );
                   }
                   return Column(
@@ -3539,6 +3589,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         shapeName: shape.name,
                         shopifyProducts: shopifyProducts,
                         shapeCarouselIndex: index,
+                        isCrown: false,
                       );
                       final imageUrl = photo.imageUrl;
                       final bool isFlipped = _flippedBrimCardIndex == index;

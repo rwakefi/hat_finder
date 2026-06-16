@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../config/app_breakpoints.dart';
 import '../widgets/moon_ridge_bottom_nav.dart';
 import '../widgets/web_content_scope.dart';
-import '../widgets/web_desktop_scroll_chrome.dart';
 import 'hat_input_screen.dart';
 import 'hat_results_screen.dart';
 import 'head_shape_screen.dart';
@@ -95,10 +94,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final useTopNav = AppBreakpoints.useWebTopNavigation(context);
-    final lockChrome = ScrollChromeLock.lockVisibleOf(context);
-    final topNavVisible = lockChrome ||
-        !useTopNav ||
-        WebDesktopScrollChromeVisibility.chromeVisibleOf(context);
     final nav = MoonRidgeBottomNav(
       selectedIndex: _selectedIndex,
       layout: useTopNav ? AppNavLayout.top : AppNavLayout.bottom,
@@ -120,26 +115,14 @@ class _AppShellState extends State<AppShell> {
       ),
     );
 
-    return ScrollChromeLock(
-      lockVisible: _selectedIndex == 0,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFAF8F5),
-        body: Column(
-          children: [
-            if (useTopNav)
-              ClipRect(
-                child: AnimatedAlign(
-                  alignment: Alignment.topCenter,
-                  heightFactor: topNavVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeInOutCubic,
-                  child: nav,
-                ),
-              ),
-            Expanded(child: content),
-            if (!useTopNav) nav,
-          ],
-        ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8F5),
+      body: Column(
+        children: [
+          if (useTopNav) nav,
+          Expanded(child: content),
+          if (!useTopNav) nav,
+        ],
       ),
     );
   }

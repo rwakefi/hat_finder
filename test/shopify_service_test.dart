@@ -39,6 +39,69 @@ void main() {
     );
   });
 
+  test('pickPreferredShapeExample prefers Amberwood for Brick crown', () {
+    final products = [
+      {
+        'title': 'AI Brick Hat',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'featuredImage': {'url': 'https://example.com/ai.png'},
+      },
+      {
+        'title': 'Amberwood Felt Hat',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Rounded Brick"]'},
+        'featuredImage': {'url': 'https://example.com/amberwood.png'},
+      },
+    ];
+
+    final picked = ShopifyService.pickPreferredShapeExample(
+      shapeName: 'Brick/Rounded Brick/Minnick',
+      products: products,
+      shapeMetaKey: 'crownShape',
+      materialContains: 'felt',
+    );
+
+    expect(picked?['url'], 'https://example.com/amberwood.png');
+    expect(picked?['title'], 'Amberwood Felt Hat');
+  });
+
+  test('pickAnyCatalogExamplePhoto uses a real product when shape has no match',
+      () {
+    final products = [
+      {
+        'title': 'Zulu Felt',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Cattleman"]'},
+        'featuredImage': {'url': 'https://example.com/zulu.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'title': 'Open Road',
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'crownShape': {'value': '["Gus"]'},
+        'featuredImage': {'url': 'https://example.com/open-road.png'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/8', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final picked = ShopifyService.pickAnyCatalogExamplePhoto(
+      shapeName: 'Open Crown',
+      products: products,
+    );
+
+    expect(picked, isNotNull);
+    expect(picked!['url'], isNotEmpty);
+  });
+
   test('filterProducts matches felt type and crown shape', () {
     final products = [
       {
