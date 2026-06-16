@@ -224,6 +224,28 @@ class ShopifyService {
     return 0;
   }
 
+  /// Higher in-stock count first; title breaks ties.
+  static int compareByTotalInventory(dynamic a, dynamic b) {
+    final inventoryCompare = productTotalInventory(b).compareTo(
+      productTotalInventory(a),
+    );
+    if (inventoryCompare != 0) return inventoryCompare;
+
+    return (a['title'] ?? '')
+        .toString()
+        .toLowerCase()
+        .compareTo((b['title'] ?? '').toString().toLowerCase());
+  }
+
+  static List<dynamic> orderByTotalInventory(Iterable<dynamic> products) {
+    return List<dynamic>.from(products)..sort(compareByTotalInventory);
+  }
+
+  /// Results grid: most stock first, Bigalli listings last.
+  static List<dynamic> orderResultsCatalog(Iterable<dynamic> products) {
+    return orderBigalliLast(orderByTotalInventory(products));
+  }
+
   /// Best Seller tag first, then higher in-stock count, then title for stability.
   static int comparePickerExampleProducts(dynamic a, dynamic b) {
     final aBest = isBestSellerProduct(a) ? 1 : 0;
@@ -779,7 +801,7 @@ class ShopifyService {
 
       return matches;
     }).toList();
-    return orderBigalliLast(filtered);
+    return orderResultsCatalog(filtered);
   }
 
   static const int closestMatchMinimum = 4;
@@ -888,9 +910,7 @@ class ShopifyService {
     scored.sort((a, b) {
       final byScore = b.value.compareTo(a.value);
       if (byScore != 0) return byScore;
-      final aTitle = (a.key['title'] ?? '').toString().toLowerCase();
-      final bTitle = (b.key['title'] ?? '').toString().toLowerCase();
-      return aTitle.compareTo(bTitle);
+      return compareByTotalInventory(a.key, b.key);
     });
 
     Iterable<dynamic> picks;
@@ -905,14 +925,10 @@ class ShopifyService {
       picks = catalog;
     }
 
-    final sorted = picks.toList()
-      ..sort((a, b) => (a['title'] ?? '')
-          .toString()
-          .toLowerCase()
-          .compareTo((b['title'] ?? '').toString().toLowerCase()));
-
-    final count = minimum < sorted.length ? minimum : sorted.length;
-    return orderBigalliLast(sorted.take(count));
+    final list = picks.toList();
+    final count = minimum < list.length ? minimum : list.length;
+    final selected = list.take(count).toList();
+    return orderResultsCatalog(selected);
   }
 
   static bool _isActiveHatTypeFilter(String? hatType) {

@@ -1865,8 +1865,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final padding = compact
         ? const EdgeInsets.fromLTRB(10, 8, 10, 6)
         : const EdgeInsets.fromLTRB(20, 16, 20, 12);
-    final historyLabelSize = compact ? 8.0 : 10.0;
-    final historyBodySize = compact ? 11.0 : 16.0;
+    final sectionLabelSize = compact ? 8.0 : 10.0;
+    final sectionBodySize = compact ? 11.0 : 16.0;
     final infoIconSize = compact ? 14.0 : 18.0;
     final infoLabelSize = compact ? 7.0 : 10.0;
     final infoButtonPadding =
@@ -1900,9 +1900,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
             SizedBox(height: compact ? 8 : 14),
             Text(
-              'THE HISTORY',
+              'THE SHAPE',
               style: GoogleFonts.montserrat(
-                fontSize: historyLabelSize,
+                fontSize: sectionLabelSize,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF559C99),
                 letterSpacing: compact ? 2.0 : 3.0,
@@ -1912,10 +1912,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
             Expanded(
               child: SingleChildScrollView(
                 child: Text(
-                  shape.history.isNotEmpty ? shape.history : shape.description,
+                  shape.physicalDescription.isNotEmpty
+                      ? shape.physicalDescription
+                      : shape.description,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.playfairDisplay(
-                    fontSize: historyBodySize,
+                    fontSize: sectionBodySize,
                     fontWeight: FontWeight.w400,
                     color: Colors.white.withValues(alpha: 0.9),
                     height: 1.5,
@@ -1928,54 +1930,30 @@ class _HatInputScreenState extends State<HatInputScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _buildShapeCardInfoButton(
                     onPressed: () =>
                         _showShapeDetailSheet(context, shape, 'wearers'),
-                    icon: Icon(Icons.people_outline, size: infoIconSize),
-                    label: Text(
-                      'FAMOUS\nWEARERS',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.montserrat(
-                        fontSize: infoLabelSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: compact ? 1.0 : 1.5,
-                        height: 1.3,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
-                      padding: infoButtonPadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(compact ? 8 : 10),
-                      ),
-                    ),
+                    icon: Icons.people_outline,
+                    topLine: 'FAMOUS',
+                    bottomLine: 'WEARERS',
+                    iconSize: infoIconSize,
+                    labelSize: infoLabelSize,
+                    padding: infoButtonPadding,
+                    borderRadius: compact ? 8 : 10,
                   ),
                 ),
                 SizedBox(width: compact ? 6 : 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _buildShapeCardInfoButton(
                     onPressed: () =>
-                        _showShapeDetailSheet(context, shape, 'physical'),
-                    icon: Icon(Icons.straighten, size: infoIconSize),
-                    label: Text(
-                      'THE\nSHAPE',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.montserrat(
-                        fontSize: infoLabelSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: compact ? 1.0 : 1.5,
-                        height: 1.3,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
-                      padding: infoButtonPadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(compact ? 8 : 10),
-                      ),
-                    ),
+                        _showShapeDetailSheet(context, shape, 'history'),
+                    icon: Icons.history_edu_outlined,
+                    topLine: 'THE',
+                    bottomLine: 'HISTORY',
+                    iconSize: infoIconSize,
+                    labelSize: infoLabelSize,
+                    padding: infoButtonPadding,
+                    borderRadius: compact ? 8 : 10,
                   ),
                 ),
               ],
@@ -2000,6 +1978,60 @@ class _HatInputScreenState extends State<HatInputScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildShapeCardInfoButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String topLine,
+    required String bottomLine,
+    required double iconSize,
+    required double labelSize,
+    required EdgeInsets padding,
+    required double borderRadius,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white70,
+        side: const BorderSide(color: Colors.white24),
+        padding: padding,
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize),
+          SizedBox(height: labelSize <= 8 ? 3 : 4),
+          Text(
+            topLine,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: GoogleFonts.montserrat(
+              fontSize: labelSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              height: 1.1,
+            ),
+          ),
+          Text(
+            bottomLine,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: GoogleFonts.montserrat(
+              fontSize: labelSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3155,7 +3187,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             color: const Color(0xFF559C99)),
                         const SizedBox(height: 12),
                         Text(
-                          type == 'wearers' ? 'FAMOUS WEARERS' : 'THE SHAPE',
+                          switch (type) {
+                            'wearers' => 'FAMOUS WEARERS',
+                            'history' => 'THE HISTORY',
+                            _ => 'THE SHAPE',
+                          },
                           style: GoogleFonts.montserrat(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -3169,10 +3205,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   const SizedBox(height: 8),
                   // Content
                   Expanded(
-                    child: type == 'wearers'
-                        ? _buildFamousWearersContent(shape, scrollController)
-                        : _buildPhysicalDescriptionContent(
-                            shape, scrollController),
+                    child: switch (type) {
+                      'wearers' =>
+                        _buildFamousWearersContent(shape, scrollController),
+                      'history' =>
+                        _buildHistoryContent(shape, scrollController),
+                      _ => _buildPhysicalDescriptionContent(
+                          shape, scrollController),
+                    },
                   ),
                 ],
               ),
@@ -3263,6 +3303,23 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildHistoryContent(HatShapeInfo shape, ScrollController controller) {
+    return SingleChildScrollView(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      child: Text(
+        shape.history.isNotEmpty ? shape.history : shape.description,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.playfairDisplay(
+          fontSize: 17,
+          color: Colors.white.withValues(alpha: 0.85),
+          height: 1.7,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
     );
   }
 
@@ -3592,196 +3649,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   ..setEntry(3, 2, 0.001) // perspective
                                   ..rotateY(angle),
                                 child: showBack
-                                    // ── BACK FACE (history) ──
                                     ? Transform(
                                         alignment: Alignment.center,
                                         transform: Matrix4.identity()
-                                          ..rotateY(pi), // un-mirror text
-                                        child: Card(
-                                          clipBehavior: Clip.antiAlias,
-                                          elevation: 0,
-                                          color: const Color(0xFF2D2926),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                            side: BorderSide(
-                                              color: isSelected
-                                                  ? const Color(0xFF559C99)
-                                                  : const Color(0xFF3D3936),
-                                              width: isSelected ? 3 : 1,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                20, 16, 20, 12),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                _buildShapeCardBackTitle(shape.name),
-                                                const SizedBox(height: 6),
-                                                Container(
-                                                  width: 40,
-                                                  height: 2,
-                                                  color:
-                                                      const Color(0xFF559C99),
-                                                ),
-                                                const SizedBox(height: 14),
-                                                Text(
-                                                  'THE HISTORY',
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        const Color(0xFF559C99),
-                                                    letterSpacing: 3.0,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Expanded(
-                                                  child: SingleChildScrollView(
-                                                    child: Text(
-                                                      shape.history.isNotEmpty
-                                                          ? shape.history
-                                                          : shape.description,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: GoogleFonts
-                                                          .playfairDisplay(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        color: Colors.white
-                                                            .withValues(
-                                                                alpha: 0.9),
-                                                        height: 1.6,
-                                                        fontStyle:
-                                                            FontStyle.italic,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                // ── Two info buttons ──
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child:
-                                                          OutlinedButton.icon(
-                                                        onPressed: () =>
-                                                            _showShapeDetailSheet(
-                                                                context,
-                                                                shape,
-                                                                'wearers'),
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .people_outline,
-                                                            size: 18),
-                                                        label: Text(
-                                                          'FAMOUS\nWEARERS',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                            height: 1.3,
-                                                          ),
-                                                        ),
-                                                        style: OutlinedButton
-                                                            .styleFrom(
-                                                          foregroundColor:
-                                                              Colors.white70,
-                                                          side:
-                                                              const BorderSide(
-                                                                  color: Colors
-                                                                      .white24),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 14),
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10)),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child:
-                                                          OutlinedButton.icon(
-                                                        onPressed: () =>
-                                                            _showShapeDetailSheet(
-                                                                context,
-                                                                shape,
-                                                                'physical'),
-                                                        icon: const Icon(
-                                                            Icons.straighten,
-                                                            size: 18),
-                                                        label: Text(
-                                                          'THE\nSHAPE',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                            height: 1.3,
-                                                          ),
-                                                        ),
-                                                        style: OutlinedButton
-                                                            .styleFrom(
-                                                          foregroundColor:
-                                                              Colors.white70,
-                                                          side:
-                                                              const BorderSide(
-                                                                  color: Colors
-                                                                      .white24),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 14),
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10)),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 10),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _flippedCardIndex = null;
-                                                    });
-                                                  },
-                                                  child: Text(
-                                                    'TAP TO FLIP BACK',
-                                                    style:
-                                                        GoogleFonts.montserrat(
-                                                      fontSize: 8,
-                                                      color: Colors.white30,
-                                                      letterSpacing: 2.0,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
+                                          ..rotateY(pi),
+                                        child: _buildShapeCardBackFace(
+                                          context: context,
+                                          shape: shape,
+                                          isSelected: isSelected,
+                                          onUnflip: () {
+                                            setState(() {
+                                              _flippedCardIndex = null;
+                                            });
+                                          },
                                         ),
                                       )
-                                    // ── FRONT FACE (image) ──
                                     : _buildShapeCardFrontFace(
                                         context: context,
                                         shape: shape,
@@ -3954,187 +3836,21 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   ..setEntry(3, 2, 0.001)
                                   ..rotateY(angle),
                                 child: showBack
-                                    // ── BACK FACE (history) ──
                                     ? Transform(
                                         alignment: Alignment.center,
                                         transform: Matrix4.identity()
                                           ..rotateY(pi),
-                                        child: Card(
-                                          clipBehavior: Clip.antiAlias,
-                                          elevation: 0,
-                                          color: const Color(0xFF2D2926),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                            side: BorderSide(
-                                              color: isSelected
-                                                  ? const Color(0xFF559C99)
-                                                  : const Color(0xFF3D3936),
-                                              width: isSelected ? 3 : 1,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                20, 16, 20, 12),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                _buildShapeCardBackTitle(shape.name),
-                                                const SizedBox(height: 6),
-                                                Container(
-                                                  width: 40,
-                                                  height: 2,
-                                                  color:
-                                                      const Color(0xFF559C99),
-                                                ),
-                                                const SizedBox(height: 14),
-                                                Text(
-                                                  'THE HISTORY',
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        const Color(0xFF559C99),
-                                                    letterSpacing: 3.0,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Expanded(
-                                                  child: SingleChildScrollView(
-                                                    child: Text(
-                                                      shape.history.isNotEmpty
-                                                          ? shape.history
-                                                          : shape.description,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: GoogleFonts
-                                                          .playfairDisplay(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        color: Colors.white
-                                                            .withValues(
-                                                                alpha: 0.9),
-                                                        height: 1.6,
-                                                        fontStyle:
-                                                            FontStyle.italic,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                // ── Two info buttons ──
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child:
-                                                          OutlinedButton.icon(
-                                                        onPressed: () =>
-                                                            _showShapeDetailSheet(
-                                                                context,
-                                                                shape,
-                                                                'wearers'),
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .people_outline,
-                                                            size: 18),
-                                                        label: Text(
-                                                          'FAMOUS\nWEARERS',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                            height: 1.3,
-                                                          ),
-                                                        ),
-                                                        style: OutlinedButton
-                                                            .styleFrom(
-                                                          foregroundColor:
-                                                              Colors.white70,
-                                                          side:
-                                                              const BorderSide(
-                                                                  color: Colors
-                                                                      .white24),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 14),
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10)),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child:
-                                                          OutlinedButton.icon(
-                                                        onPressed: () =>
-                                                            _showShapeDetailSheet(
-                                                                context,
-                                                                shape,
-                                                                'physical'),
-                                                        icon: const Icon(
-                                                            Icons.straighten,
-                                                            size: 18),
-                                                        label: Text(
-                                                          'THE\nSHAPE',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: GoogleFonts
-                                                              .montserrat(
-                                                            fontSize: 10,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            letterSpacing: 1.5,
-                                                            height: 1.3,
-                                                          ),
-                                                        ),
-                                                        style: OutlinedButton
-                                                            .styleFrom(
-                                                          foregroundColor:
-                                                              Colors.white70,
-                                                          side:
-                                                              const BorderSide(
-                                                                  color: Colors
-                                                                      .white24),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 14),
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10)),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  'TAP TO FLIP BACK',
-                                                  style: GoogleFonts.montserrat(
-                                                    fontSize: 8,
-                                                    color: Colors.white30,
-                                                    letterSpacing: 2.0,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
+                                        child: _buildShapeCardBackFace(
+                                          context: context,
+                                          shape: shape,
+                                          isSelected: isSelected,
+                                          onUnflip: () {
+                                            setState(() {
+                                              _flippedBrimCardIndex = null;
+                                            });
+                                          },
                                         ),
                                       )
-                                    // ── FRONT FACE (image) ──
                                     : _buildShapeCardFrontFace(
                                         context: context,
                                         shape: shape,

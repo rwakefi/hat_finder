@@ -18,17 +18,18 @@ import '../widgets/web_content_scope.dart';
 class ShapeGuideScreen extends StatefulWidget {
   const ShapeGuideScreen({
     super.key,
+    required this.isCrown,
     required this.appBarLabel,
     required this.eyebrow,
     required this.title,
     required this.intro,
-    required this.shapes,
     required this.metaField,
     this.footerNote,
   });
 
   /// Brim shapes guide.
   factory ShapeGuideScreen.brim() => const ShapeGuideScreen(
+        isCrown: false,
         appBarLabel: 'BRIM SHAPE GUIDE',
         eyebrow: 'KNOW YOUR BRIM',
         title: 'A Field Guide to Brim Shapes',
@@ -36,7 +37,6 @@ class ShapeGuideScreen extends StatefulWidget {
             'From the cleanest flat brim to the show-pen polish of a '
             'Showmanship, here is how each shape is built — and the look '
             'it carries.',
-        shapes: brimShapes,
         metaField: 'brimShape',
         footerNote:
             'Brim shape is mostly about looks and tradition — any of these can '
@@ -46,6 +46,7 @@ class ShapeGuideScreen extends StatefulWidget {
 
   /// Crown shapes guide.
   factory ShapeGuideScreen.crown() => const ShapeGuideScreen(
+        isCrown: true,
         appBarLabel: 'CROWN SHAPE GUIDE',
         eyebrow: 'KNOW YOUR CROWN',
         title: 'A Field Guide to Crown Shapes',
@@ -53,18 +54,17 @@ class ShapeGuideScreen extends StatefulWidget {
             'The crown is the heart of the hat. From the timeless Cattleman to '
             'the blank-canvas Open Crown, here is how each profile is creased '
             '— and the story it tells.',
-        shapes: crownShapes,
         metaField: 'crownShape',
         footerNote:
             'Most felt hats can be re-creased into another crown by a hatter. '
             'Pick the profile you love here, then filter the catalog to match.',
       );
 
+  final bool isCrown;
   final String appBarLabel;
   final String eyebrow;
   final String title;
   final String intro;
-  final List<HatShapeInfo> shapes;
   final String metaField;
   final String? footerNote;
 
@@ -78,18 +78,74 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
   static const Color _accent = Color(0xFF559C99);
   static const Color _border = Color(0xFFE4DED1);
 
+  late List<HatShapeInfo> _shapes;
   Map<String, String> _exampleImages = {};
+
+  List<HatShapeInfo> get _fallbackShapes =>
+      widget.isCrown ? crownShapes : brimShapes;
 
   @override
   void initState() {
     super.initState();
-    _loadExampleImages();
+    _shapes = List<HatShapeInfo>.from(_fallbackShapes);
+    _loadGuideData();
+  }
+
+  Future<void> _loadGuideData() async {
+    await _loadValidationOrder();
+    await _loadExampleImages();
+  }
+
+  Future<void> _loadValidationOrder() async {
+    final key = widget.isCrown ? 'crown_shapes' : 'brim_shapes';
+    try {
+      final choices =
+          await ShopifyService.fetchValidationChoices(forceRefresh: true);
+      final names = choices[key];
+      if (names == null || names.isEmpty || !mounted) return;
+      setState(() {
+        _shapes = _orderedGuideShapes(names);
+      });
+    } catch (_) {
+      // Fallback catalog order is fine offline.
+    }
+  }
+
+  List<HatShapeInfo> _orderedGuideShapes(List<String> names) {
+    return names.map(_enrichShapeName).toList();
+  }
+
+  HatShapeInfo _enrichShapeName(String name) {
+    for (final shape in _fallbackShapes) {
+      if (shape.name == name) return shape;
+      if (ShopifyService.matchShape(shape.name, name)) {
+        return HatShapeInfo(
+          name,
+          shape.imagePath,
+          shape.description,
+          history: shape.history,
+          famousWearers: shape.famousWearers,
+          physicalDescription: shape.physicalDescription,
+          galleryImages: shape.galleryImages,
+        );
+      }
+    }
+    return HatShapeInfo(
+      name,
+      'assets/images/placeholder.png',
+      widget.isCrown ? 'Custom shaped crown.' : 'Custom shaped brim.',
+      physicalDescription: widget.isCrown
+          ? 'Individually creased custom crown.'
+          : 'Individually shaped custom brim.',
+    );
   }
 
   Future<void> _loadExampleImages() async {
     final cached = ShopifyService.peekFullProducts();
     if (cached != null) {
-      _exampleImages = _computeExampleImages(cached);
+      final images = _computeExampleImages(cached);
+      if (!mounted) return;
+      setState(() => _exampleImages = images);
       return;
     }
     try {
@@ -109,7 +165,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
 
     final used = <String>{};
     final result = <String, String>{};
-    for (final shape in widget.shapes) {
+    for (final shape in _shapes) {
       for (final product in sorted) {
         if (ShopifyService.isExcludedFromHatFinderExamples(product)) continue;
         if (!ShopifyService.isHatFinderCatalogProduct(product)) continue;
@@ -245,7 +301,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
                   if (!twoUp) {
                     return Column(
                       children: [
-                        for (final shape in widget.shapes) ...[
+                        for (final shape in _shapes) ...[
                           _ShapeCard(
                             shape: shape,
                             imageUrl: _exampleImages[shape.name],
@@ -262,7 +318,7 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
                     spacing: spacing,
                     runSpacing: spacing,
                     children: [
-                      for (final shape in widget.shapes)
+                      for (final shape in _shapes)
                         SizedBox(
                           width: cardWidth,
                           child: _ShapeCard(

@@ -124,7 +124,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _fullCatalog = all;
     final filtered = _filterCatalog(all);
     _rebuildSwatchCache(filtered);
-    return ShopifyService.orderBigalliLast(filtered);
+    return filtered;
   }
 
   List<double> _crownHeightOptionsForFineTuning() {
@@ -205,7 +205,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       }
     }
 
-    return filtered;
+    return ShopifyService.orderResultsCatalog(filtered);
   }
 
   void _applyFilters() {

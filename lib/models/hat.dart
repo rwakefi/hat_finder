@@ -166,6 +166,20 @@ const List<HatShapeInfo> crownShapes = [
 /// from Shopify admin via the Hat Finder backend.
 const List<HatShapeInfo> brimShapes = [
   HatShapeInfo(
+    'J (George Strait, Medium Curved)',
+    'assets/images/placeholder.png',
+    'Classic roper look — front matches the crown width.',
+    famousWearers: [
+      {
+        'name': 'George Strait',
+        'context':
+            'The clean, medium-curved J brim is central to his signature western look.'
+      },
+    ],
+    physicalDescription:
+        'The front of the brim matches the width of the crown. Medium side height with soft corners — a classic roper look with old-school roots.',
+  ),
+  HatShapeInfo(
     'Flat/Pencil Curl',
     'assets/images/placeholder.png',
     'The most open brim — clean and straight all the way around.',
@@ -185,20 +199,6 @@ const List<HatShapeInfo> brimShapes = [
     'Soft dip front to back with gentle curves throughout.',
     physicalDescription:
         'A step up from flat, with a soft dip that gradually drops from front to back. Gentle curves throughout with no sharp angles — unlike the aggressive 90-degree bend of a Taco or Quarter Horse brim.',
-  ),
-  HatShapeInfo(
-    'J (George Strait, Medium Curved)',
-    'assets/images/placeholder.png',
-    'Classic roper look — front matches the crown width.',
-    famousWearers: [
-      {
-        'name': 'George Strait',
-        'context':
-            'The clean, medium-curved J brim is central to his signature western look.'
-      },
-    ],
-    physicalDescription:
-        'The front of the brim matches the width of the crown. Medium side height with soft corners — a classic roper look with old-school roots.',
   ),
   HatShapeInfo(
     'JB (Bullrider)',

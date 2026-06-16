@@ -347,6 +347,48 @@ void main() {
     expect(closest.first['title'], 'Alpha City Felt');
   });
 
+  test('filterProducts orders results by totalInventory descending', () {
+    final products = [
+      {
+        'title': 'Low Stock Felt',
+        'totalInventory': 2,
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'title': 'High Stock Felt',
+        'totalInventory': 24,
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/8', 'availableForSale': true}},
+          ],
+        },
+      },
+      {
+        'title': 'Mid Stock Felt',
+        'totalInventory': 8,
+        'feltStrawOrBallcap': {'value': '["Felt"]'},
+        'variants': {
+          'edges': [
+            {'node': {'title': '7 1/4', 'availableForSale': true}},
+          ],
+        },
+      },
+    ];
+
+    final results = ShopifyService.filterProducts(products, hatType: 'Felt');
+    expect(results.map((p) => p['title']).toList(), [
+      'High Stock Felt',
+      'Mid Stock Felt',
+      'Low Stock Felt',
+    ]);
+  });
+
   test('filterProducts matches felt type and crown shape', () {
     final products = [
       {
@@ -681,10 +723,10 @@ void main() {
       'Open Crown',
     ];
     const shopifyBrimOrder = [
+      'J (George Strait, Medium Curved)',
       'Flat/Pencil Curl',
       'Snap Brim/Flanged Brim',
       'RD (Round)',
-      'J (George Strait, Medium Curved)',
       'JB (Bullrider)',
       'CHL (Cool Hand Luke, Shovel, Reiner Low Sides)',
       'U (Reiner High Sides)',

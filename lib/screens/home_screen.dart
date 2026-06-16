@@ -8,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../config/app_breakpoints.dart';
+import '../screens/shape_guide_screen.dart';
 import '../services/shopify_service.dart';
 import '../theme/moon_ridge_logo_sizes.dart';
 
@@ -126,34 +127,33 @@ class _HomeScreenState extends State<HomeScreen> {
         compact: compact,
       ),
       SizedBox(height: buttonGap),
-      IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _SmallBubble(
-                icon: Icons.play_circle_outline_rounded,
-                label: 'How to Measure\nfor Hat Size',
-                onTap: () => _showVideoModal(context),
-              ),
+      _HomeSecondaryActions(
+        rowGap: buttonGap,
+        columnGap: splitLayout ? (isWideDesktop ? 14 : 12) : 12,
+        relaxed: splitLayout,
+        onMeasure: () => _showVideoModal(context),
+        onVirtualMeasure: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Coming soon!'),
+              duration: Duration(seconds: 2),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SmallBubble(
-                icon: Icons.straighten_outlined,
-                label: 'Virtual Head\nMeasurement',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Coming soon!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-              ),
+          );
+        },
+        onCrownGuide: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ShapeGuideScreen.crown(),
             ),
-          ],
-        ),
+          );
+        },
+        onBrimGuide: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ShapeGuideScreen.brim(),
+            ),
+          );
+        },
       ),
       SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : 16),
       Center(
@@ -314,7 +314,7 @@ class _WebActionsPanel extends StatelessWidget {
             vertical: 32,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
+            constraints: BoxConstraints(maxWidth: isWideDesktop ? 420 : 380),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -728,16 +728,89 @@ class _OptionBlock extends StatelessWidget {
   }
 }
 
+class _HomeSecondaryActions extends StatelessWidget {
+  const _HomeSecondaryActions({
+    required this.rowGap,
+    required this.columnGap,
+    required this.relaxed,
+    required this.onMeasure,
+    required this.onVirtualMeasure,
+    required this.onCrownGuide,
+    required this.onBrimGuide,
+  });
+
+  final double rowGap;
+  final double columnGap;
+  final bool relaxed;
+  final VoidCallback onMeasure;
+  final VoidCallback onVirtualMeasure;
+  final VoidCallback onCrownGuide;
+  final VoidCallback onBrimGuide;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget row(List<Widget> children) {
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: children[0]),
+            SizedBox(width: columnGap),
+            Expanded(child: children[1]),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row([
+          _SmallBubble(
+            icon: Icons.play_circle_outline_rounded,
+            label: 'How to Measure\nfor Hat Size',
+            onTap: onMeasure,
+            relaxed: relaxed,
+          ),
+          _SmallBubble(
+            icon: Icons.straighten_outlined,
+            label: 'Virtual Head\nMeasurement',
+            onTap: onVirtualMeasure,
+            relaxed: relaxed,
+          ),
+        ]),
+        SizedBox(height: rowGap),
+        row([
+          _SmallBubble(
+            icon: Icons.layers_outlined,
+            label: 'Learn About\nCrown Shape',
+            onTap: onCrownGuide,
+            relaxed: relaxed,
+          ),
+          _SmallBubble(
+            icon: Icons.border_horizontal,
+            label: 'Learn About\nBrim Shape',
+            onTap: onBrimGuide,
+            relaxed: relaxed,
+          ),
+        ]),
+      ],
+    );
+  }
+}
+
 class _SmallBubble extends StatelessWidget {
   const _SmallBubble({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.relaxed = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool relaxed;
 
   @override
   Widget build(BuildContext context) {
@@ -756,22 +829,25 @@ class _SmallBubble extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+            padding: EdgeInsets.symmetric(
+              vertical: relaxed ? 16 : 14,
+              horizontal: relaxed ? 16 : 14,
+            ),
             child: Row(
               children: [
                 Icon(
                   icon,
-                  size: 20,
+                  size: relaxed ? 22 : 20,
                   color: _HomePalette.turquoise,
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: relaxed ? 12 : 10),
                 Expanded(
                   child: Text(
                     label,
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: relaxed ? 13 : 12,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                      letterSpacing: relaxed ? 0.35 : 0.5,
                       color: _HomePalette.espresso,
                       height: 1.35,
                     ),
