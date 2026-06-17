@@ -265,6 +265,18 @@ async def _build_products_payload(lite: bool) -> dict:
     return await _shopify_graphql(query)
 
 
+def _is_retired_crown_validation_choice(name: str) -> bool:
+    normalized = (
+        name.strip()
+        .lower()
+        .replace("'", "")
+        .replace("'s", "")
+    )
+    if normalized == "cutter":
+        return True
+    return "mule kick" in normalized and "horseshoe" in normalized
+
+
 async def _build_validation_payload() -> dict:
     query = """
     query {
@@ -311,8 +323,7 @@ async def _build_validation_payload() -> dict:
                 crown_choices = [
                     choice
                     for choice in choices
-                    if choice.strip().lower().replace("'", "").replace("'s", "")
-                    != "cutter"
+                    if not _is_retired_crown_validation_choice(choice)
                 ]
             elif key == "brim_shape":
                 brim_choices = choices

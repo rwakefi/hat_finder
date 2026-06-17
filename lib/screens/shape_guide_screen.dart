@@ -98,9 +98,23 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
 
   Future<void> _loadValidationOrder() async {
     final key = widget.isCrown ? 'crown_shapes' : 'brim_shapes';
+    final cached = ShopifyService.peekValidationChoices();
+    if (cached != null) {
+      final names = cached[key];
+      if (names != null && names.isNotEmpty && mounted) {
+        setState(() {
+          _shapes = _orderedGuideShapes(
+            widget.isCrown
+                ? ShopifyService.filterCrownValidationChoices(names)
+                : names,
+          );
+        });
+      }
+    }
     try {
-      final choices =
-          await ShopifyService.fetchValidationChoices(forceRefresh: true);
+      final choices = await ShopifyService.fetchValidationChoices(
+        forceRefresh: cached == null,
+      );
       final names = choices[key];
       if (names == null || names.isEmpty || !mounted) return;
       setState(() {
@@ -728,7 +742,7 @@ class _ShapeCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildThumb(),
+          _buildThumb(context),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -774,9 +788,11 @@ class _ShapeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumb() {
+  Widget _buildThumb(BuildContext context) {
     const double size = 84;
     final radius = BorderRadius.circular(12);
+    final cacheWidth =
+        (size * MediaQuery.devicePixelRatioOf(context)).round();
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: radius,
@@ -785,6 +801,7 @@ class _ShapeCard extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
+          cacheWidth: cacheWidth,
           errorBuilder: (_, __, ___) => _buildMonogram(size, radius),
         ),
       );

@@ -50,12 +50,17 @@ class HatResultsScreen extends StatefulWidget {
 }
 
 class _HatResultsScreenState extends State<HatResultsScreen> {
-  late Future<List<dynamic>> _hatsFuture;
   String? _selectedColor;
   String? _selectedVariantSize;
   Map<String, List<({String color, String variantGid, String? imageUrl})>>
       _swatchCache = {};
   List<dynamic>? _fullCatalog;
+  List<dynamic> _resultHats = [];
+  List<String> _resultSizes = [];
+  List<String> _resultColors = [];
+  List<double>? _cachedCrownHeightOptions;
+  bool _resultsLoading = true;
+  Object? _resultsError;
   bool _fineTuningExpanded = false;
   bool _summaryFiltersExpanded = true;
   late String? _filterHatType;
@@ -85,8 +90,87 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
     _filterBrimWidths = List<String>.from(widget.brimWidths ?? []);
 
-    // Always load the full catalog — lite preloads lack color variants for swatches.
-    _hatsFuture = _fetchFilteredHats();
+    _loadInitialResults();
+  }
+
+  Future<void> _loadInitialResults() async {
+    try {
+      var catalog = ShopifyService.peekFullProducts();
+      if (widget.preloadedHats != null) {
+        catalog ??= await ShopifyService.fetchFullProducts();
+        if (!mounted) return;
+        setState(() {
+          _fullCatalog = catalog;
+          _syncResultHats(widget.preloadedHats!);
+          _cachedCrownHeightOptions = _computeCrownHeightOptions();
+          _resultsLoading = false;
+        });
+        return;
+      }
+
+      catalog ??= await ShopifyService.fetchFullProducts();
+      if (!mounted) return;
+      setState(() {
+        _fullCatalog = catalog;
+        _syncResultHats(_filterCatalog(catalog!));
+        _cachedCrownHeightOptions = _computeCrownHeightOptions();
+        _resultsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _resultsError = e;
+        _resultsLoading = false;
+      });
+    }
+  }
+
+  void _syncResultHats(List<dynamic> hats) {
+    _resultHats = hats;
+    _rebuildSwatchCache(hats);
+    final sizes = <String>{};
+    final colors = <String>{};
+    for (final hat in hats) {
+      sizes.addAll(_availableSizesForHat(hat));
+      for (final entry in _swatchColorsFor(hat)) {
+        colors.add(entry.color);
+      }
+    }
+    _resultSizes = sizes.toList()..sort(ShopifyService.compareHatSizes);
+    _resultColors = colors.toList()..sort();
+  }
+
+  List<dynamic> get _displayHats {
+    var hats = _resultHats;
+    if (_selectedVariantSize != null) {
+      hats = hats
+          .where((hat) => _hatMatchesSelectedSize(hat, _selectedVariantSize!))
+          .toList();
+    }
+    if (_selectedColor != null) {
+      hats = hats
+          .where(
+            (hat) => _swatchColorsFor(hat).any(
+              (entry) =>
+                  entry.color.toLowerCase() == _selectedColor!.toLowerCase(),
+            ),
+          )
+          .toList();
+    }
+    return hats;
+  }
+
+  List<double> _computeCrownHeightOptions() {
+    final baseline = defaultCrownHeightOptions();
+    final catalog = _fullCatalog;
+    if (catalog == null) return baseline;
+    final fromCatalog = ShopifyService.uniqueCrownHeights(catalog);
+    if (fromCatalog.isEmpty) return baseline;
+    return {...baseline, ...fromCatalog}.toList()..sort();
+  }
+
+  List<double> _crownHeightOptionsForFineTuning() {
+    return _cachedCrownHeightOptions ?? _computeCrownHeightOptions();
   }
 
   bool get _showsWesternStyleFilter {
@@ -117,24 +201,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   int _resultsCrossAxisCount(BuildContext context) =>
       AppBreakpoints.gridCrossAxisCount(context, laptop: 3, desktop: 4);
-
-  Future<List<dynamic>> _fetchFilteredHats() async {
-    final all = await ShopifyService.fetchFullProducts();
-    if (!mounted) return [];
-    _fullCatalog = all;
-    final filtered = _filterCatalog(all);
-    _rebuildSwatchCache(filtered);
-    return filtered;
-  }
-
-  List<double> _crownHeightOptionsForFineTuning() {
-    final baseline = defaultCrownHeightOptions();
-    final catalog = _fullCatalog;
-    if (catalog == null) return baseline;
-    final fromCatalog = ShopifyService.uniqueCrownHeights(catalog);
-    if (fromCatalog.isEmpty) return baseline;
-    return {...baseline, ...fromCatalog}.toList()..sort();
-  }
 
   List<dynamic> _filterCatalog(List<dynamic> catalog) {
     final filterArgs = (
@@ -211,20 +277,16 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   void _applyFilters() {
     final source = _fullCatalog;
     if (source == null) return;
-    final filtered = _filterCatalog(source);
     setState(() {
       _selectedColor = null;
       _selectedVariantSize = null;
-      _rebuildSwatchCache(filtered);
-      _hatsFuture = Future.value(filtered);
+      _syncResultHats(_filterCatalog(source));
     });
   }
 
   void _onFineTuningChanged(FineTuningValues values) {
-    setState(() {
-      _filterCrownHeights = List<double>.from(values.crownHeights);
-      _filterBrimWidths = List<String>.from(values.brimWidths);
-    });
+    _filterCrownHeights = List<double>.from(values.crownHeights);
+    _filterBrimWidths = List<String>.from(values.brimWidths);
     _applyFilters();
   }
 
@@ -236,10 +298,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       options: hatTypes,
     );
     if (!mounted || picked == _filterHatType) return;
-    setState(() {
-      _filterHatType = picked;
-      if (!_showsWesternStyleFilter) _filterWesternStyle = null;
-    });
+    _filterHatType = picked;
+    if (!_showsWesternStyleFilter) _filterWesternStyle = null;
     _applyFilters();
   }
 
@@ -251,7 +311,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       options: _westernStyleOptions,
     );
     if (!mounted || picked == _filterWesternStyle) return;
-    setState(() => _filterWesternStyle = picked);
+    _filterWesternStyle = picked;
     _applyFilters();
   }
 
@@ -263,7 +323,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       options: widget.crownShapeOptions ?? crownShapes,
     );
     if (!mounted || picked == _filterCrownShape) return;
-    setState(() => _filterCrownShape = picked);
+    _filterCrownShape = picked;
     _applyFilters();
   }
 
@@ -275,7 +335,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       options: widget.brimShapeOptions ?? brimShapes,
     );
     if (!mounted || picked == _filterBrimShape) return;
-    setState(() => _filterBrimShape = picked);
+    _filterBrimShape = picked;
     _applyFilters();
   }
 
@@ -619,184 +679,140 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               if (_showingClosestMatches) _buildClosestMatchesBanner(),
               const Divider(height: 1, color: _borderGrey),
               Expanded(
-                child: FutureBuilder<List<dynamic>>(
-              future: _hatsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(color: _turquoise),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Finding Your Perfect Hat...',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 14,
-                            color: _espresso.withValues(alpha: 0.5),
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red)),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off_rounded,
-                              size: 56,
-                              color: _espresso.withValues(alpha: 0.2)),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No Matches Found',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: _espresso,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try adjusting your shape or size filters.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              color: _espresso.withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                final hats = snapshot.data!;
-                if (_swatchCache.isEmpty ||
-                    _swatchCache.length != hats.length) {
-                  _rebuildSwatchCache(hats);
-                }
-
-                // Extract unique in-stock sizes from returned products
-                final Set<String> availableSizes = {};
-                for (final hat in hats) {
-                  availableSizes.addAll(_availableSizesForHat(hat));
-                }
-                final sortedSizes = availableSizes.toList()
-                  ..sort(ShopifyService.compareHatSizes);
-
-                // Extract unique in-stock colors from returned products
-                final Set<String> availableColors = {};
-                for (final hat in hats) {
-                  for (final entry in _swatchColorsFor(hat)) {
-                    availableColors.add(entry.color);
-                  }
-                }
-                final sortedColors = availableColors.toList()..sort();
-
-                // Filter by selected size, then color
-                final sizeFilteredHats = _selectedVariantSize == null
-                    ? hats
-                    : hats
-                        .where((hat) =>
-                            _hatMatchesSelectedSize(hat, _selectedVariantSize!))
-                        .toList();
-
-                final filteredHats = _selectedColor == null
-                    ? sizeFilteredHats
-                    : sizeFilteredHats.where((hat) {
-                        return _swatchColorsFor(hat).any(
-                          (entry) =>
-                              entry.color.toLowerCase() ==
-                              _selectedColor!.toLowerCase(),
-                        );
-                      }).toList();
-
-                final compactChips = AppBreakpoints.isLaptop(context);
-                return Column(
-                  children: [
-                    if (sortedSizes.isNotEmpty)
-                      _buildChipFilterBar<String>(
-                        icon: Icons.straighten_outlined,
-                        label: 'SIZE',
-                        options: sortedSizes,
-                        selected: _selectedVariantSize,
-                        labelFor: (size) => size,
-                        onSelected: (size) =>
-                            setState(() => _selectedVariantSize = size),
-                        compact: compactChips,
-                      ),
-                    if (sortedSizes.isNotEmpty && !compactChips)
-                      const Divider(height: 1, color: _borderGrey),
-                    if (sortedColors.isNotEmpty)
-                      _buildChipFilterBar<String>(
-                        icon: Icons.palette_outlined,
-                        label: 'COLOR',
-                        options: sortedColors,
-                        selected: _selectedColor,
-                        labelFor: (color) => color,
-                        onSelected: (color) =>
-                            setState(() => _selectedColor = color),
-                        compact: compactChips,
-                      ),
-                    if (sortedColors.isNotEmpty)
-                      const Divider(height: 1, color: _borderGrey),
-                    // Grid
-                    Expanded(
-                      child: filteredHats.isEmpty
-                          ? Center(
-                              child: Text(
-                                _selectedVariantSize != null
-                                    ? 'No hats in this size.'
-                                    : sortedColors.isNotEmpty &&
-                                            _selectedColor != null
-                                        ? 'No hats in this color.'
-                                        : 'No hats match these filters.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  color: _espresso.withValues(alpha: 0.4),
-                                ),
-                              ),
-                            )
-                          : GridView.builder(
-                              padding:
-                                  const EdgeInsets.fromLTRB(12, 12, 12, 32),
-                              addAutomaticKeepAlives: false,
-                              addRepaintBoundaries: true,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: _resultsCrossAxisCount(context),
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                                childAspectRatio: _resultsCardAspectRatio(context),
-                              ),
-                              itemCount: filteredHats.length,
-                              itemBuilder: (context, index) {
-                                return RepaintBoundary(
-                                  child: _buildHatCard(filteredHats[index]),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                child: _buildResultsBody(),
           ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildResultsBody() {
+    if (_resultsLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: _turquoise),
+            const SizedBox(height: 24),
+            Text(
+              'Finding Your Perfect Hat...',
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                color: _espresso.withValues(alpha: 0.5),
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_resultsError != null) {
+      return Center(
+        child: Text(
+          'Error: $_resultsError',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
+    }
+    if (_resultHats.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off_rounded,
+                  size: 56, color: _espresso.withValues(alpha: 0.2)),
+              const SizedBox(height: 16),
+              Text(
+                'No Matches Found',
+                style: GoogleFonts.montserrat(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _espresso,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try adjusting your shape or size filters.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: _espresso.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final displayHats = _displayHats;
+    final compactChips = AppBreakpoints.isLaptop(context);
+    return Column(
+      children: [
+        if (_resultSizes.isNotEmpty)
+          _buildChipFilterBar<String>(
+            icon: Icons.straighten_outlined,
+            label: 'SIZE',
+            options: _resultSizes,
+            selected: _selectedVariantSize,
+            labelFor: (size) => size,
+            onSelected: (size) => setState(() => _selectedVariantSize = size),
+            compact: compactChips,
+          ),
+        if (_resultSizes.isNotEmpty && !compactChips)
+          const Divider(height: 1, color: _borderGrey),
+        if (_resultColors.isNotEmpty)
+          _buildChipFilterBar<String>(
+            icon: Icons.palette_outlined,
+            label: 'COLOR',
+            options: _resultColors,
+            selected: _selectedColor,
+            labelFor: (color) => color,
+            onSelected: (color) => setState(() => _selectedColor = color),
+            compact: compactChips,
+          ),
+        if (_resultColors.isNotEmpty)
+          const Divider(height: 1, color: _borderGrey),
+        Expanded(
+          child: displayHats.isEmpty
+              ? Center(
+                  child: Text(
+                    _selectedVariantSize != null
+                        ? 'No hats in this size.'
+                        : _resultColors.isNotEmpty && _selectedColor != null
+                            ? 'No hats in this color.'
+                            : 'No hats match these filters.',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: _espresso.withValues(alpha: 0.4),
+                    ),
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _resultsCrossAxisCount(context),
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: _resultsCardAspectRatio(context),
+                  ),
+                  itemCount: displayHats.length,
+                  itemBuilder: (context, index) {
+                    return RepaintBoundary(
+                      child: _buildHatCard(displayHats[index]),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 

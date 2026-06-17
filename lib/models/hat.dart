@@ -154,13 +154,6 @@ const List<HatShapeInfo> crownShapes = [
         'West Texas Punch — Two deep sweeping side dents.',
   ),
   HatShapeInfo(
-    'Mule Kick/Horseshoe',
-    'assets/images/crowns/round_top.png',
-    'A custom-shop favorite with a bumped-out "mule kick" on top.',
-    physicalDescription:
-        'A distinct bump pushes outward from the felt at the top of the crown, adding a one-of-a-kind profile that sets it apart from every other shape on the block.',
-  ),
-  HatShapeInfo(
     'Open Crown',
     'assets/images/crowns/open_crown_felt.png',
     'A smooth, uncreased dome — your blank canvas for custom shaping.',

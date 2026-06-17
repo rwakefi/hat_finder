@@ -355,7 +355,8 @@ class ShopifyService {
         .replaceAll("'s", '')
         .replaceAll("'", '')
         .trim();
-    return normalized == 'cutter';
+    if (normalized == 'cutter') return true;
+    return normalized.contains('mule kick') && normalized.contains('horseshoe');
   }
 
   static List<String> filterCrownValidationChoices(Iterable<String> names) {

@@ -73,6 +73,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
   List<dynamic>? _allProducts;
   Map<String, List<Map<String, String>>> _crownProductsMap = {};
   Map<String, List<Map<String, String>>> _brimProductsMap = {};
+  Map<String, _ShapeCardPhoto> _crownShapePhotos = {};
+  Map<String, _ShapeCardPhoto> _brimShapePhotos = {};
   List<HatShapeInfo>? _cachedAvailableBrimShapes;
   List<dynamic>? _crownFilteredProducts;
 
@@ -409,6 +411,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
     _sortedCrownShapes = List<HatShapeInfo>.from(crownShapes);
     _sortedBrimShapes = List<HatShapeInfo>.from(brimShapeList);
+    _refreshShapePhotoCache(crownShapes, brimShapeList);
     if (selectedCrownShape != null &&
         !_isWizardCrownShape(selectedCrownShape!)) {
       selectedCrownShape = null;
@@ -461,6 +464,25 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _updateCrownFilteredProducts();
     _rebuildAvailableBrimShapes();
     _syncBrimSelectionToAvailable();
+  }
+
+  /// Commits the visible crown carousel card when the user taps Next (not on swipe).
+  void _commitCrownCarouselSelection() {
+    final sorted = _sortedCrownShapes ?? _currentCrownShapes;
+    if (_currentCrownCarouselIndex >= sorted.length) return;
+    final shape = sorted[_currentCrownCarouselIndex];
+    if (selectedCrownShape?.name == shape.name) return;
+    selectedCrownShape = shape;
+    _onCrownSelectionChanged();
+  }
+
+  /// Commits the visible brim carousel card before finishing the wizard.
+  void _commitBrimCarouselSelection() {
+    final sorted = _sortedBrimShapes ?? _availableBrimShapes;
+    if (_currentBrimCarouselIndex >= sorted.length) return;
+    final shape = sorted[_currentBrimCarouselIndex];
+    if (selectedBrimShape?.name == shape.name) return;
+    selectedBrimShape = shape;
   }
 
   void _syncBrimSelectionToAvailable() {
@@ -659,6 +681,50 @@ class _HatInputScreenState extends State<HatInputScreen> {
   /// Generic hat product photo (background removed) when Shopify has no match.
   static const _hatPhotoPlaceholderAsset = 'assets/images/placeholder.png';
 
+  void _refreshShapePhotoCache(
+    List<HatShapeInfo> crownShapes,
+    List<HatShapeInfo> brimShapes,
+  ) {
+    final crownPhotos = <String, _ShapeCardPhoto>{};
+    for (var i = 0; i < crownShapes.length; i++) {
+      final shape = crownShapes[i];
+      crownPhotos[shape.name] = _pickShapeCardPhoto(
+        shapeName: shape.name,
+        shopifyProducts: _crownProductsMap[shape.name] ?? [],
+        shapeCarouselIndex: i,
+        isCrown: true,
+      );
+    }
+    final brimPhotos = <String, _ShapeCardPhoto>{};
+    for (var i = 0; i < brimShapes.length; i++) {
+      final shape = brimShapes[i];
+      brimPhotos[shape.name] = _pickShapeCardPhoto(
+        shapeName: shape.name,
+        shopifyProducts: _brimProductsMap[shape.name] ?? [],
+        shapeCarouselIndex: i,
+        isCrown: false,
+      );
+    }
+    _crownShapePhotos = crownPhotos;
+    _brimShapePhotos = brimPhotos;
+  }
+
+  _ShapeCardPhoto _cachedShapePhoto({
+    required String shapeName,
+    required bool isCrown,
+    required List<Map<String, String>> shopifyProducts,
+    required int shapeCarouselIndex,
+  }) {
+    final cache = isCrown ? _crownShapePhotos : _brimShapePhotos;
+    return cache[shapeName] ??
+        _pickShapeCardPhoto(
+          shapeName: shapeName,
+          shopifyProducts: shopifyProducts,
+          shapeCarouselIndex: shapeCarouselIndex,
+          isCrown: isCrown,
+        );
+  }
+
   /// Shape-tagged catalog photo when available.
   ///
   /// Priority: exact shape + hat type, curated example, same shape in another
@@ -723,8 +789,16 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return const _ShapeCardPhoto();
   }
 
-  Widget _buildShapeCardHatImage(String? imageUrl, {String? fallbackAsset}) {
+  Widget _buildShapeCardHatImage(
+    BuildContext context,
+    String? imageUrl, {
+    String? fallbackAsset,
+  }) {
     const padding = EdgeInsets.fromLTRB(2, 0, 2, 0);
+    final cacheWidth = (MediaQuery.sizeOf(context).width *
+            0.45 *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return Padding(
         padding: padding,
@@ -732,6 +806,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           imageUrl,
           fit: BoxFit.contain,
           alignment: Alignment.center,
+          cacheWidth: cacheWidth,
           errorBuilder: (_, __, ___) => Padding(
             padding: padding,
             child: _buildHatPhotoPlaceholder(fallbackAsset: fallbackAsset),
@@ -761,6 +836,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   /// Hat-type grid photos — full hat visible inside the 2×2 grid (no brim crop).
   Widget _buildHatTypeCardImage({
+    required BuildContext context,
     required String? imageUrl,
     required String imagePath,
     bool compact = false,
@@ -768,6 +844,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final inset = compact
         ? const EdgeInsets.fromLTRB(4, 2, 4, 0)
         : const EdgeInsets.fromLTRB(10, 10, 10, 6);
+    final cacheWidth = (MediaQuery.sizeOf(context).width *
+            0.35 *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
     Widget buildImage(Widget image) {
       return Padding(padding: inset, child: image);
     }
@@ -780,6 +860,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             imageUrl,
             fit: BoxFit.contain,
             alignment: Alignment.center,
+            cacheWidth: cacheWidth,
             errorBuilder: (_, __, ___) =>
                 _buildHatPhotoPlaceholder(fallbackAsset: imagePath),
           ),
@@ -1353,6 +1434,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildHatTypeWizardCard({
+    required BuildContext context,
     required HatShapeInfo typeInfo,
     required int index,
     required String? imageUrl,
@@ -1361,6 +1443,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       title: typeInfo.name,
       description: typeInfo.description,
       image: _buildHatTypeCardImage(
+        context: context,
         imageUrl: imageUrl,
         imagePath: typeInfo.imagePath,
         compact: true,
@@ -1371,16 +1454,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildStyleCardImage({
+    required BuildContext context,
     required String? imageUrl,
     required String? fallbackAsset,
     bool compact = false,
   }) {
+    final cacheWidth = (MediaQuery.sizeOf(context).width *
+            0.4 *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
     if (imageUrl != null) {
       return Image.network(
         imageUrl,
         fit: compact ? BoxFit.contain : BoxFit.cover,
         alignment:
             compact ? Alignment.center : const Alignment(0.0, -0.35),
+        cacheWidth: cacheWidth,
         errorBuilder: (_, __, ___) => fallbackAsset != null
             ? Image.asset(
                 fallbackAsset,
@@ -1521,6 +1610,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildStyleWizardCard({
+    required BuildContext context,
     required Map<String, String> style,
     required int index,
     required Map<String, String?> imageUrls,
@@ -1536,6 +1626,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       title: title,
       description: style['desc'],
       image: _buildStyleCardImage(
+        context: context,
         imageUrl: imageUrl,
         fallbackAsset: style['fallback'],
         compact: true,
@@ -1580,6 +1671,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return _buildWizardRowPager(
       itemCount: styles.length,
       itemBuilder: (context, index) => _buildStyleWizardCard(
+        context: context,
         style: styles[index],
         index: index,
         imageUrls: imageUrls,
@@ -1613,6 +1705,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               return Padding(
                 padding: _shapeCardPagePadding,
                 child: _buildStyleWizardCard(
+                  context: context,
                   style: style,
                   index: index,
                   imageUrls: imageUrls,
@@ -2172,6 +2265,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   child: Transform.scale(
                     scale: _shapeCardImageScale(context),
                     child: _buildShapeCardHatImage(
+                      context,
                       imageUrl,
                       fallbackAsset: shape.imagePath,
                     ),
@@ -2214,10 +2308,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
     }
 
     try {
-      // Always refresh from Shopify admin so crown/brim order stays current
-      // (splash may have preloaded an older cached list).
-      final choices =
-          await ShopifyService.fetchValidationChoices(forceRefresh: true);
+      // Refresh in background when splash preloaded a cached list.
+      final choices = await ShopifyService.fetchValidationChoices(
+        forceRefresh: cached == null,
+      );
       if (!mounted) return;
       _applyChoicesFromApi(choices);
     } catch (e) {
@@ -2348,11 +2442,15 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
       bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
       int westernIndex = hasWestern ? 1 : -1;
+      int crownIndex = hasWestern ? 2 : 1;
 
       if (_currentPageIndex == westernIndex && selectedWesternStyle == null) {
         setState(() {
           selectedWesternStyle = 'Western';
         });
+      }
+      if (_currentPageIndex == crownIndex) {
+        setState(_commitCrownCarouselSelection);
       }
       // Crown and brim pages: null selection = Any — just advance without forcing a pick
     }
@@ -2425,6 +2523,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   void _submitSearch() {
+    _commitBrimCarouselSelection();
+    final catalog = _allProducts ?? ShopifyService.peekFullProducts();
+    List<dynamic>? preloadedHats;
+    if (catalog != null) {
+      var filtered = ShopifyService.filterProducts(
+        catalog,
+        hatType: selectedHatType?.name,
+        westernStyle: selectedWesternStyle,
+        crownShape: selectedCrownShape?.name,
+        brimShape: selectedBrimShape?.name,
+      );
+      if (filtered.isEmpty) {
+        filtered = ShopifyService.closestMatchProducts(
+          catalog,
+          hatType: selectedHatType?.name,
+          westernStyle: selectedWesternStyle,
+          crownShape: selectedCrownShape?.name,
+          brimShape: selectedBrimShape?.name,
+        );
+      }
+      preloadedHats = ShopifyService.orderResultsCatalog(filtered);
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => HatResultsScreen(
@@ -2436,6 +2556,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           brimShape: selectedBrimShape?.name,
           crownShapeOptions: _crownOptionsForResults(),
           brimShapeOptions: _brimOptionsForResults(),
+          preloadedHats: preloadedHats,
         ),
       ),
     );
@@ -2895,6 +3016,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                                   if (useStyleCards) {
                                     return _buildHatTypeWizardCard(
+                                      context: context,
                                       typeInfo: typeInfo,
                                       index: index,
                                       imageUrl: imageUrl,
@@ -2934,6 +3056,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                                 child: Transform.scale(
                                                   scale: 1.1,
                                                   child: _buildHatTypeCardImage(
+                                                    context: context,
                                                     imageUrl: imageUrl,
                                                     imagePath:
                                                         typeInfo.imagePath,
@@ -2981,6 +3104,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                   final imageUrl =
                                       _materialExampleUrls[typeInfo.name];
                                   return _buildHatTypeWizardCard(
+                                    context: context,
                                     typeInfo: typeInfo,
                                     index: index,
                                     imageUrl: imageUrl,
@@ -3114,6 +3238,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           children: [
                             Expanded(
                               child: _buildStyleCardImage(
+                                context: context,
                                 imageUrl: imageUrl,
                                 fallbackAsset: style['fallback'],
                               ),
@@ -3456,6 +3581,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           child: InkWell(
                             onTap: onSelect,
                             child: _buildHatTypeCardImage(
+                              context: context,
                               imageUrl: imageUrl,
                               imagePath: shape.imagePath,
                               compact: true,
@@ -3501,7 +3627,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       itemBuilder: (context, index) {
         final shape = shapes[index];
         final shopifyProducts = productsMap[shape.name] ?? [];
-        final photo = _pickShapeCardPhoto(
+        final photo = _cachedShapePhoto(
           shapeName: shape.name,
           shopifyProducts: shopifyProducts,
           shapeCarouselIndex: index,
@@ -3552,7 +3678,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       itemBuilder: (context, index) {
         final shape = shapes[index];
         final shopifyProducts = productsMap[shape.name] ?? [];
-        final photo = _pickShapeCardPhoto(
+        final photo = _cachedShapePhoto(
           shapeName: shape.name,
           shopifyProducts: shopifyProducts,
           shapeCarouselIndex: index,
@@ -3636,12 +3762,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       setState(() {
                         _currentCrownCarouselIndex = index;
                         _flippedCardIndex = null;
-                        final sorted =
-                            _sortedCrownShapes ?? _currentCrownShapes;
-                        if (index < sorted.length) {
-                          selectedCrownShape = sorted[index];
-                          _onCrownSelectionChanged();
-                        }
                       });
                     },
                     itemCount: sortedShapes.length,
@@ -3652,7 +3772,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           : index == _currentCrownCarouselIndex;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
-                      final photo = _pickShapeCardPhoto(
+                      final photo = _cachedShapePhoto(
                         shapeName: shape.name,
                         shopifyProducts: shopifyProducts,
                         shapeCarouselIndex: index,
@@ -3827,9 +3947,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       setState(() {
                         _currentBrimCarouselIndex = index;
                         _flippedBrimCardIndex = null;
-                        if (index < sortedShapes.length) {
-                          selectedBrimShape = sortedShapes[index];
-                        }
                       });
                     },
                     itemCount: sortedShapes.length,
@@ -3840,7 +3957,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                           : index == _currentBrimCarouselIndex;
                       final shopifyProducts =
                           shopifyProductsMap[shape.name] ?? [];
-                      final photo = _pickShapeCardPhoto(
+                      final photo = _cachedShapePhoto(
                         shapeName: shape.name,
                         shopifyProducts: shopifyProducts,
                         shapeCarouselIndex: index,
