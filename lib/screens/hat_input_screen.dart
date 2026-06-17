@@ -409,17 +409,48 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _crownProductsMap = _buildShapeProductMap(crownShapes, isCrown: true);
     _brimProductsMap = _buildShapeProductMap(brimShapeList, isCrown: false);
 
-    _sortedCrownShapes = List<HatShapeInfo>.from(crownShapes);
-    _sortedBrimShapes = List<HatShapeInfo>.from(brimShapeList);
-    _refreshShapePhotoCache(crownShapes, brimShapeList);
-    if (selectedCrownShape != null &&
-        !_isWizardCrownShape(selectedCrownShape!)) {
-      selectedCrownShape = null;
-      _currentCrownCarouselIndex = 0;
-    }
+    _sortedCrownShapes = _filterShapesToCatalogInventory(
+      crownShapes,
+      _crownProductsMap,
+    );
+    _sortedBrimShapes = _filterShapesToCatalogInventory(
+      brimShapeList,
+      _brimProductsMap,
+    );
+    _refreshShapePhotoCache(_sortedCrownShapes!, _sortedBrimShapes!);
+    _syncCrownSelectionToAvailable();
     _updateCrownFilteredProducts();
     _rebuildAvailableBrimShapes();
     _syncBrimSelectionToAvailable();
+  }
+
+  /// City and Outdoor/Sportsman hats often carry a narrower shape mix — only
+  /// offer crown/brim cards backed by in-stock catalog matches.
+  bool get _limitsWizardShapesToCatalogInventory {
+    final style = selectedWesternStyle;
+    return style == 'City' || style == 'Outdoor';
+  }
+
+  List<HatShapeInfo> _filterShapesToCatalogInventory(
+    List<HatShapeInfo> shapes,
+    Map<String, List<Map<String, String>>> productsMap,
+  ) {
+    if (!_limitsWizardShapesToCatalogInventory) return shapes;
+    return shapes
+        .where((shape) => productsMap[shape.name]?.isNotEmpty ?? false)
+        .toList(growable: false);
+  }
+
+  void _syncCrownSelectionToAvailable() {
+    final available = _sortedCrownShapes ?? _currentCrownShapes;
+    if (selectedCrownShape != null &&
+        !available.any((shape) => shape.name == selectedCrownShape!.name)) {
+      selectedCrownShape = null;
+      _currentCrownCarouselIndex = 0;
+      if (_crownCarouselController.hasClients) {
+        _crownCarouselController.jumpToPage(0);
+      }
+    }
   }
 
   void _updateCrownFilteredProducts() {
@@ -439,18 +470,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
   void _rebuildAvailableBrimShapes() {
     final all = _allBrimShapeOptions;
     final crownProducts = _crownFilteredProducts;
-    if (crownProducts == null) {
-      _cachedAvailableBrimShapes = all;
+    if (crownProducts != null) {
+      _cachedAvailableBrimShapes = all.where((brim) {
+        for (final product in crownProducts) {
+          if (_matchShape(_metaValue(product['brimShape']), brim.name)) {
+            return true;
+          }
+        }
+        return false;
+      }).toList(growable: false);
       return;
     }
-    _cachedAvailableBrimShapes = all.where((brim) {
-      for (final product in crownProducts) {
-        if (_matchShape(_metaValue(product['brimShape']), brim.name)) {
-          return true;
-        }
-      }
-      return false;
-    }).toList(growable: false);
+    if (_limitsWizardShapesToCatalogInventory) {
+      _cachedAvailableBrimShapes = all
+          .where((brim) => _brimProductsMap[brim.name]?.isNotEmpty ?? false)
+          .toList(growable: false);
+      return;
+    }
+    _cachedAvailableBrimShapes = all;
   }
 
   List<HatShapeInfo> get _allBrimShapeOptions =>
@@ -3693,6 +3730,20 @@ class _HatInputScreenState extends State<HatInputScreen> {
             _sortedCrownShapes ?? List<HatShapeInfo>.from(_currentCrownShapes);
         final shopifyProductsMap = _crownProductsMap;
 
+        if (sortedShapes.isEmpty) {
+          return Column(
+            children: [
+              _buildWizardStepTitle('Select Crown Shape:'),
+              _buildWizardEmptyState(
+                message: _limitsWizardShapesToCatalogInventory
+                    ? 'No crown shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                    : 'No crown shapes available for your selections.',
+                showFindHats: true,
+              ),
+            ],
+          );
+        }
+
         return Column(
           children: [
             if (catalogLoading)
@@ -3872,9 +3923,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
               _buildWizardStepTitle('Select Brim Shape:'),
               _buildWizardEmptyState(
                 message: selectedCrownShape == null
-                    ? 'Select a crown shape first.'
+                    ? (_limitsWizardShapesToCatalogInventory
+                        ? 'No brim shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                        : 'Select a crown shape first.')
                     : 'No brim shapes in stock for\n${selectedCrownShape!.name}\nwith your current selections.',
-                showFindHats: selectedCrownShape != null,
+                showFindHats: selectedCrownShape != null ||
+                    _limitsWizardShapesToCatalogInventory,
               ),
             ],
           );

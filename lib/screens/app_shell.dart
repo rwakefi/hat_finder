@@ -28,6 +28,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+  int _hatInputSession = 0;
   final Set<int> _visitedTabs = {0};
   final Set<int> _deferredTabs = {};
 
@@ -44,6 +45,10 @@ class _AppShellState extends State<AppShell> {
     final shouldDeferTabBuild =
         !_visitedTabs.contains(index) && _webViewTabs.contains(index);
     setState(() {
+      if (index == 0) {
+        // Home abandons the in-progress wizard — fresh session next visit.
+        _hatInputSession++;
+      }
       _selectedIndex = index;
       if (shouldDeferTabBuild) {
         _deferredTabs.add(index);
@@ -76,7 +81,10 @@ class _AppShellState extends State<AppShell> {
           onFitGuide: () => _selectTab(2),
           onShop: () => _selectTab(3),
         ),
-      1 => HatInputScreen(onExit: () => _selectTab(0)),
+      1 => HatInputScreen(
+          key: ValueKey('hat-input-$_hatInputSession'),
+          onExit: () => _selectTab(0),
+        ),
       2 => const HeadShapeScreen(),
       3 => ShopWebViewScreen(onBack: () => _selectTab(0)),
       4 => ShopWebViewScreen(

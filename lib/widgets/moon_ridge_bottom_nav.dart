@@ -128,42 +128,47 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final hasHomeIndicator = MediaQuery.paddingOf(context).bottom > 0;
     final isLaptop = AppBreakpoints.isLaptop(context);
     final isMobileWeb =
         kIsWeb && !AppBreakpoints.useWebTopNavigation(context);
 
+    // Apple HIG tab bar content is 49pt; we use a fixed label slot plus padding.
     final labelSlotHeight = isMobileWeb ? 38.0 : _labelSlotHeight;
     final topPadding = isMobileWeb ? 10.0 : 8.0;
-    final bottomPadding = bottomInset > 0
+    // Extra gap above the home indicator — SafeArea supplies the system inset.
+    final extraBottomPadding = hasHomeIndicator
         ? (isMobileWeb ? 8.0 : 6.0)
         : (isMobileWeb ? 10.0 : (isLaptop ? 10.0 : 8.0));
 
     return ColoredBox(
       color: _barColor,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          isLaptop ? 24 : 16,
-          topPadding,
-          isLaptop ? 24 : 16,
-          bottomPadding,
-        ),
-        child: SizedBox(
-          height: labelSlotHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(_tabs.length, (index) {
-              return Expanded(
-                child: _BottomNavTabItem(
-                  tab: _tabs[index],
-                  active: index == _visualSelectedIndex,
-                  onTap: () => _handleTap(index),
-                  labelSlotHeight: labelSlotHeight,
-                  activeColor: _active,
-                  inactiveColor: _inactive,
-                ),
-              );
-            }),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            isLaptop ? 24 : 16,
+            topPadding,
+            isLaptop ? 24 : 16,
+            extraBottomPadding,
+          ),
+          child: SizedBox(
+            height: labelSlotHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(_tabs.length, (index) {
+                return Expanded(
+                  child: _BottomNavTabItem(
+                    tab: _tabs[index],
+                    active: index == _visualSelectedIndex,
+                    onTap: () => _handleTap(index),
+                    labelSlotHeight: labelSlotHeight,
+                    activeColor: _active,
+                    inactiveColor: _inactive,
+                  ),
+                );
+              }),
+            ),
           ),
         ),
       ),
