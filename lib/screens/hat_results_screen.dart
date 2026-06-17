@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_breakpoints.dart';
 import '../services/shopify_service.dart';
-import '../services/database_service.dart';
 import '../models/hat.dart';
 import '../models/head_measurement_profile.dart';
 import '../models/head_shape_profile.dart';
@@ -838,6 +837,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final cardSwatches =
         swatchColors.length > 1 ? swatchColors : <({String color, String variantGid, String? imageUrl})>[];
     final imageUrl = _heroImageForHat(hat, swatchColors);
+    final cardImageUrls = _cardImageUrls(hat, imageUrl, swatchColors);
     final imageCacheWidth = (MediaQuery.sizeOf(context).width *
             0.5 *
             MediaQuery.devicePixelRatioOf(context))
@@ -907,24 +907,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   clipBehavior: Clip.antiAlias,
                   children: [
                     Positioned.fill(
-                      child: imageUrl != null
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                              alignment: const Alignment(0.0, -0.2),
-                              cacheWidth: imageCacheWidth,
-                              filterQuality: FilterQuality.medium,
-                              errorBuilder: (_, __, ___) => Center(
-                                child: Icon(Icons.image_outlined,
-                                    color: _espresso.withValues(alpha: 0.15),
-                                    size: 36),
-                              ),
-                            )
-                          : Center(
-                              child: Icon(Icons.image_outlined,
-                                  color: _espresso.withValues(alpha: 0.15),
-                                  size: 36),
-                            ),
+                      child: _CardImageGallery(
+                        imageUrls: cardImageUrls,
+                        cacheWidth: imageCacheWidth,
+                      ),
                     ),
                     if (cardSwatches.isNotEmpty)
                       Positioned(
@@ -973,91 +959,87 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 ),
               ),
             ),
-            // Title + Price + CTA
+            // Title + Price + pinned footer
             Expanded(
               flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      title.toUpperCase(),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: _espresso,
-                        letterSpacing: 1.0,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // Price
-                    if (priceStr.isNotEmpty)
-                      Text(
-                        priceStr,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _turquoise,
-                        ),
-                      ),
-                    const SizedBox(height: 6),
-                    // Compact attributes
-                    if (!isBallcap) ...[
-                      _buildAttribute('Crown', crownShape),
-                      _buildAttribute('Crown Height', crownHeight),
-                      _buildAttribute('Brim', brimShape),
-                      _buildAttribute('Brim Width', brimWidth),
-                    ] else ...[
-                      _buildAttribute('Material', material),
-                    ],
-                    const SizedBox(height: 4),
-                    // CTA row
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            final success = await DatabaseService.saveHat(
-                              name: title,
-                              price: priceStr,
-                              url: productUrl,
-                              brand: _filterWesternStyle,
-                            );
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  success
-                                      ? 'Saved to Bookmarks'
-                                      : 'Failed to save bookmark.',
-                                ),
-                                backgroundColor:
-                                    success ? _turquoise : Colors.red,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
+                          Text(
+                            title.toUpperCase(),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _espresso,
+                              letterSpacing: 1.0,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // Price
+                          if (priceStr.isNotEmpty)
+                            Text(
+                              priceStr,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: _turquoise,
                               ),
-                            );
-                          },
-                          child: Icon(Icons.bookmark_border_rounded,
-                              color: _espresso.withValues(alpha: 0.4),
-                              size: 20),
+                            ),
+                          const SizedBox(height: 6),
+                          // Compact attributes
+                          if (!isBallcap) ...[
+                            _buildAttribute('Crown', crownShape),
+                            _buildAttribute('Crown Height', crownHeight),
+                            _buildAttribute('Brim', brimShape),
+                            _buildAttribute('Brim Width', brimWidth),
+                          ] else ...[
+                            _buildAttribute('Material', material),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                    child: Center(
+                      child: FilledButton(
+                        onPressed: openProduct,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _turquoise,
+                          foregroundColor: _white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          minimumSize: const Size(0, 28),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
                         ),
-                        const Spacer(),
-                        Text(
-                          'VIEW →',
+                        child: Text(
+                          'MORE INFO / BUY',
                           style: GoogleFonts.montserrat(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: _turquoise,
-                            letterSpacing: 1.5,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1308,6 +1290,30 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       }
     }
     return featured;
+  }
+
+  List<String> _cardImageUrls(
+    dynamic hat,
+    String? heroUrl,
+    List<({String color, String variantGid, String? imageUrl})> swatchColors,
+  ) {
+    final urls = <String>[];
+    final seen = <String>{};
+
+    void add(String? url) {
+      if (url == null || url.isEmpty || seen.contains(url)) return;
+      seen.add(url);
+      urls.add(url);
+    }
+
+    add(heroUrl);
+    for (final edge in hat['images']?['edges'] as List<dynamic>? ?? []) {
+      add(edge['node']?['url'] as String?);
+    }
+    for (final entry in swatchColors) {
+      add(entry.imageUrl);
+    }
+    return urls;
   }
 
   Widget _buildColorSwatchCircle({
@@ -1654,6 +1660,102 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CardImageGallery extends StatefulWidget {
+  const _CardImageGallery({
+    required this.imageUrls,
+    required this.cacheWidth,
+  });
+
+  final List<String> imageUrls;
+  final int cacheWidth;
+
+  @override
+  State<_CardImageGallery> createState() => _CardImageGalleryState();
+}
+
+class _CardImageGalleryState extends State<_CardImageGallery> {
+  static const _espresso = Color(0xFF2D2926);
+  static const _turquoise = Color(0xFF559C99);
+
+  late final PageController _pageController = PageController();
+  int _pageIndex = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.imageUrls.isEmpty) {
+      return Center(
+        child: Icon(
+          Icons.image_outlined,
+          color: _espresso.withValues(alpha: 0.15),
+          size: 36,
+        ),
+      );
+    }
+
+    if (widget.imageUrls.length == 1) {
+      return _buildImage(widget.imageUrls.first);
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          itemCount: widget.imageUrls.length,
+          onPageChanged: (index) => setState(() => _pageIndex = index),
+          itemBuilder: (context, index) => _buildImage(widget.imageUrls[index]),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 4,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.imageUrls.length, (index) {
+              final active = index == _pageIndex;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: active ? 6 : 5,
+                height: active ? 6 : 5,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active
+                      ? _turquoise
+                      : _espresso.withValues(alpha: 0.22),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImage(String url) {
+    return Image.network(
+      url,
+      fit: BoxFit.contain,
+      alignment: const Alignment(0.0, -0.2),
+      cacheWidth: widget.cacheWidth,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, __, ___) => Center(
+        child: Icon(
+          Icons.image_outlined,
+          color: _espresso.withValues(alpha: 0.15),
+          size: 36,
         ),
       ),
     );

@@ -912,13 +912,61 @@ class _HatInputScreenState extends State<HatInputScreen> {
   static const double _shapeCardTitleLineGap = 1;
   static const double _shapeCardFeaturedBlockHeight = 44;
   static const double _shapeCardTextLift = 10;
+  static const double _shapeCardTextLiftCompact = 4;
 
-  double get _shapeCardTitleBlockHeight =>
-      _shapeCardTitlePrimarySize * _shapeCardTitleLineHeight +
-      _shapeCardTitleLineGap +
-      _shapeCardTitleAliasSize * _shapeCardTitleLineHeight +
-      _shapeCardTitleLineGap +
-      _shapeCardTitleAliasSize * _shapeCardTitleLineHeight;
+  double _shapeCardTextLiftFor(BuildContext context) =>
+      _isProMaxLayout(context) ? _shapeCardTextLift : _shapeCardTextLiftCompact;
+
+  ({double primary, double alias, double lineHeight, double lineGap})
+      _shapeCardTitleMetrics(BuildContext context, List<String> parts) {
+    final compactCarousel = !_isWebDesktopWizard(context);
+    if (compactCarousel && parts.length >= 3) {
+      return (
+        primary: 15.0,
+        alias: 11.0,
+        lineHeight: 1.12,
+        lineGap: 4.0,
+      );
+    }
+    if (compactCarousel && parts.length == 2) {
+      return (
+        primary: 16.0,
+        alias: 12.0,
+        lineHeight: 1.12,
+        lineGap: 3.0,
+      );
+    }
+    return (
+      primary: _shapeCardTitlePrimarySize,
+      alias: _shapeCardTitleAliasSize,
+      lineHeight: _shapeCardTitleLineHeight,
+      lineGap: _shapeCardTitleLineGap,
+    );
+  }
+
+  double _shapeCardTitleLineBoxHeight({
+    required double fontSize,
+    required double lineHeight,
+  }) =>
+      (fontSize * lineHeight).ceilToDouble() + 2;
+
+  double _shapeCardTitleBlockHeight(
+    ({double primary, double alias, double lineHeight, double lineGap}) metrics,
+  ) =>
+      _shapeCardTitleLineBoxHeight(
+        fontSize: metrics.primary,
+        lineHeight: metrics.lineHeight,
+      ) +
+      metrics.lineGap +
+      _shapeCardTitleLineBoxHeight(
+        fontSize: metrics.alias,
+        lineHeight: metrics.lineHeight,
+      ) +
+      metrics.lineGap +
+      _shapeCardTitleLineBoxHeight(
+        fontSize: metrics.alias,
+        lineHeight: metrics.lineHeight,
+      );
 
   /// Pro Max class (~932pt logical height). Adjustments below this threshold
   /// are left alone so iPhone 17 / Air layouts stay unchanged.
@@ -971,6 +1019,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildStackedShapeTitle({
+    required BuildContext context,
     required String name,
     required Color primaryColor,
     required Color aliasColor,
@@ -978,39 +1027,45 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }) {
     final parts = _shapeCardTitleParts(name);
     if (fixedThreeLineSlot) {
-      const lineBoxPrimary =
-          _shapeCardTitlePrimarySize * _shapeCardTitleLineHeight;
-      const lineBoxAlias = _shapeCardTitleAliasSize * _shapeCardTitleLineHeight;
-      return SizedBox(
-        height: _shapeCardTitleBlockHeight,
+      final metrics = _shapeCardTitleMetrics(context, parts);
+      final primaryBox = _shapeCardTitleLineBoxHeight(
+        fontSize: metrics.primary,
+        lineHeight: metrics.lineHeight,
+      );
+      final aliasBox = _shapeCardTitleLineBoxHeight(
+        fontSize: metrics.alias,
+        lineHeight: metrics.lineHeight,
+      );
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: _shapeCardTitleBlockHeight(metrics),
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             for (var i = 0; i < _shapeCardTitleMaxLines; i++)
               Padding(
                 padding: EdgeInsets.only(
-                  top: i == 0 ? 0 : _shapeCardTitleLineGap,
+                  top: i == 0 ? 0 : metrics.lineGap,
                 ),
                 child: SizedBox(
-                  height: i == 0 ? lineBoxPrimary : lineBoxAlias,
+                  height: i == 0 ? primaryBox : aliasBox,
                   width: double.infinity,
                   child: i < parts.length
-                      ? Align(
-                          alignment: Alignment.center,
+                      ? FittedBox(
+                          fit: BoxFit.scaleDown,
                           child: Text(
                             parts[i],
                             textAlign: TextAlign.center,
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.montserrat(
-                              fontSize: i == 0
-                                  ? _shapeCardTitlePrimarySize
-                                  : _shapeCardTitleAliasSize,
+                              fontSize: i == 0 ? metrics.primary : metrics.alias,
                               fontWeight:
                                   i == 0 ? FontWeight.w800 : FontWeight.w600,
                               color: i == 0 ? primaryColor : aliasColor,
                               letterSpacing: i == 0 ? 1.0 : 0.65,
-                              height: _shapeCardTitleLineHeight,
+                              height: metrics.lineHeight,
                             ),
                           ),
                         )
@@ -1049,8 +1104,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     );
   }
 
-  Widget _buildShapeCardBackTitle(String name) {
+  Widget _buildShapeCardBackTitle(BuildContext context, String name) {
     return _buildStackedShapeTitle(
+      context: context,
       name: name,
       primaryColor: Colors.white,
       aliasColor: Colors.white.withValues(alpha: 0.62),
@@ -1938,13 +1994,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   /// Shape name below the hat photo — primary line plus muted alias lines and a teal accent rule.
-  Widget _buildShapeCardTitleBar(String name) {
+  Widget _buildShapeCardTitleBar(BuildContext context, String name) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildStackedShapeTitle(
+            context: context,
             name: name,
             primaryColor: const Color(0xFF2D2926),
             aliasColor: const Color(0xFF5A5551),
@@ -2055,7 +2112,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildShapeCardBackTitle(shape.name),
+            _buildShapeCardBackTitle(context, shape.name),
             SizedBox(height: compact ? 4 : 6),
             Container(
               width: 40,
@@ -2291,11 +2348,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
               ),
             ),
             Transform.translate(
-              offset: const Offset(0, -_shapeCardTextLift),
+              offset: Offset(0, -_shapeCardTextLiftFor(context)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildShapeCardTitleBar(shape.name),
+                  _buildShapeCardTitleBar(context, shape.name),
                   _buildShapeCardFrontFooter(
                     shape: shape,
                     onFlip: onFlip,

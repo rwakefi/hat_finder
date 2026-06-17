@@ -691,7 +691,7 @@ class ShopifyService {
             priceRange {
               minVariantPrice { amount currencyCode }
             }
-            images(first: 1) {
+            images(first: 10) {
               edges { node { url altText } }
             }
             variants(first: 50) {

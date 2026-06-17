@@ -30,8 +30,8 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   static const _active = Color(0xFFD4A843);
   static const _inactive = Color(0xFF9E9890);
 
-  static const _labelSlotHeight = 34.0;
-  static const _labelFontSize = 12.0;
+  static const _labelSlotHeight = 36.0;
+  static const _labelFontSize = 13.0;
 
   static const _surface = Color(0xFFFAF8F5);
   static const _border = Color(0xFFE8E5E1);
@@ -134,7 +134,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
         kIsWeb && !AppBreakpoints.useWebTopNavigation(context);
 
     // Apple HIG tab bar content is 49pt; we use a fixed label slot plus padding.
-    final labelSlotHeight = isMobileWeb ? 38.0 : _labelSlotHeight;
+    final labelSlotHeight = isMobileWeb ? 40.0 : _labelSlotHeight;
     final topPadding = isMobileWeb ? 10.0 : 8.0;
     // Extra gap above the home indicator — SafeArea supplies the system inset.
     final extraBottomPadding = hasHomeIndicator
