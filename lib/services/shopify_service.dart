@@ -347,6 +347,23 @@ class ShopifyService {
   /// Shared shape matching for wizard UI and filtering.
   static bool matchShape(String prod, String ui) => _matchShape(prod, ui);
 
+  /// Crown labels removed from Shopify admin but still on legacy API payloads.
+  static bool isRetiredCrownValidationChoice(String name) {
+    final normalized = name
+        .toLowerCase()
+        .replaceAll('-', ' ')
+        .replaceAll("'s", '')
+        .replaceAll("'", '')
+        .trim();
+    return normalized == 'cutter';
+  }
+
+  static List<String> filterCrownValidationChoices(Iterable<String> names) {
+    return names
+        .where((name) => !isRetiredCrownValidationChoice(name))
+        .toList();
+  }
+
   /// Curated wizard/guide photos — Shopify product title substring per UI label.
   static const Map<String, String> preferredShapeExampleTitleTerms = {
     'Brick/Rounded Brick/Minnick/CHL': 'amberwood',
@@ -1048,7 +1065,9 @@ class ShopifyService {
       throw const FormatException('validation_choices payload must be a map');
     }
     return {
-      'crown_shapes': _parseValidationChoiceList(body['crown_shapes']),
+      'crown_shapes': filterCrownValidationChoices(
+        _parseValidationChoiceList(body['crown_shapes']),
+      ),
       'brim_shapes': _parseValidationChoiceList(body['brim_shapes']),
       'material_types': _parseValidationChoiceList(body['material_types']),
     };
@@ -1099,7 +1118,9 @@ class ShopifyService {
 
     return {
       'crown_shapes': _orderedValidationChoices(
-        apiValues: apiCrownValues,
+        apiValues: apiCrownValues
+            .where((value) => !isRetiredCrownValidationChoice(value))
+            .toSet(),
         canonicalNames: crownShapes.map((shape) => shape.name),
       ),
       'brim_shapes': _orderedValidationChoices(

@@ -308,7 +308,12 @@ async def _build_validation_payload() -> dict:
                         choices = []
 
             if key == "crown_shape":
-                crown_choices = choices
+                crown_choices = [
+                    choice
+                    for choice in choices
+                    if choice.strip().lower().replace("'", "").replace("'s", "")
+                    != "cutter"
+                ]
             elif key == "brim_shape":
                 brim_choices = choices
             elif key == "felt_straw_or_ballcap":

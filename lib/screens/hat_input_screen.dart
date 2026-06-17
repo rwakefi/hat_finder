@@ -205,8 +205,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
           if (lookup.contains('cattleman')) {
             lookup = 'cattleman';
           } else if (lookup.contains('texas punch') ||
+              lookup.contains('west texas punch') ||
               lookup.contains('west texas')) {
-            lookup = 'texas punch';
+            lookup = 'walker/west texas punch';
+          } else if (lookup.contains('walker') &&
+              !lookup.contains('west texas punch')) {
+            lookup = 'walker/west texas punch';
           } else if (lookup.contains('cool hand') || lookup == 'chl') {
             lookup = 'brick';
           } else if (lookup.contains('pinch')) {
@@ -951,6 +955,54 @@ class _HatInputScreenState extends State<HatInputScreen> {
       name: name,
       primaryColor: Colors.white,
       aliasColor: Colors.white.withValues(alpha: 0.62),
+    );
+  }
+
+  Widget _buildShapeProfileItems({
+    required HatShapeInfo shape,
+    required double bodySize,
+    bool compact = false,
+    bool forSheet = false,
+  }) {
+    final items = shape.profileItems;
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final multi = items.length > 1;
+    final titleSize = compact ? 9.0 : (forSheet ? 11.0 : 10.0);
+    final gap = compact ? 10.0 : 16.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (multi) ...[
+            Text(
+              items[i].title.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.92),
+                letterSpacing: compact ? 1.2 : 1.6,
+              ),
+            ),
+            SizedBox(height: compact ? 4 : 6),
+          ],
+          Text(
+            items[i].body,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: bodySize,
+              fontWeight: FontWeight.w400,
+              color: Colors.white.withValues(alpha: 0.9),
+              height: 1.5,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          if (i < items.length - 1) SizedBox(height: gap),
+        ],
+      ],
     );
   }
 
@@ -1913,18 +1965,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
             SizedBox(height: compact ? 6 : 10),
             Expanded(
               child: SingleChildScrollView(
-                child: Text(
-                  shape.physicalDescription.isNotEmpty
-                      ? shape.physicalDescription
-                      : shape.description,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: sectionBodySize,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    height: 1.5,
-                    fontStyle: FontStyle.italic,
-                  ),
+                child: _buildShapeProfileItems(
+                  shape: shape,
+                  bodySize: sectionBodySize,
+                  compact: compact,
                 ),
               ),
             ),
@@ -2206,7 +2250,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (!mounted) return;
     setState(() {
       _materialTypes = materialStrings.map(_mapStringToHatType).toList();
-      _rawCrownShapes = crownStrings
+      _rawCrownShapes = ShopifyService.filterCrownValidationChoices(crownStrings)
           .map((name) => _mapStringToShapeInfo(name, isCrown: true))
           .toList();
       _rawBrimShapes = brimStrings
@@ -3345,17 +3389,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 color: Color(0xFF559C99), size: 28),
           ),
           const SizedBox(height: 20),
-          Text(
-            shape.physicalDescription.isNotEmpty
-                ? shape.physicalDescription
-                : shape.description,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 17,
-              color: Colors.white.withValues(alpha: 0.85),
-              height: 1.7,
-              fontStyle: FontStyle.italic,
-            ),
+          _buildShapeProfileItems(
+            shape: shape,
+            bodySize: 17,
+            forSheet: true,
           ),
         ],
       ),

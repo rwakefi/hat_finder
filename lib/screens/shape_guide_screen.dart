@@ -104,7 +104,11 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
       final names = choices[key];
       if (names == null || names.isEmpty || !mounted) return;
       setState(() {
-        _shapes = _orderedGuideShapes(names);
+        _shapes = _orderedGuideShapes(
+          widget.isCrown
+              ? ShopifyService.filterCrownValidationChoices(names)
+              : names,
+        );
       });
     } catch (_) {
       // Fallback catalog order is fine offline.
@@ -112,8 +116,53 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
   }
 
   List<HatShapeInfo> _orderedGuideShapes(List<String> names) {
-    return names.map(_enrichShapeName).toList();
+    final shapes = <HatShapeInfo>[];
+    for (final name in names) {
+      for (final part in _expandGuideShapeName(name)) {
+        shapes.add(_enrichGuideShape(part));
+      }
+    }
+    return shapes;
   }
+
+  /// Crown guide expands combined Shopify labels; the wizard keeps one card.
+  List<String> _expandGuideShapeName(String name) {
+    if (!widget.isCrown) return [name];
+    final normalized = name.toLowerCase().replaceAll("'s", '').trim();
+    if (normalized.contains('walker') && normalized.contains('west texas punch')) {
+      return const ['Walker', 'West Texas Punch'];
+    }
+    return [name];
+  }
+
+  HatShapeInfo _enrichGuideShape(String name) {
+    if (widget.isCrown) {
+      final guideOnly = _crownGuideOnlyShapes[name];
+      if (guideOnly != null) return guideOnly;
+    }
+    return _enrichShapeName(name);
+  }
+
+  static const Map<String, HatShapeInfo> _crownGuideOnlyShapes = {
+    'Walker': HatShapeInfo(
+      'Walker',
+      'assets/images/crowns/walker.png',
+      'Two small side dents, no center crease.',
+      famousWearers: [
+        {
+          'name': 'Ryan Bingham',
+          'context': 'Yellowstone',
+        },
+      ],
+      physicalDescription: 'Two small side dents, no center crease.',
+    ),
+    'West Texas Punch': HatShapeInfo(
+      'West Texas Punch',
+      'assets/images/crowns/texas_punch.png',
+      'Two deep sweeping side dents.',
+      physicalDescription: 'Two deep sweeping side dents.',
+    ),
+  };
 
   HatShapeInfo _enrichShapeName(String name) {
     for (final shape in _fallbackShapes) {
@@ -202,6 +251,47 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
   }
 
   /// Short monogram for the fallback tile (e.g. `J`, `WTP`, `OPEN`).
+  /// Combined Shopify labels split or omitted from the main guide grid.
+  static const List<String> _guideExcludedCrownLabels = [
+    'Mule Kick/Horseshoe',
+  ];
+
+  /// Guide-only entries for the Non-Traditional Crowns section.
+  static const List<HatShapeInfo> _nonTraditionalGuideShapes = [
+    HatShapeInfo(
+      'Horseshoe',
+      'assets/images/crowns/round_top.png',
+      'A low-profile crown pressed into the curved silhouette of a horseshoe.',
+      physicalDescription:
+          'A specialty crown shape where the top of the hat is pressed into the '
+          'curved silhouette of a horseshoe — a low-profile, round-backed style '
+          'typically around 4¼" in height, often paired with a mule kick in the '
+          'front. More custom conversation piece than everyday crease.',
+    ),
+    HatShapeInfo(
+      'Coffin',
+      'assets/images/crowns/square_top.png',
+      'A tapered crown wider at the shoulders, narrowing toward the top.',
+      physicalDescription:
+          'A specialty crown shaped to mirror the tapered silhouette of a coffin '
+          '— wider at the shoulders, narrowing toward the top. Not for everyone.',
+    ),
+  ];
+
+  bool _isGuideExcludedCrownShape(String name) {
+    for (final label in _guideExcludedCrownLabels) {
+      if (ShopifyService.matchShape(name, label)) return true;
+    }
+    return false;
+  }
+
+  List<HatShapeInfo> get _primaryGuideShapes {
+    if (!widget.isCrown) return _shapes;
+    return _shapes
+        .where((shape) => !_isGuideExcludedCrownShape(shape.name))
+        .toList();
+  }
+
   String _monogram(String name) {
     final head = name.split('(').first.trim();
     final firstToken = head.split(RegExp(r'[\s/]')).first.trim();
@@ -297,39 +387,8 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
               ),
               const SizedBox(height: 24),
               LayoutBuilder(
-                builder: (context, constraints) {
-                  if (!twoUp) {
-                    return Column(
-                      children: [
-                        for (final shape in _shapes) ...[
-                          _ShapeCard(
-                            shape: shape,
-                            imageUrl: _exampleImages[shape.name],
-                            monogram: _monogram(shape.name),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                      ],
-                    );
-                  }
-                  const spacing = 16.0;
-                  final cardWidth = (constraints.maxWidth - spacing) / 2;
-                  return Wrap(
-                    spacing: spacing,
-                    runSpacing: spacing,
-                    children: [
-                      for (final shape in _shapes)
-                        SizedBox(
-                          width: cardWidth,
-                          child: _ShapeCard(
-                            shape: shape,
-                            imageUrl: _exampleImages[shape.name],
-                            monogram: _monogram(shape.name),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+                builder: (context, constraints) =>
+                    _buildShapeCardGrid(_primaryGuideShapes, constraints, twoUp),
               ),
               if (widget.footerNote != null) ...[
                 const SizedBox(height: 8),
@@ -352,8 +411,279 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
                   ),
                 ),
               ],
+              if (widget.isCrown) ...[
+                const SizedBox(height: 32),
+                _buildCrownVariationsSection(),
+                if (_nonTraditionalGuideShapes.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  _buildCrownNonTraditionalSection(twoUp),
+                ],
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShapeCardGrid(
+    List<HatShapeInfo> shapes,
+    BoxConstraints constraints,
+    bool twoUp,
+  ) {
+    if (!twoUp) {
+      return Column(
+        children: [
+          for (final shape in shapes) ...[
+            _ShapeCard(
+              shape: shape,
+              imageUrl: _exampleImages[shape.name],
+              monogram: _monogram(shape.name),
+            ),
+            const SizedBox(height: 14),
+          ],
+        ],
+      );
+    }
+    const spacing = 16.0;
+    final cardWidth = (constraints.maxWidth - spacing) / 2;
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: [
+        for (final shape in shapes)
+          SizedBox(
+            width: cardWidth,
+            child: _ShapeCard(
+              shape: shape,
+              imageUrl: _exampleImages[shape.name],
+              monogram: _monogram(shape.name),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGuideSectionHeader({
+    required String eyebrow,
+    required String title,
+    required String intro,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          eyebrow,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+            color: _accent,
+          ),
+        ),
+        const SizedBox(height: WizardHeaderSpacing.gap),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: SectionTitleStyle.playfairBold(
+            fontSize: SectionTitleStyle.guide * 0.72,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          intro,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            height: 1.5,
+            color: _espresso.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const List<_GuideVariation> _crownVariations = [
+    _GuideVariation(
+      title: 'Mule Kick',
+      monogram: 'MK',
+      body:
+          'A mule kick is a sharp inward dent pressed into the front of the crown '
+          '— a subtle but distinctive modification that adds character and a slightly '
+          'more aggressive, worn-in look to almost any crease style. It\'s a custom '
+          'add-on a skilled hat shaper can steam and press in on request, and like '
+          'its namesake, it leaves an impression.',
+    ),
+    _GuideVariation(
+      title: 'Cutter Bumps',
+      monogram: 'CB',
+      body:
+          "A modified Cattleman's feature where the side dents of the crown are "
+          'bumped outward. Originally favored by cutting horse competitors to keep '
+          'their hat secure at speed — and considered an optional add-on that a hat '
+          'shaper can press in on request.',
+    ),
+  ];
+
+  Widget _buildCrownVariationsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildGuideSectionHeader(
+          eyebrow: 'VARIATIONS',
+          title: 'Variations',
+          intro:
+              'Optional custom details a hat shaper can steam and press in on request.',
+        ),
+        const SizedBox(height: 20),
+        for (final variation in _crownVariations) ...[
+          _VariationCard(variation: variation),
+          const SizedBox(height: 14),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCrownNonTraditionalSection(bool twoUp) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildGuideSectionHeader(
+          eyebrow: 'NON-TRADITIONAL CROWNS',
+          title: 'Non-Traditional Crowns',
+          intro:
+              'Profiles that step outside the classic center-crease tradition — '
+              'flat tops, open domes, and shapes built for a different kind of statement.',
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) => _buildShapeCardGrid(
+            _nonTraditionalGuideShapes,
+            constraints,
+            twoUp,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GuideVariation {
+  const _GuideVariation({
+    required this.title,
+    required this.monogram,
+    required this.body,
+    this.imagePath,
+  });
+
+  final String title;
+  final String monogram;
+  final String body;
+  final String? imagePath;
+}
+
+class _VariationCard extends StatelessWidget {
+  const _VariationCard({required this.variation});
+
+  final _GuideVariation variation;
+
+  static const Color _espresso = Color(0xFF2D2926);
+  static const Color _accent = Color(0xFF559C99);
+  static const Color _border = Color(0xFFE4DED1);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildThumb(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  variation.title,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: _espresso,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  variation.body,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: _espresso.withValues(alpha: 0.78),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumb() {
+    const double size = 84;
+    final radius = BorderRadius.circular(12);
+    final imagePath = variation.imagePath;
+    if (imagePath != null) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: Image.asset(
+          imagePath,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildMonogram(size, radius),
+        ),
+      );
+    }
+    return _buildMonogram(size, radius);
+  }
+
+  Widget _buildMonogram(double size, BorderRadius radius) {
+    final monogram = variation.monogram;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6FB3B0), _accent],
+        ),
+        borderRadius: radius,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        monogram,
+        style: GoogleFonts.playfairDisplay(
+          fontSize: monogram.length > 2 ? 18 : 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          letterSpacing: 1,
         ),
       ),
     );
@@ -422,6 +752,20 @@ class _ShapeCard extends StatelessWidget {
                     color: _espresso.withValues(alpha: 0.78),
                   ),
                 ),
+                if (shape.famousWearers.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    shape.famousWearers
+                        .map((w) => '${w['name']} — ${w['context']}')
+                        .join(' · '),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                      color: _accent.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -40,6 +40,35 @@ class HatShapeInfo {
 
   @override
   int get hashCode => name.hashCode;
+
+  /// Separate write-ups for combined Shopify labels (e.g. Walker/West Texas Punch).
+  List<ShapeProfileItem> get profileItems {
+    final key = name.toLowerCase().replaceAll("'s", '').trim();
+    if (key.contains('walker') && key.contains('west texas punch')) {
+      return const [
+        ShapeProfileItem(
+          title: 'Walker',
+          body: 'Two small side dents, no center crease.',
+        ),
+        ShapeProfileItem(
+          title: 'West Texas Punch',
+          body: 'Two deep sweeping side dents.',
+        ),
+      ];
+    }
+    final body =
+        physicalDescription.isNotEmpty ? physicalDescription : description;
+    if (body.isEmpty) return const [];
+    return [ShapeProfileItem(title: name, body: body)];
+  }
+}
+
+/// One labeled block on a combined shape card (wizard back face, guides, sheets).
+class ShapeProfileItem {
+  const ShapeProfileItem({required this.title, required this.body});
+
+  final String title;
+  final String body;
 }
 
 /// Fallback catalog — names align with Shopify `custom.felt_straw_or_ballcap`.
@@ -111,32 +140,18 @@ const List<HatShapeInfo> crownShapes = [
         'Clean and unconventional. A flat, circular top with a continuous gutter running all the way around the outer edge — no pinch, no crease, just a bold, unbroken line. The Buckaroo shares this low, flat profile with a working-ranch attitude.',
   ),
   HatShapeInfo(
-    'Texas Punch',
-    'assets/images/crowns/texas_punch.png',
-    'A deep, aggressive crease favored in working ranch country.',
+    'Walker/West Texas Punch',
+    'assets/images/crowns/walker.png',
+    'Two crown profiles — the understated Walker and the tall West Texas Punch.',
     famousWearers: [
       {
-        'name': 'West Texas Ranchers',
-        'context':
-            'A regional signature shape born in the Permian Basin, built for function in extreme heat.'
+        'name': 'Ryan Bingham',
+        'context': 'Yellowstone — Walker crown',
       },
     ],
     physicalDescription:
-        'Built for the ranch. A deep, assertive crease with a taller crown and sharp, well-defined side dents. No frills — just a hard-working shape with serious character.',
-  ),
-  HatShapeInfo(
-    'Cutter',
-    'assets/images/crowns/square_top.png',
-    'Popped-out side dents for a squarer, aggressive performance profile.',
-    physicalDescription:
-        'A performance-minded evolution of the Cattleman. The side dents are bumped out and popped, widening the crown from the front for a squarer, more aggressive stance.',
-  ),
-  HatShapeInfo(
-    'The Walker',
-    'assets/images/crowns/walker.png',
-    'A smooth top, no center crease, and one small dent on each side of the front.',
-    physicalDescription:
-        'A modern favorite. No center crease — just a smooth top with a single subtle dent on each side of the front. Clean, understated, and highly wearable.',
+        'Walker — Two small side dents, no center crease.\n\n'
+        'West Texas Punch — Two deep sweeping side dents.',
   ),
   HatShapeInfo(
     'Mule Kick/Horseshoe',

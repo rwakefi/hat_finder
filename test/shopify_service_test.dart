@@ -709,6 +709,19 @@ void main() {
     expect(parsed['material_types'], isEmpty);
   });
 
+  test('filterCrownValidationChoices removes retired Cutter label', () {
+    expect(
+      ShopifyService.filterCrownValidationChoices([
+        "Cattleman's",
+        'Cutter',
+        'Open Crown',
+      ]),
+      ["Cattleman's", 'Open Crown'],
+    );
+    expect(ShopifyService.isRetiredCrownValidationChoice('Cutter'), isTrue);
+    expect(ShopifyService.isRetiredCrownValidationChoice("Cutter's"), isTrue);
+  });
+
   test('fallback crown and brim catalogs mirror Shopify admin order', () {
     const shopifyCrownOrder = [
       "Cattleman's",
@@ -716,9 +729,7 @@ void main() {
       'Brick/Rounded Brick/Minnick/CHL',
       'Gus/Tom Mix',
       'Gambler/Telescope/Buckaroo',
-      'Texas Punch',
-      'Cutter',
-      'The Walker',
+      'Walker/West Texas Punch',
       'Mule Kick/Horseshoe',
       'Open Crown',
     ];
