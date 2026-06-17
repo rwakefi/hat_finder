@@ -1436,8 +1436,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => setState(
-                        () => _summaryFiltersExpanded =
-                            !_summaryFiltersExpanded,
+                        () =>
+                            _summaryFiltersExpanded = !_summaryFiltersExpanded,
                       ),
                       borderRadius: BorderRadius.circular(14),
                       child: const SizedBox.expand(),
@@ -1462,9 +1462,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.5,
-                          color: _summaryFiltersExpanded
-                              ? _turquoise
-                              : _espresso,
+                          color:
+                              _summaryFiltersExpanded ? _turquoise : _espresso,
                         ),
                       ),
                       const SizedBox(width: 4),
