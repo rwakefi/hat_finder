@@ -130,8 +130,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
           path = 'assets/images/crowns/gus.png';
         } else if (normalized.contains('teardrop')) {
           path = 'assets/images/crowns/teardrop.png';
-        } else if (normalized.contains('open crown')) {
-          path = 'assets/images/crowns/open_crown_straw.png';
         }
         return HatShapeInfo(
           shape.name,
