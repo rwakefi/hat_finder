@@ -744,7 +744,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     }
 
     final displayHats = _displayHats;
-    final compactChips = AppBreakpoints.isLaptop(context);
+    final compactChips = !AppBreakpoints.isDesktop(context);
     return Column(
       children: [
         if (_resultSizes.isNotEmpty)
@@ -1081,10 +1081,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     return Container(
       color: _offWhite,
-      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 300),
+      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 260),
       child: SingleChildScrollView(
         padding:
-            EdgeInsets.fromLTRB(16, isLaptop ? 6 : 10, 16, isLaptop ? 4 : 8),
+            EdgeInsets.fromLTRB(16, isLaptop ? 6 : 8, 16, isLaptop ? 4 : 6),
         child: Column(
           children: [
             if (widget.headShapeProfile != null) ...[
@@ -1097,7 +1097,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ],
             _buildCollapsibleSummaryFilters(),
             if (_showsFineTuningTray && !isLaptop) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               FineTuningTray(
                 expanded: _fineTuningExpanded,
                 onExpandedChanged: (open) =>
@@ -1417,7 +1417,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         Material(
           color: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
               color: _summaryFiltersExpanded
                   ? _turquoise.withValues(alpha: 0.1)
@@ -1525,7 +1525,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 5),
             child: _buildSummaryDropdowns(),
           ),
           crossFadeState: _summaryFiltersExpanded
@@ -1630,7 +1630,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ],
         ),
         if (_showsFineTuningTray) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Row(
             children: [
               _buildSummaryDropdown(
@@ -1685,18 +1685,18 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                fontSize: isLaptop ? 8 : 9,
+                fontSize: 8,
                 color: _turquoise,
                 fontWeight: FontWeight.w700,
-                letterSpacing: isLaptop ? 1.2 : 1.6,
+                letterSpacing: isLaptop ? 1.2 : 1.4,
               ),
             ),
-            SizedBox(height: isLaptop ? 2 : 3),
+            const SizedBox(height: 2),
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                horizontal: isLaptop ? 6 : 8,
-                vertical: isLaptop ? 4 : 5,
+                horizontal: isLaptop ? 6 : 7,
+                vertical: 4,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1712,10 +1712,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                        fontSize: isLaptop ? 11 : 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: _espresso,
-                        height: 1.1,
+                        height: 1.0,
                       ),
                     ),
                   ),

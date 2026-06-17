@@ -219,7 +219,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   static const Color _turquoise = Color(0xFF559C99);
   static const Color _surface = Color(0xFFF8F7F5);
   static const Color _border = Color(0xFFE8E5E1);
-  static const double _panelMaxHeight = 200;
+  static const double _panelMaxHeight = 175;
 
   final ScrollController _scrollController = ScrollController();
   bool _showScrollHint = false;
@@ -326,12 +326,12 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         children: [
           SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _sectionLabel('Crown Height:', Icons.architecture_outlined),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 _multiCheckboxSection<double>(
                   anySelected: widget.crownHeights.isEmpty,
                   onAny: () => _emit(heights: []),
@@ -349,11 +349,11 @@ class _FineTuningTrayState extends State<FineTuningTray> {
                   },
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.symmetric(vertical: 6),
                   child: Divider(height: 1, color: _border),
                 ),
                 _sectionLabel('Brim Width:', Icons.waves_outlined),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 _multiCheckboxSection<String>(
                   anySelected: widget.brimWidths.isEmpty,
                   onAny: () => _emit(widths: []),
@@ -444,7 +444,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         onTap: () => widget.onExpandedChanged(!widget.expanded),
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
             color:
                 widget.expanded ? _turquoise.withValues(alpha: 0.1) : _surface,
@@ -459,28 +459,28 @@ class _FineTuningTrayState extends State<FineTuningTray> {
             children: [
               Icon(
                 Icons.tune_rounded,
-                size: 15,
+                size: 14,
                 color: widget.expanded
                     ? _turquoise
                     : _espresso.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 'FINE TUNING',
                 style: GoogleFonts.montserrat(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.4,
                   color: widget.expanded ? _turquoise : _espresso,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               AnimatedRotation(
                 turns: widget.expanded ? 0.5 : 0,
                 duration: const Duration(milliseconds: 220),
                 child: Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  size: 18,
+                  size: 16,
                   color: widget.expanded
                       ? _turquoise
                       : _espresso.withValues(alpha: 0.5),
@@ -524,7 +524,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 5),
             child: _expandedPanel(context),
           ),
           crossFadeState: widget.expanded
@@ -540,14 +540,14 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   Widget _sectionLabel(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 15, color: _turquoise),
-        const SizedBox(width: 6),
+        Icon(icon, size: 14, color: _turquoise),
+        const SizedBox(width: 5),
         Text(
           title.toUpperCase(),
           style: GoogleFonts.montserrat(
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
+            letterSpacing: 1.4,
             color: _turquoise,
           ),
         ),
@@ -564,8 +564,8 @@ class _FineTuningTrayState extends State<FineTuningTray> {
     required ValueChanged<T> onToggle,
   }) {
     return Wrap(
-      spacing: 5,
-      runSpacing: 3,
+      spacing: 4,
+      runSpacing: 2,
       children: [
         _chipToggle(
           label: 'Any',
@@ -592,7 +592,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
       label: Text(
         label,
         style: GoogleFonts.montserrat(
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           color: selected ? Colors.white : _espresso,
         ),
