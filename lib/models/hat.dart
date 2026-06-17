@@ -147,7 +147,7 @@ const List<HatShapeInfo> crownShapes = [
   ),
   HatShapeInfo(
     'Open Crown',
-    'assets/images/crowns/open_crown.png',
+    'assets/images/crowns/open_crown_felt.png',
     'A smooth, uncreased dome — your blank canvas for custom shaping.',
     famousWearers: [
       {

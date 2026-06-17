@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -129,18 +130,26 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   Widget _buildBottomBar(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final isLaptop = AppBreakpoints.isLaptop(context);
+    final isMobileWeb =
+        kIsWeb && !AppBreakpoints.useWebTopNavigation(context);
+
+    final labelSlotHeight = isMobileWeb ? 38.0 : _labelSlotHeight;
+    final topPadding = isMobileWeb ? 10.0 : 8.0;
+    final bottomPadding = bottomInset > 0
+        ? (isMobileWeb ? 8.0 : 6.0)
+        : (isMobileWeb ? 10.0 : (isLaptop ? 10.0 : 8.0));
 
     return ColoredBox(
       color: _barColor,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           isLaptop ? 24 : 16,
-          isLaptop ? 8 : 8,
+          topPadding,
           isLaptop ? 24 : 16,
-          bottomInset > 0 ? 6 : (isLaptop ? 10 : 8),
+          bottomPadding,
         ),
         child: SizedBox(
-          height: _labelSlotHeight,
+          height: labelSlotHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: List.generate(_tabs.length, (index) {
@@ -149,7 +158,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
                   tab: _tabs[index],
                   active: index == _visualSelectedIndex,
                   onTap: () => _handleTap(index),
-                  labelSlotHeight: _labelSlotHeight,
+                  labelSlotHeight: labelSlotHeight,
                   activeColor: _active,
                   inactiveColor: _inactive,
                 ),
