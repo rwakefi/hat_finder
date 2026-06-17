@@ -1679,6 +1679,8 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
       return _buildImage(widget.imageUrls.first);
     }
 
+    final showNavArrows = AppBreakpoints.isLaptop(context);
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -1688,6 +1690,36 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
           onPageChanged: (index) => setState(() => _pageIndex = index),
           itemBuilder: (context, index) => _buildImage(widget.imageUrls[index]),
         ),
+        if (showNavArrows && _pageIndex > 0)
+          Positioned(
+            left: 4,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _buildGalleryNavButton(
+                icon: Icons.chevron_left_rounded,
+                onTap: () => _pageController.previousPage(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                ),
+              ),
+            ),
+          ),
+        if (showNavArrows && _pageIndex < widget.imageUrls.length - 1)
+          Positioned(
+            right: 4,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _buildGalleryNavButton(
+                icon: Icons.chevron_right_rounded,
+                onTap: () => _pageController.nextPage(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                ),
+              ),
+            ),
+          ),
         Positioned(
           left: 0,
           right: 0,
@@ -1711,6 +1743,35 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGalleryNavButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.82),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 18, color: _espresso.withValues(alpha: 0.65)),
+        ),
+      ),
     );
   }
 

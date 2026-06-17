@@ -12,6 +12,8 @@ const Color kSplashCream = Color(0xFFF2EDE6);
 const Color kSplashAccent = Color(0xFF7BA8A5);
 
 const String _logoAsset = 'assets/images/moon_ridge_logo.png';
+const String _stetsonDealerLogo = 'assets/images/dealers/stetson_authorized.png';
+const String _resistolDealerLogo = 'assets/images/dealers/resistol_authorized.png';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,8 +25,8 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   static const _prefsLaunchKey = 'has_launched_before';
-  static const _returningDelayMs = 1600;
-  static const _firstLaunchDelayMs = 3400;
+  static const _returningDelayMs = 2800;
+  static const _firstLaunchDelayMs = 4600;
 
   late final AnimationController _introController;
   late final AnimationController _exitController;
@@ -34,6 +36,8 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _headlineFade;
   late final Animation<Offset> _headlineSlide;
   late final Animation<double> _headlineScale;
+  late final Animation<double> _dealerFade;
+  late final Animation<Offset> _dealerSlide;
   late final Animation<double> _vignetteFade;
   late final Animation<double> _exitFade;
 
@@ -110,6 +114,23 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(
         parent: _introController,
         curve: const Interval(0.48, 1.0, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _dealerFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: const Interval(0.62, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    _dealerSlide = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: const Interval(0.62, 1.0, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -201,7 +222,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   Column(
                     children: [
-                      const Spacer(flex: 28),
+                      const Spacer(flex: 18),
                       FadeTransition(
                         opacity: _logoFade,
                         child: Transform.translate(
@@ -216,7 +237,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
                       ),
-                      const Spacer(flex: 22),
+                      const Spacer(flex: 12),
                       FadeTransition(
                         opacity: _headlineFade,
                         child: SlideTransition(
@@ -264,6 +285,21 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const Spacer(flex: 14),
+                      FadeTransition(
+                        opacity: _dealerFade,
+                        child: SlideTransition(
+                          position: _dealerSlide,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              28,
+                              0,
+                              28,
+                              MediaQuery.paddingOf(context).bottom + 28,
+                            ),
+                            child: _buildAuthorizedDealerSection(logoWidth),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -271,6 +307,54 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildAuthorizedDealerSection(double referenceWidth) {
+    final dealerLogoWidth = (referenceWidth * 0.72).clamp(210.0, 280.0);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'AUTHORIZED DEALER:',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: kSplashChampagne.withValues(alpha: 0.8),
+            letterSpacing: 2.4,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildDealerLogo(
+          assetPath: _stetsonDealerLogo,
+          label: 'Stetson',
+          width: dealerLogoWidth,
+        ),
+        const SizedBox(height: 20),
+        _buildDealerLogo(
+          assetPath: _resistolDealerLogo,
+          label: 'Resistol',
+          width: dealerLogoWidth,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDealerLogo({
+    required String assetPath,
+    required String label,
+    required double width,
+  }) {
+    return Semantics(
+      label: '$label authorized dealer',
+      child: Image.asset(
+        assetPath,
+        width: width,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
       ),
     );
   }
