@@ -1432,15 +1432,21 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               alignment: Alignment.center,
               children: [
                 Positioned.fill(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => setState(
-                        () =>
-                            _summaryFiltersExpanded = !_summaryFiltersExpanded,
+                  child: Semantics(
+                    button: true,
+                    label: _summaryFiltersExpanded
+                        ? 'Collapse filters'
+                        : 'Expand filters',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => setState(
+                          () => _summaryFiltersExpanded =
+                              !_summaryFiltersExpanded,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        child: const SizedBox.expand(),
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      child: const SizedBox.expand(),
                     ),
                   ),
                 ),
@@ -1498,18 +1504,22 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         GestureDetector(
                           onTap: _clearAllFilters,
                           behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            child: Text(
-                              'CLEAR',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
-                                color: _turquoise,
+                          child: Semantics(
+                            button: true,
+                            label: 'Clear filters',
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                'CLEAR',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                  color: _turquoise,
+                                ),
                               ),
                             ),
                           ),
@@ -1549,13 +1559,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             child: GestureDetector(
               onTap: _clearAllFilters,
               behavior: HitTestBehavior.opaque,
-              child: Text(
-                'CLEAR',
-                style: GoogleFonts.montserrat(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: _turquoise,
+              child: Semantics(
+                button: true,
+                label: 'Clear filters',
+                child: Text(
+                  'CLEAR',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: _turquoise,
+                  ),
                 ),
               ),
             ),

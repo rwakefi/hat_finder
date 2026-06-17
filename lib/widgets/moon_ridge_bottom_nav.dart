@@ -134,7 +134,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
 
     // Apple HIG tab bar content is 49pt; we use a fixed label slot plus padding.
     final labelSlotHeight = isMobileWeb ? 40.0 : _labelSlotHeight;
-    final topPadding = isMobileWeb ? 10.0 : 8.0;
+    final topPadding = isMobileWeb ? 12.0 : 11.0;
     // Extra gap above the home indicator — SafeArea supplies the system inset.
     final extraBottomPadding = hasHomeIndicator
         ? (isMobileWeb ? 8.0 : 6.0)
