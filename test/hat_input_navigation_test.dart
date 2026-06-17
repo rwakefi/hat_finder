@@ -122,7 +122,8 @@ void main() {
   }
 
   group('hat type wizard navigation', () {
-    testWidgets('Felt navigates Style → Crown → Brim → Results', (tester) async {
+    testWidgets('Felt navigates Style → Crown → Brim → Results',
+        (tester) async {
       await openWizard(tester);
 
       await tapHatTypeCard(tester, 'FELT');
@@ -138,7 +139,8 @@ void main() {
       expect(find.text('RESULTS'), findsOneWidget);
     });
 
-    testWidgets('Straw navigates Style → Crown → Brim → Results', (tester) async {
+    testWidgets('Straw navigates Style → Crown → Brim → Results',
+        (tester) async {
       await openWizard(tester);
 
       await tapHatTypeCard(tester, 'STRAW');
@@ -189,6 +191,10 @@ void main() {
 
       await tapWizardFindHats(tester);
       expect(find.text('RESULTS'), findsOneWidget);
+      final results =
+          tester.widget<HatResultsScreen>(find.byType(HatResultsScreen));
+      expect(results.crownShape, isNull);
+      expect(results.brimShape, isNull);
     });
 
     testWidgets('back navigation returns through wizard steps for Felt',

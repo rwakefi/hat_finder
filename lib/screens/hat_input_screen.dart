@@ -466,25 +466,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     _syncBrimSelectionToAvailable();
   }
 
-  /// Commits the visible crown carousel card when the user taps Next (not on swipe).
-  void _commitCrownCarouselSelection() {
-    final sorted = _sortedCrownShapes ?? _currentCrownShapes;
-    if (_currentCrownCarouselIndex >= sorted.length) return;
-    final shape = sorted[_currentCrownCarouselIndex];
-    if (selectedCrownShape?.name == shape.name) return;
-    selectedCrownShape = shape;
-    _onCrownSelectionChanged();
-  }
-
-  /// Commits the visible brim carousel card before finishing the wizard.
-  void _commitBrimCarouselSelection() {
-    final sorted = _sortedBrimShapes ?? _availableBrimShapes;
-    if (_currentBrimCarouselIndex >= sorted.length) return;
-    final shape = sorted[_currentBrimCarouselIndex];
-    if (selectedBrimShape?.name == shape.name) return;
-    selectedBrimShape = shape;
-  }
-
   void _syncBrimSelectionToAvailable() {
     final available = _availableBrimShapes;
     if (selectedBrimShape != null &&
@@ -2442,15 +2423,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
       }
       bool hasWestern = _needsWesternStyleStep(selectedHatType?.name);
       int westernIndex = hasWestern ? 1 : -1;
-      int crownIndex = hasWestern ? 2 : 1;
 
       if (_currentPageIndex == westernIndex && selectedWesternStyle == null) {
         setState(() {
           selectedWesternStyle = 'Western';
         });
-      }
-      if (_currentPageIndex == crownIndex) {
-        setState(_commitCrownCarouselSelection);
       }
       // Crown and brim pages: null selection = Any — just advance without forcing a pick
     }
@@ -2523,7 +2500,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   void _submitSearch() {
-    _commitBrimCarouselSelection();
     final catalog = _allProducts ?? ShopifyService.peekFullProducts();
     List<dynamic>? preloadedHats;
     if (catalog != null) {
