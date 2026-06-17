@@ -16,6 +16,7 @@ const String _stetsonDealerLogo =
     'assets/images/dealers/stetson_authorized.png';
 const String _resistolDealerLogo =
     'assets/images/dealers/resistol_authorized.png';
+const double _resistolDealerOpacity = 0.60;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -339,6 +340,7 @@ class _SplashScreenState extends State<SplashScreen>
           assetPath: _resistolDealerLogo,
           label: 'Resistol',
           width: dealerLogoWidth,
+          opacity: _resistolDealerOpacity,
         ),
       ],
     );
@@ -348,14 +350,18 @@ class _SplashScreenState extends State<SplashScreen>
     required String assetPath,
     required String label,
     required double width,
+    double opacity = 1.0,
   }) {
     return Semantics(
       label: '$label authorized dealer',
-      child: Image.asset(
-        assetPath,
-        width: width,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
+      child: Opacity(
+        opacity: opacity,
+        child: Image.asset(
+          assetPath,
+          width: width,
+          fit: BoxFit.contain,
+          alignment: Alignment.center,
+        ),
       ),
     );
   }
