@@ -1060,7 +1060,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             style: GoogleFonts.montserrat(
-                              fontSize: i == 0 ? metrics.primary : metrics.alias,
+                              fontSize:
+                                  i == 0 ? metrics.primary : metrics.alias,
                               fontWeight:
                                   i == 0 ? FontWeight.w800 : FontWeight.w600,
                               color: i == 0 ? primaryColor : aliasColor,
@@ -2596,6 +2597,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   void _submitSearch() {
     final catalog = _allProducts ?? ShopifyService.peekFullProducts();
     List<dynamic>? preloadedHats;
+    var showingClosestMatches = false;
     if (catalog != null) {
       var filtered = ShopifyService.filterProducts(
         catalog,
@@ -2605,6 +2607,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         brimShape: selectedBrimShape?.name,
       );
       if (filtered.isEmpty) {
+        showingClosestMatches = true;
         filtered = ShopifyService.closestMatchProducts(
           catalog,
           hatType: selectedHatType?.name,
@@ -2627,6 +2630,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           crownShapeOptions: _crownOptionsForResults(),
           brimShapeOptions: _brimOptionsForResults(),
           preloadedHats: preloadedHats,
+          showingClosestMatches: showingClosestMatches,
         ),
       ),
     );

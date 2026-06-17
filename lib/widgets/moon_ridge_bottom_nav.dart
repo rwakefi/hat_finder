@@ -130,8 +130,7 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
   Widget _buildBottomBar(BuildContext context) {
     final hasHomeIndicator = MediaQuery.paddingOf(context).bottom > 0;
     final isLaptop = AppBreakpoints.isLaptop(context);
-    final isMobileWeb =
-        kIsWeb && !AppBreakpoints.useWebTopNavigation(context);
+    final isMobileWeb = kIsWeb && !AppBreakpoints.useWebTopNavigation(context);
 
     // Apple HIG tab bar content is 49pt; we use a fixed label slot plus padding.
     final labelSlotHeight = isMobileWeb ? 40.0 : _labelSlotHeight;

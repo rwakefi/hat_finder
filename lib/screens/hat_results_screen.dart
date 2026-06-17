@@ -24,6 +24,7 @@ class HatResultsScreen extends StatefulWidget {
 
   /// Instant results from the wizard cache (full catalog loaded in background).
   final List<dynamic>? preloadedHats;
+  final bool showingClosestMatches;
   final List<HatShapeInfo>? crownShapeOptions;
   final List<HatShapeInfo>? brimShapeOptions;
   final bool hideFooter;
@@ -39,6 +40,7 @@ class HatResultsScreen extends StatefulWidget {
     this.brimShape,
     this.brimWidths,
     this.preloadedHats,
+    this.showingClosestMatches = false,
     this.crownShapeOptions,
     this.brimShapeOptions,
     this.hideFooter = false,
@@ -88,6 +90,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _filterBrimShape = widget.brimShape;
     _filterCrownHeights = List<double>.from(widget.crownHeights ?? []);
     _filterBrimWidths = List<String>.from(widget.brimWidths ?? []);
+    _showingClosestMatches = widget.showingClosestMatches;
 
     _loadInitialResults();
   }
@@ -206,8 +209,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       hatType: _filterHatType,
       westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
       crownShape: _filterCrownShape,
-      crownHeights:
-          _filterCrownHeights.isEmpty ? null : _filterCrownHeights,
+      crownHeights: _filterCrownHeights.isEmpty ? null : _filterCrownHeights,
       brimShape: _filterBrimShape,
       brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
     );
@@ -235,39 +237,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       );
     } else {
       _showingClosestMatches = false;
-    }
-
-    // If showing all hat types (i.e. hatType is null, empty, or Any),
-    // ensure at least one of the top 4 results is a Ball Cap for testing/preview.
-    final hasNoHatTypeFilter = _filterHatType == null ||
-        _filterHatType!.isEmpty ||
-        _filterHatType!.toLowerCase() == 'any' ||
-        _filterHatType!.toLowerCase() == 'any type';
-
-    if (hasNoHatTypeFilter && filtered.length >= 4) {
-      bool hasBallCapInTop4 = false;
-      for (int i = 0; i < 4 && i < filtered.length; i++) {
-        final prodType = _metaValue(filtered[i]['feltStrawOrBallcap']).toLowerCase();
-        if (prodType.contains('ballcap')) {
-          hasBallCapInTop4 = true;
-          break;
-        }
-      }
-
-      if (!hasBallCapInTop4) {
-        int ballCapIndex = -1;
-        for (int i = 4; i < filtered.length; i++) {
-          final prodType = _metaValue(filtered[i]['feltStrawOrBallcap']).toLowerCase();
-          if (prodType.contains('ballcap')) {
-            ballCapIndex = i;
-            break;
-          }
-        }
-        if (ballCapIndex != -1) {
-          final ballCap = filtered.removeAt(ballCapIndex);
-          filtered.insert(2, ballCap); // Insert at 3rd position (index 2)
-        }
-      }
     }
 
     return ShopifyService.orderResultsCatalog(filtered);
@@ -391,8 +360,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       final node = edge['node'];
       if (node == null || !_variantIsAvailable(node)) continue;
       final size = _variantOptionValue(node, optionName: 'size');
-      if (size != null &&
-          size.toLowerCase() == selectedSize.toLowerCase()) {
+      if (size != null && size.toLowerCase() == selectedSize.toLowerCase()) {
         return true;
       }
     }
@@ -625,7 +593,6 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   String _productUrlForVariant(String baseUrl, String variantGid) =>
       StorefrontLinks.withVariant(baseUrl, variantGid);
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -679,7 +646,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               const Divider(height: 1, color: _borderGrey),
               Expanded(
                 child: _buildResultsBody(),
-          ),
+              ),
             ],
           ),
         ),
@@ -834,8 +801,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         prodType.contains('flat cap');
 
     final swatchColors = _swatchColorsFor(hat);
-    final cardSwatches =
-        swatchColors.length > 1 ? swatchColors : <({String color, String variantGid, String? imageUrl})>[];
+    final cardSwatches = swatchColors.length > 1
+        ? swatchColors
+        : <({String color, String variantGid, String? imageUrl})>[];
     final imageUrl = _heroImageForHat(hat, swatchColors);
     final cardImageUrls = _cardImageUrls(hat, imageUrl, swatchColors);
     final imageCacheWidth = (MediaQuery.sizeOf(context).width *
@@ -895,156 +863,157 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         borderRadius: BorderRadius.circular(15),
         child: InkWell(
           onTap: openProduct,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Hero image
-            Expanded(
-              flex: 3,
-              child: Container(
-                color: _white,
-                child: Stack(
-                  clipBehavior: Clip.antiAlias,
-                  children: [
-                    Positioned.fill(
-                      child: _CardImageGallery(
-                        imageUrls: cardImageUrls,
-                        cacheWidth: imageCacheWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Hero image
+              Expanded(
+                flex: 3,
+                child: Container(
+                  color: _white,
+                  child: Stack(
+                    clipBehavior: Clip.antiAlias,
+                    children: [
+                      Positioned.fill(
+                        child: _CardImageGallery(
+                          imageUrls: cardImageUrls,
+                          cacheWidth: imageCacheWidth,
+                        ),
                       ),
-                    ),
-                    if (cardSwatches.isNotEmpty)
-                      Positioned(
-                        top: 6,
-                        right: 10,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: cardSwatches.map((entry) {
-                            return Tooltip(
-                              message: entry.color,
-                              preferBelow: false,
-                              verticalOffset: 12,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                              textStyle: GoogleFonts.montserrat(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _white,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _espresso.withValues(alpha: 0.92),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Semantics(
-                                label: '${entry.color} color',
-                                button: true,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      openProduct(variantGid: entry.variantGid),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(left: 5),
-                                    width: 28,
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    child: _buildColorSwatchCircle(
-                                      colorName: entry.color,
+                      if (cardSwatches.isNotEmpty)
+                        Positioned(
+                          top: 6,
+                          right: 10,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: cardSwatches.map((entry) {
+                              return Tooltip(
+                                message: entry.color,
+                                preferBelow: false,
+                                verticalOffset: 12,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                textStyle: GoogleFonts.montserrat(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _white,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _espresso.withValues(alpha: 0.92),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Semantics(
+                                  label: '${entry.color} color',
+                                  button: true,
+                                  child: GestureDetector(
+                                    onTap: () => openProduct(
+                                        variantGid: entry.variantGid),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Container(
+                                      margin: const EdgeInsets.only(left: 5),
+                                      width: 28,
+                                      height: 28,
+                                      alignment: Alignment.center,
+                                      child: _buildColorSwatchCircle(
+                                        colorName: entry.color,
+                                      ),
                                     ),
                                   ),
                                 ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              // Title + Price + pinned footer
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              title.toUpperCase(),
+                              style: GoogleFonts.montserrat(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: _espresso,
+                                letterSpacing: 1.0,
+                                height: 1.3,
                               ),
-                            );
-                          }).toList(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // Price
+                            if (priceStr.isNotEmpty)
+                              Text(
+                                priceStr,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _turquoise,
+                                ),
+                              ),
+                            const SizedBox(height: 6),
+                            // Compact attributes
+                            if (!isBallcap) ...[
+                              _buildAttribute('Crown', crownShape),
+                              _buildAttribute('Crown Height', crownHeight),
+                              _buildAttribute('Brim', brimShape),
+                              _buildAttribute('Brim Width', brimWidth),
+                            ] else ...[
+                              _buildAttribute('Material', material),
+                            ],
+                          ],
                         ),
                       ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: Center(
+                        child: FilledButton(
+                          onPressed: openProduct,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _turquoise,
+                            foregroundColor: _white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            minimumSize: const Size(0, 28),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'MORE INFO / BUY',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            // Title + Price + pinned footer
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title
-                          Text(
-                            title.toUpperCase(),
-                            style: GoogleFonts.montserrat(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: _espresso,
-                              letterSpacing: 1.0,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          // Price
-                          if (priceStr.isNotEmpty)
-                            Text(
-                              priceStr,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: _turquoise,
-                              ),
-                            ),
-                          const SizedBox(height: 6),
-                          // Compact attributes
-                          if (!isBallcap) ...[
-                            _buildAttribute('Crown', crownShape),
-                            _buildAttribute('Crown Height', crownHeight),
-                            _buildAttribute('Brim', brimShape),
-                            _buildAttribute('Brim Width', brimWidth),
-                          ] else ...[
-                            _buildAttribute('Material', material),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                    child: Center(
-                      child: FilledButton(
-                        onPressed: openProduct,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _turquoise,
-                          foregroundColor: _white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          minimumSize: const Size(0, 28),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'MORE INFO / BUY',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ), // ClipRRect
     );
   }
@@ -1088,7 +1057,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       color: _offWhite,
       constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 300),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16, isLaptop ? 6 : 10, 16, isLaptop ? 4 : 8),
+        padding:
+            EdgeInsets.fromLTRB(16, isLaptop ? 6 : 10, 16, isLaptop ? 4 : 8),
         child: Column(
           children: [
             if (widget.headShapeProfile != null) ...[
@@ -1254,7 +1224,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   static bool _isRedColorName(String colorName) {
     final c = colorName.toLowerCase().trim();
-    return c == 'red' || c.startsWith('red ') || c.endsWith(' red') ||
+    return c == 'red' ||
+        c.startsWith('red ') ||
+        c.endsWith(' red') ||
         c.contains(' red ');
   }
 
@@ -1452,8 +1424,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
-                      color:
-                          _summaryFiltersExpanded ? _turquoise : _espresso,
+                      color: _summaryFiltersExpanded ? _turquoise : _espresso,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1732,9 +1703,8 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: active
-                      ? _turquoise
-                      : _espresso.withValues(alpha: 0.22),
+                  color:
+                      active ? _turquoise : _espresso.withValues(alpha: 0.22),
                 ),
               );
             }),
