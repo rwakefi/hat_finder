@@ -33,8 +33,7 @@ class ShapeGuideScreen extends StatefulWidget {
         appBarLabel: 'BRIM SHAPE GUIDE',
         eyebrow: 'KNOW YOUR BRIM',
         title: 'A Field Guide to Brim Shapes',
-        intro:
-            'From the cleanest flat brim to the show-pen polish of a '
+        intro: 'From the cleanest flat brim to the show-pen polish of a '
             'Showmanship, here is how each shape is built — and the look '
             'it carries.',
         metaField: 'brimShape',
@@ -143,7 +142,8 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
   List<String> _expandGuideShapeName(String name) {
     if (!widget.isCrown) return [name];
     final normalized = name.toLowerCase().replaceAll("'s", '').trim();
-    if (normalized.contains('walker') && normalized.contains('west texas punch')) {
+    if (normalized.contains('walker') &&
+        normalized.contains('west texas punch')) {
       return const ['Walker', 'West Texas Punch'];
     }
     return [name];
@@ -325,9 +325,8 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       foregroundColor: _espresso,
-      toolbarHeight: MoonRidgeLogoSizes.secondaryAppBar +
-          WizardHeaderSpacing.gap +
-          18,
+      toolbarHeight:
+          MoonRidgeLogoSizes.secondaryAppBar + WizardHeaderSpacing.gap + 18,
       centerTitle: true,
       leading: Navigator.of(context).canPop()
           ? IconButton(
@@ -366,7 +365,8 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
       appBar: _buildAppBar(),
       body: WebContentScope(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, WizardHeaderSpacing.gap, 20, 36),
+          padding:
+              const EdgeInsets.fromLTRB(20, WizardHeaderSpacing.gap, 20, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -401,8 +401,8 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
               ),
               const SizedBox(height: 24),
               LayoutBuilder(
-                builder: (context, constraints) =>
-                    _buildShapeCardGrid(_primaryGuideShapes, constraints, twoUp),
+                builder: (context, constraints) => _buildShapeCardGrid(
+                    _primaryGuideShapes, constraints, twoUp),
               ),
               if (widget.footerNote != null) ...[
                 const SizedBox(height: 8),
@@ -589,13 +589,11 @@ class _GuideVariation {
     required this.title,
     required this.monogram,
     required this.body,
-    this.imagePath,
   });
 
   final String title;
   final String monogram;
   final String body;
-  final String? imagePath;
 }
 
 class _VariationCard extends StatelessWidget {
@@ -661,19 +659,6 @@ class _VariationCard extends StatelessWidget {
   Widget _buildThumb() {
     const double size = 84;
     final radius = BorderRadius.circular(12);
-    final imagePath = variation.imagePath;
-    if (imagePath != null) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Image.asset(
-          imagePath,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildMonogram(size, radius),
-        ),
-      );
-    }
     return _buildMonogram(size, radius);
   }
 
@@ -791,8 +776,7 @@ class _ShapeCard extends StatelessWidget {
   Widget _buildThumb(BuildContext context) {
     const double size = 84;
     final radius = BorderRadius.circular(12);
-    final cacheWidth =
-        (size * MediaQuery.devicePixelRatioOf(context)).round();
+    final cacheWidth = (size * MediaQuery.devicePixelRatioOf(context)).round();
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: radius,

@@ -25,6 +25,7 @@ class HatInputScreen extends StatefulWidget {
 
   final HeadShapeProfile? headShapeProfile;
   final HeadMeasurementProfile? headMeasurementProfile;
+
   /// Called when BACK is tapped on the first wizard step and there is no route
   /// to pop (e.g. Hat Finder tab inside [AppShell]).
   final VoidCallback? onExit;
@@ -111,8 +112,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
   /// Wizard crown catalog in Shopify admin validation order.
   List<HatShapeInfo> _orderedWizardCrownShapes() {
-    final source =
-        _rawCrownShapes.isNotEmpty ? _rawCrownShapes : crownShapes;
+    final source = _rawCrownShapes.isNotEmpty ? _rawCrownShapes : crownShapes;
     return _wizardCrownShapes(source);
   }
 
@@ -658,7 +658,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     return map;
   }
 
-  dynamic? _productForExampleTitle(String? title) {
+  dynamic _productForExampleTitle(String? title) {
     if (_allProducts == null || title == null || title.isEmpty) return null;
     for (final product in _allProducts!) {
       if ((product['title'] ?? '').toString() == title) return product;
@@ -1139,7 +1139,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
           // Total block (card area + both gutters) is capped on desktop and
           // never exceeds the available width on any platform.
           final blockWidth = webDesktop
-              ? min(available, _webShapeCarouselMaxWidth + _carouselNavGutter * 2)
+              ? min(
+                  available, _webShapeCarouselMaxWidth + _carouselNavGutter * 2)
               : available;
 
           return Align(
@@ -1467,8 +1468,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       return Image.network(
         imageUrl,
         fit: compact ? BoxFit.contain : BoxFit.cover,
-        alignment:
-            compact ? Alignment.center : const Alignment(0.0, -0.35),
+        alignment: compact ? Alignment.center : const Alignment(0.0, -0.35),
         cacheWidth: cacheWidth,
         errorBuilder: (_, __, ___) => fallbackAsset != null
             ? Image.asset(
@@ -1834,26 +1834,26 @@ class _HatInputScreenState extends State<HatInputScreen> {
           : WizardHeaderSpacing.guideLink,
       child: Center(
         child: TextButton.icon(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: builder),
-          );
-        },
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF559C99),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
-        ),
-        icon: const Icon(Icons.menu_book_outlined, size: 14),
-        label: Text(
-          label,
-          style: GoogleFonts.montserrat(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: builder),
+            );
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF559C99),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
           ),
-        ),
+          icon: const Icon(Icons.menu_book_outlined, size: 14),
+          label: Text(
+            label,
+            style: GoogleFonts.montserrat(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
@@ -2016,8 +2016,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final sectionBodySize = compact ? 11.0 : 16.0;
     final infoIconSize = compact ? 14.0 : 18.0;
     final infoLabelSize = compact ? 7.0 : 10.0;
-    final infoButtonPadding =
-        compact ? const EdgeInsets.symmetric(vertical: 8) : const EdgeInsets.symmetric(vertical: 14);
+    final infoButtonPadding = compact
+        ? const EdgeInsets.symmetric(vertical: 8)
+        : const EdgeInsets.symmetric(vertical: 14);
     final flipBackFontSize = compact ? 7.0 : 8.0;
 
     return Card(
@@ -2027,9 +2028,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(borderRadius),
         side: BorderSide(
-          color: isSelected
-              ? const Color(0xFF559C99)
-              : const Color(0xFF3D3936),
+          color: isSelected ? const Color(0xFF559C99) : const Color(0xFF3D3936),
           width: isSelected ? 3 : 1,
         ),
       ),
@@ -2344,9 +2343,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
     if (!mounted) return;
     setState(() {
       _materialTypes = materialStrings.map(_mapStringToHatType).toList();
-      _rawCrownShapes = ShopifyService.filterCrownValidationChoices(crownStrings)
-          .map((name) => _mapStringToShapeInfo(name, isCrown: true))
-          .toList();
+      _rawCrownShapes =
+          ShopifyService.filterCrownValidationChoices(crownStrings)
+              .map((name) => _mapStringToShapeInfo(name, isCrown: true))
+              .toList();
       _rawBrimShapes = brimStrings
           .map((name) => _mapStringToShapeInfo(name, isCrown: false))
           .toList();
@@ -2600,100 +2600,101 @@ class _HatInputScreenState extends State<HatInputScreen> {
       canPop: _allowRoutePop,
       onPopInvokedWithResult: (didPop, _) => _handleSystemBack(didPop),
       child: Scaffold(
-      extendBodyBehindAppBar: !_useWebCompactWizardHeader(context),
-      appBar: _useWebCompactWizardHeader(context)
-          ? AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              toolbarHeight: 0,
-              automaticallyImplyLeading: false,
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(3),
-                child: _buildProgressBar(),
+        extendBodyBehindAppBar: !_useWebCompactWizardHeader(context),
+        appBar: _useWebCompactWizardHeader(context)
+            ? AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                toolbarHeight: 0,
+                automaticallyImplyLeading: false,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(3),
+                  child: _buildProgressBar(),
+                ),
+              )
+            : AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                toolbarHeight:
+                    MoonRidgeLogoSizes.wizardAppBar + WizardHeaderSpacing.gap,
+                title: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/Moon Ridge Header Logo.png',
+                      height: MoonRidgeLogoSizes.wizardAppBar,
+                    ),
+                    const SizedBox(height: WizardHeaderSpacing.gap),
+                  ],
+                ),
+                centerTitle: true,
+                automaticallyImplyLeading: false,
+                leading: null,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(3),
+                  child: _buildProgressBar(),
+                ),
               ),
-            )
-          : AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              toolbarHeight:
-                  MoonRidgeLogoSizes.wizardAppBar + WizardHeaderSpacing.gap,
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/images/Moon Ridge Header Logo.png',
-                    height: MoonRidgeLogoSizes.wizardAppBar,
-                  ),
-                  const SizedBox(height: WizardHeaderSpacing.gap),
-                ],
+        body: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.white, // Clean, airy background
               ),
-              centerTitle: true,
-              automaticallyImplyLeading: false,
-              leading: null,
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(3),
-                child: _buildProgressBar(),
-              ),
-            ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white, // Clean, airy background
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: kIsWeb
-                        ? AppBreakpoints.webAppMaxWidth(context)
-                        : 1040,
-                  ),
-                  child: Column(
-                    children: [
-                      if (_useWebCompactWizardHeader(context))
-                        _buildWizardCenterLogo(context),
-                      if (widget.headShapeProfile != null)
-                        _buildHeadShapeProfileBanner(widget.headShapeProfile!),
-                      if (widget.headMeasurementProfile != null)
-                        _buildHeadMeasurementBanner(
-                            widget.headMeasurementProfile!),
-                      Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          physics:
-                              const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentPageIndex = index;
-                              _flippedCardIndex = null;
-                              _flippedBrimCardIndex = null;
-                              if (index == 0) {
-                                _materialExampleUrls =
-                                    _computeMaterialExampleImages();
-                              }
-                            });
-                          },
-                          children: _pages,
+              child: SafeArea(
+                bottom: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: kIsWeb
+                          ? AppBreakpoints.webAppMaxWidth(context)
+                          : 1040,
+                    ),
+                    child: Column(
+                      children: [
+                        if (_useWebCompactWizardHeader(context))
+                          _buildWizardCenterLogo(context),
+                        if (widget.headShapeProfile != null)
+                          _buildHeadShapeProfileBanner(
+                              widget.headShapeProfile!),
+                        if (widget.headMeasurementProfile != null)
+                          _buildHeadMeasurementBanner(
+                              widget.headMeasurementProfile!),
+                        Expanded(
+                          child: PageView(
+                            controller: _pageController,
+                            physics:
+                                const NeverScrollableScrollPhysics(), // Disable swipe to force using buttons
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPageIndex = index;
+                                _flippedCardIndex = null;
+                                _flippedBrimCardIndex = null;
+                                if (index == 0) {
+                                  _materialExampleUrls =
+                                      _computeMaterialExampleImages();
+                                }
+                              });
+                            },
+                            children: _pages,
+                          ),
                         ),
-                      ),
-                      if (_useInlineWizardFooter(context))
-                        _buildBottomNav(includeBottomSafeArea: false),
-                    ],
+                        if (_useInlineWizardFooter(context))
+                          _buildBottomNav(includeBottomSafeArea: false),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            child: _buildDiscreteBackButton(context),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildScaffoldFooter(context),
+            Positioned(
+              top: 0,
+              left: 0,
+              child: _buildDiscreteBackButton(context),
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildScaffoldFooter(context),
       ),
     );
   }
@@ -2815,9 +2816,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           : 'Any Crown · Next';
     }
     if (_currentPageIndex == brimIndex) {
-      return selectedBrimShape != null
-          ? '✓ Find Hats'
-          : 'Any Brim · Find Hats';
+      return selectedBrimShape != null ? '✓ Find Hats' : 'Any Brim · Find Hats';
     }
     return 'Find Hats';
   }
@@ -2843,8 +2842,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               OutlinedButton(
-                onPressed:
-                    _currentPageIndex > 0 ? _previousPage : _exitWizard,
+                onPressed: _currentPageIndex > 0 ? _previousPage : _exitWizard,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF2D2926),
                   side: const BorderSide(color: Color(0xFF2D2926), width: 1.5),
@@ -2956,8 +2954,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             ),
             child: Text(
               'ANY HAT TYPE',
@@ -2985,143 +2982,137 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                   Expanded(
                     child: LayoutBuilder(
-                          builder: (context, c) {
-                            final fourUp = _isWebWizardFourUp(c.maxWidth);
-                            final crossAxisCount =
-                                fourUp ? _webWizardGridColumns : 2;
-                            const useStyleCards = kIsWeb;
-                            final aspect = fourUp
-                                ? 0.72
-                                : useStyleCards
-                                    ? 0.58
-                                    : (_isProMaxLayout(context) ? 0.92 : 0.85);
+                      builder: (context, c) {
+                        final fourUp = _isWebWizardFourUp(c.maxWidth);
+                        final crossAxisCount =
+                            fourUp ? _webWizardGridColumns : 2;
+                        const useStyleCards = kIsWeb;
+                        final aspect = fourUp
+                            ? 0.72
+                            : useStyleCards
+                                ? 0.58
+                                : (_isProMaxLayout(context) ? 0.92 : 0.85);
 
-                            Widget buildGrid({required EdgeInsets padding}) {
-                              return GridView.count(
-                                crossAxisCount: crossAxisCount,
-                                shrinkWrap: fourUp,
-                                physics: fourUp
-                                    ? const NeverScrollableScrollPhysics()
-                                    : null,
-                                padding: padding,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: aspect,
-                                children:
-                                    _availableHatTypes.map((typeInfo) {
-                                  final imageUrl =
-                                      _materialExampleUrls[typeInfo.name];
-                                  final index =
-                                      _availableHatTypes.indexOf(typeInfo);
+                        Widget buildGrid({required EdgeInsets padding}) {
+                          return GridView.count(
+                            crossAxisCount: crossAxisCount,
+                            shrinkWrap: fourUp,
+                            physics: fourUp
+                                ? const NeverScrollableScrollPhysics()
+                                : null,
+                            padding: padding,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: aspect,
+                            children: _availableHatTypes.map((typeInfo) {
+                              final imageUrl =
+                                  _materialExampleUrls[typeInfo.name];
+                              final index =
+                                  _availableHatTypes.indexOf(typeInfo);
 
-                                  if (useStyleCards) {
-                                    return _buildHatTypeWizardCard(
-                                      context: context,
-                                      typeInfo: typeInfo,
-                                      index: index,
-                                      imageUrl: imageUrl,
-                                    );
-                                  }
+                              if (useStyleCards) {
+                                return _buildHatTypeWizardCard(
+                                  context: context,
+                                  typeInfo: typeInfo,
+                                  index: index,
+                                  imageUrl: imageUrl,
+                                );
+                              }
 
-                                  final isSelected =
-                                      selectedHatType == typeInfo;
+                              final isSelected = selectedHatType == typeInfo;
 
-                                  return Card(
-                                    elevation: 0,
-                                    clipBehavior: Clip.antiAlias,
-                                    color: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? const Color(0xFF559C99)
-                                            : const Color(0xFF559C99)
-                                                .withValues(alpha: 0.35),
-                                        width: isSelected ? 3 : 1,
-                                      ),
-                                    ),
-                                    child: InkWell(
-                                      onTap: () => _selectHatTypeAndAdvance(
-                                        typeInfo,
-                                        index,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: ClipRect(
-                                              child: Align(
-                                                alignment: Alignment.center,
-                                                child: Transform.scale(
-                                                  scale: 1.1,
-                                                  child: _buildHatTypeCardImage(
-                                                    context: context,
-                                                    imageUrl: imageUrl,
-                                                    imagePath:
-                                                        typeInfo.imagePath,
-                                                    compact: fourUp,
-                                                  ),
-                                                ),
+                              return Card(
+                                elevation: 0,
+                                clipBehavior: Clip.antiAlias,
+                                color: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? const Color(0xFF559C99)
+                                        : const Color(0xFF559C99)
+                                            .withValues(alpha: 0.35),
+                                    width: isSelected ? 3 : 1,
+                                  ),
+                                ),
+                                child: InkWell(
+                                  onTap: () => _selectHatTypeAndAdvance(
+                                    typeInfo,
+                                    index,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: ClipRect(
+                                          child: Align(
+                                            alignment: Alignment.center,
+                                            child: Transform.scale(
+                                              scale: 1.1,
+                                              child: _buildHatTypeCardImage(
+                                                context: context,
+                                                imageUrl: imageUrl,
+                                                imagePath: typeInfo.imagePath,
+                                                compact: fourUp,
                                               ),
                                             ),
                                           ),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical:
-                                                  fourUp ? 10.0 : 12.0,
-                                              horizontal: fourUp ? 4.0 : 0,
-                                            ),
-                                            color: Colors.white,
-                                            child: Text(
-                                              typeInfo.name.toUpperCase(),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: fourUp ? 11 : 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: const Color(0xFF2D2926),
-                                                letterSpacing:
-                                                    fourUp ? 1.2 : 2.0,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: fourUp ? 10.0 : 12.0,
+                                          horizontal: fourUp ? 4.0 : 0,
+                                        ),
+                                        color: Colors.white,
+                                        child: Text(
+                                          typeInfo.name.toUpperCase(),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: fourUp ? 11 : 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF2D2926),
+                                            letterSpacing: fourUp ? 1.2 : 2.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               );
-                            }
+                            }).toList(),
+                          );
+                        }
 
-                            if (fourUp) {
-                              return _buildWizardRowPager(
-                                itemCount: _availableHatTypes.length,
-                                itemBuilder: (context, index) {
-                                  final typeInfo =
-                                      _availableHatTypes[index];
-                                  final imageUrl =
-                                      _materialExampleUrls[typeInfo.name];
-                                  return _buildHatTypeWizardCard(
-                                    context: context,
-                                    typeInfo: typeInfo,
-                                    index: index,
-                                    imageUrl: imageUrl,
-                                  );
-                                },
+                        if (fourUp) {
+                          return _buildWizardRowPager(
+                            itemCount: _availableHatTypes.length,
+                            itemBuilder: (context, index) {
+                              final typeInfo = _availableHatTypes[index];
+                              final imageUrl =
+                                  _materialExampleUrls[typeInfo.name];
+                              return _buildHatTypeWizardCard(
+                                context: context,
+                                typeInfo: typeInfo,
+                                index: index,
+                                imageUrl: imageUrl,
                               );
-                            }
+                            },
+                          );
+                        }
 
-                            return buildGrid(
-                              padding: EdgeInsets.fromLTRB(
-                                12,
-                                12,
-                                12,
-                                _isProMaxLayout(context) ? 4 : 12,
-                              ),
-                            );
-                          },
+                        return buildGrid(
+                          padding: EdgeInsets.fromLTRB(
+                            12,
+                            12,
+                            12,
+                            _isProMaxLayout(context) ? 4 : 12,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -3180,8 +3171,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
               side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             ),
             child: Text(
               'ANY STYLE',
@@ -3231,8 +3221,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         ),
                       ),
                       child: InkWell(
-                        onTap: () =>
-                            _selectWesternStyleAndAdvance(name, index),
+                        onTap: () => _selectWesternStyleAndAdvance(name, index),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -3752,105 +3741,107 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   return Column(
                     children: [
                       _buildWizardCarouselArea(
-              controller: _crownCarouselController,
-              currentIndex: _currentCrownCarouselIndex,
-              itemCount: sortedShapes.length,
-              pageView: PageView.builder(
-                    controller: _crownCarouselController,
-                    clipBehavior: Clip.hardEdge,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentCrownCarouselIndex = index;
-                        _flippedCardIndex = null;
-                      });
-                    },
-                    itemCount: sortedShapes.length,
-                    itemBuilder: (context, index) {
-                      final shape = sortedShapes[index];
-                      final isSelected = selectedCrownShape != null
-                          ? selectedCrownShape!.name == shape.name
-                          : index == _currentCrownCarouselIndex;
-                      final shopifyProducts =
-                          shopifyProductsMap[shape.name] ?? [];
-                      final photo = _cachedShapePhoto(
-                        shapeName: shape.name,
-                        shopifyProducts: shopifyProducts,
-                        shapeCarouselIndex: index,
-                        isCrown: true,
-                      );
-                      final imageUrl = photo.imageUrl;
-                      final bool isFlipped = _flippedCardIndex == index;
-
-                      return Padding(
-                        padding: _shapeCardPagePadding,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            if (isFlipped) {
-                              setState(() {
-                                _flippedCardIndex = null;
-                              });
-                              return;
-                            }
-                            _selectCrownAndAdvance(shape, index);
+                        controller: _crownCarouselController,
+                        currentIndex: _currentCrownCarouselIndex,
+                        itemCount: sortedShapes.length,
+                        pageView: PageView.builder(
+                          controller: _crownCarouselController,
+                          clipBehavior: Clip.hardEdge,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentCrownCarouselIndex = index;
+                              _flippedCardIndex = null;
+                            });
                           },
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(
-                                begin: 0, end: isFlipped ? pi : 0),
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOutCubic,
-                            builder: (context, angle, _) {
-                              // Determine which face to show
-                              final showBack = angle > pi / 2;
-                              return Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..setEntry(3, 2, 0.001) // perspective
-                                  ..rotateY(angle),
-                                child: showBack
-                                    ? Transform(
-                                        alignment: Alignment.center,
-                                        transform: Matrix4.identity()
-                                          ..rotateY(pi),
-                                        child: _buildShapeCardBackFace(
-                                          context: context,
-                                          shape: shape,
-                                          isSelected: isSelected,
-                                          onUnflip: () {
-                                            setState(() {
-                                              _flippedCardIndex = null;
-                                            });
-                                          },
-                                        ),
-                                      )
-                                    : _buildShapeCardFrontFace(
-                                        context: context,
-                                        shape: shape,
-                                        imageUrl: imageUrl,
-                                        featuredProductTitle: photo.productTitle,
-                                        isSelected: isSelected,
-                                        onFlip: () {
-                                          setState(() {
-                                            _flippedCardIndex = index;
-                                          });
-                                        },
-                                      ),
-                              );
-                            },
-                          ),
+                          itemCount: sortedShapes.length,
+                          itemBuilder: (context, index) {
+                            final shape = sortedShapes[index];
+                            final isSelected = selectedCrownShape != null
+                                ? selectedCrownShape!.name == shape.name
+                                : index == _currentCrownCarouselIndex;
+                            final shopifyProducts =
+                                shopifyProductsMap[shape.name] ?? [];
+                            final photo = _cachedShapePhoto(
+                              shapeName: shape.name,
+                              shopifyProducts: shopifyProducts,
+                              shapeCarouselIndex: index,
+                              isCrown: true,
+                            );
+                            final imageUrl = photo.imageUrl;
+                            final bool isFlipped = _flippedCardIndex == index;
+
+                            return Padding(
+                              padding: _shapeCardPagePadding,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  if (isFlipped) {
+                                    setState(() {
+                                      _flippedCardIndex = null;
+                                    });
+                                    return;
+                                  }
+                                  _selectCrownAndAdvance(shape, index);
+                                },
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(
+                                      begin: 0, end: isFlipped ? pi : 0),
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.easeInOutCubic,
+                                  builder: (context, angle, _) {
+                                    // Determine which face to show
+                                    final showBack = angle > pi / 2;
+                                    return Transform(
+                                      alignment: Alignment.center,
+                                      transform: Matrix4.identity()
+                                        ..setEntry(3, 2, 0.001) // perspective
+                                        ..rotateY(angle),
+                                      child: showBack
+                                          ? Transform(
+                                              alignment: Alignment.center,
+                                              transform: Matrix4.identity()
+                                                ..rotateY(pi),
+                                              child: _buildShapeCardBackFace(
+                                                context: context,
+                                                shape: shape,
+                                                isSelected: isSelected,
+                                                onUnflip: () {
+                                                  setState(() {
+                                                    _flippedCardIndex = null;
+                                                  });
+                                                },
+                                              ),
+                                            )
+                                          : _buildShapeCardFrontFace(
+                                              context: context,
+                                              shape: shape,
+                                              imageUrl: imageUrl,
+                                              featuredProductTitle:
+                                                  photo.productTitle,
+                                              isSelected: isSelected,
+                                              onFlip: () {
+                                                setState(() {
+                                                  _flippedCardIndex = index;
+                                                });
+                                              },
+                                            ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-            ),
-            _buildWizardCarouselFooter(
-              itemCount: sortedShapes.length,
-              currentIndex: _currentCrownCarouselIndex,
-              nextLabel: _currentCrownCarouselIndex + 1 < sortedShapes.length
-                  ? sortedShapes[_currentCrownCarouselIndex + 1].name
-                  : '',
-              maxDots: 8,
-            ),
+                      ),
+                      _buildWizardCarouselFooter(
+                        itemCount: sortedShapes.length,
+                        currentIndex: _currentCrownCarouselIndex,
+                        nextLabel: _currentCrownCarouselIndex + 1 <
+                                sortedShapes.length
+                            ? sortedShapes[_currentCrownCarouselIndex + 1].name
+                            : '',
+                        maxDots: 8,
+                      ),
                     ],
                   );
                 },
@@ -3937,103 +3928,107 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   return Column(
                     children: [
                       _buildWizardCarouselArea(
-              controller: _brimCarouselController,
-              currentIndex: _currentBrimCarouselIndex,
-              itemCount: sortedShapes.length,
-              pageView: PageView.builder(
-                    controller: _brimCarouselController,
-                    clipBehavior: Clip.hardEdge,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentBrimCarouselIndex = index;
-                        _flippedBrimCardIndex = null;
-                      });
-                    },
-                    itemCount: sortedShapes.length,
-                    itemBuilder: (context, index) {
-                      final shape = sortedShapes[index];
-                      final isSelected = selectedBrimShape != null
-                          ? selectedBrimShape!.name == shape.name
-                          : index == _currentBrimCarouselIndex;
-                      final shopifyProducts =
-                          shopifyProductsMap[shape.name] ?? [];
-                      final photo = _cachedShapePhoto(
-                        shapeName: shape.name,
-                        shopifyProducts: shopifyProducts,
-                        shapeCarouselIndex: index,
-                        isCrown: false,
-                      );
-                      final imageUrl = photo.imageUrl;
-                      final bool isFlipped = _flippedBrimCardIndex == index;
-
-                      return Padding(
-                        padding: _shapeCardPagePadding,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            if (isFlipped) {
-                              setState(() {
-                                _flippedBrimCardIndex = null;
-                              });
-                              return;
-                            }
-                            _selectBrimAndAdvance(shape, index);
+                        controller: _brimCarouselController,
+                        currentIndex: _currentBrimCarouselIndex,
+                        itemCount: sortedShapes.length,
+                        pageView: PageView.builder(
+                          controller: _brimCarouselController,
+                          clipBehavior: Clip.hardEdge,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentBrimCarouselIndex = index;
+                              _flippedBrimCardIndex = null;
+                            });
                           },
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(
-                                begin: 0, end: isFlipped ? pi : 0),
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOutCubic,
-                            builder: (context, angle, _) {
-                              final showBack = angle > pi / 2;
-                              return Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..setEntry(3, 2, 0.001)
-                                  ..rotateY(angle),
-                                child: showBack
-                                    ? Transform(
-                                        alignment: Alignment.center,
-                                        transform: Matrix4.identity()
-                                          ..rotateY(pi),
-                                        child: _buildShapeCardBackFace(
-                                          context: context,
-                                          shape: shape,
-                                          isSelected: isSelected,
-                                          onUnflip: () {
-                                            setState(() {
-                                              _flippedBrimCardIndex = null;
-                                            });
-                                          },
-                                        ),
-                                      )
-                                    : _buildShapeCardFrontFace(
-                                        context: context,
-                                        shape: shape,
-                                        imageUrl: imageUrl,
-                                        featuredProductTitle: photo.productTitle,
-                                        isSelected: isSelected,
-                                        onFlip: () {
-                                          setState(() {
-                                            _flippedBrimCardIndex = index;
-                                          });
-                                        },
-                                      ),
-                              );
-                            },
-                          ),
+                          itemCount: sortedShapes.length,
+                          itemBuilder: (context, index) {
+                            final shape = sortedShapes[index];
+                            final isSelected = selectedBrimShape != null
+                                ? selectedBrimShape!.name == shape.name
+                                : index == _currentBrimCarouselIndex;
+                            final shopifyProducts =
+                                shopifyProductsMap[shape.name] ?? [];
+                            final photo = _cachedShapePhoto(
+                              shapeName: shape.name,
+                              shopifyProducts: shopifyProducts,
+                              shapeCarouselIndex: index,
+                              isCrown: false,
+                            );
+                            final imageUrl = photo.imageUrl;
+                            final bool isFlipped =
+                                _flippedBrimCardIndex == index;
+
+                            return Padding(
+                              padding: _shapeCardPagePadding,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  if (isFlipped) {
+                                    setState(() {
+                                      _flippedBrimCardIndex = null;
+                                    });
+                                    return;
+                                  }
+                                  _selectBrimAndAdvance(shape, index);
+                                },
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(
+                                      begin: 0, end: isFlipped ? pi : 0),
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.easeInOutCubic,
+                                  builder: (context, angle, _) {
+                                    final showBack = angle > pi / 2;
+                                    return Transform(
+                                      alignment: Alignment.center,
+                                      transform: Matrix4.identity()
+                                        ..setEntry(3, 2, 0.001)
+                                        ..rotateY(angle),
+                                      child: showBack
+                                          ? Transform(
+                                              alignment: Alignment.center,
+                                              transform: Matrix4.identity()
+                                                ..rotateY(pi),
+                                              child: _buildShapeCardBackFace(
+                                                context: context,
+                                                shape: shape,
+                                                isSelected: isSelected,
+                                                onUnflip: () {
+                                                  setState(() {
+                                                    _flippedBrimCardIndex =
+                                                        null;
+                                                  });
+                                                },
+                                              ),
+                                            )
+                                          : _buildShapeCardFrontFace(
+                                              context: context,
+                                              shape: shape,
+                                              imageUrl: imageUrl,
+                                              featuredProductTitle:
+                                                  photo.productTitle,
+                                              isSelected: isSelected,
+                                              onFlip: () {
+                                                setState(() {
+                                                  _flippedBrimCardIndex = index;
+                                                });
+                                              },
+                                            ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-            ),
-            _buildWizardCarouselFooter(
-              itemCount: sortedShapes.length,
-              currentIndex: _currentBrimCarouselIndex,
-              nextLabel: _currentBrimCarouselIndex + 1 < sortedShapes.length
-                  ? sortedShapes[_currentBrimCarouselIndex + 1].name
-                  : '',
-            ),
+                      ),
+                      _buildWizardCarouselFooter(
+                        itemCount: sortedShapes.length,
+                        currentIndex: _currentBrimCarouselIndex,
+                        nextLabel: _currentBrimCarouselIndex + 1 <
+                                sortedShapes.length
+                            ? sortedShapes[_currentBrimCarouselIndex + 1].name
+                            : '',
+                      ),
                     ],
                   );
                 },
@@ -4085,8 +4080,7 @@ class _WizardRowPagerState extends State<_WizardRowPager> {
   void initState() {
     super.initState();
     _pageController = PageController(
-      viewportFraction:
-          _multiPage ? _WizardRowPager.peekViewportFraction : 1.0,
+      viewportFraction: _multiPage ? _WizardRowPager.peekViewportFraction : 1.0,
     );
   }
 
@@ -4103,8 +4097,7 @@ class _WizardRowPagerState extends State<_WizardRowPager> {
               _WizardRowPager.spacing * (_WizardRowPager.cardsPerPage - 1)) /
           _WizardRowPager.cardsPerPage;
     }
-    return (contentWidth -
-            _WizardRowPager.spacing * (countOnPage - 1)) /
+    return (contentWidth - _WizardRowPager.spacing * (countOnPage - 1)) /
         countOnPage;
   }
 
@@ -4146,8 +4139,7 @@ class _WizardRowPagerState extends State<_WizardRowPager> {
         // PageView gives each page only `viewportFraction` of the viewport
         // (the remainder is the peek). Size content to that slot so the row
         // of cards fits exactly instead of overflowing the page.
-        final pageExtent =
-            viewportWidth * _WizardRowPager.peekViewportFraction;
+        final pageExtent = viewportWidth * _WizardRowPager.peekViewportFraction;
         return PageView.builder(
           controller: _pageController,
           clipBehavior: Clip.hardEdge,
