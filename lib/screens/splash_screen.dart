@@ -12,8 +12,10 @@ const Color kSplashCream = Color(0xFFF2EDE6);
 const Color kSplashAccent = Color(0xFF7BA8A5);
 
 const String _logoAsset = 'assets/images/moon_ridge_logo.png';
-const String _stetsonDealerLogo = 'assets/images/dealers/stetson_authorized.png';
-const String _resistolDealerLogo = 'assets/images/dealers/resistol_authorized.png';
+const String _stetsonDealerLogo =
+    'assets/images/dealers/stetson_authorized.png';
+const String _resistolDealerLogo =
+    'assets/images/dealers/resistol_authorized.png';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -252,8 +254,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   Container(
                                     width: 40,
                                     height: 1,
-                                    margin:
-                                        const EdgeInsets.only(bottom: 18),
+                                    margin: const EdgeInsets.only(bottom: 18),
                                     color:
                                         kSplashAccent.withValues(alpha: 0.55),
                                   ),

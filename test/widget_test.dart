@@ -7,10 +7,26 @@ void main() {
     SharedPreferences.setMockInitialValues({'has_launched_before': true});
 
     await tester.pumpWidget(const HatFinderApp());
-    await tester.pump(const Duration(milliseconds: 2600));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('SEARCH BY HAT TYPE'));
 
     expect(find.text('FIND YOUR PERFECT HAT'), findsOneWidget);
     expect(find.text('SEARCH BY HAT TYPE'), findsOneWidget);
   });
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 8),
+}) async {
+  const step = Duration(milliseconds: 100);
+  var elapsed = Duration.zero;
+  while (elapsed < timeout) {
+    await tester.pump(step);
+    if (tester.any(finder)) {
+      await tester.pumpAndSettle();
+      return;
+    }
+    elapsed += step;
+  }
 }
