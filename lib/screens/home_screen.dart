@@ -37,20 +37,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final compact = screenHeight < 860;
+    final mediaSize = MediaQuery.sizeOf(context);
+    final screenHeight = mediaSize.height;
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final compact =
+        screenHeight < 860 || mediaSize.width < 390 || textScale > 1.08;
     final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
     final isWideDesktop = AppBreakpoints.isWide(context);
     final heroHeight = splitLayout
         ? double.infinity
-        : (screenHeight * (compact ? 0.30 : 0.36))
-            .clamp(compact ? 200.0 : 240.0, compact ? 270.0 : 320.0);
+        : (screenHeight * (compact ? 0.28 : 0.36))
+            .clamp(compact ? 190.0 : 240.0, compact ? 246.0 : 320.0);
     final logoHeight = compact
-        ? MoonRidgeLogoSizes.homeCompact
+        ? MoonRidgeLogoSizes.homeCompactTight
         : (isWideDesktop
             ? MoonRidgeLogoSizes.homeWide
             : MoonRidgeLogoSizes.homeDefault);
-    final buttonGap = compact ? 12.0 : (isWideDesktop ? 18.0 : 16.0);
+    final buttonGap = compact ? 10.0 : (isWideDesktop ? 18.0 : 16.0);
+    final footerLogoGap = compact ? 10.0 : (splitLayout ? 24.0 : 16.0);
+    final actionsBottomPadding = compact ? 28.0 : 12.0;
     final heroFlex = isWideDesktop ? 12 : 11;
     final actionsFlex = isWideDesktop ? 10 : 9;
     final webSplit = splitLayout && kIsWeb;
@@ -155,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : 16),
+      SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
       Center(
         child: Image.asset(
           'assets/images/Moon Ridge Header Logo.png',
@@ -170,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isWideDesktop ? 32 : 24,
         splitLayout ? (isWideDesktop ? 40 : 28) : 16,
         isWideDesktop ? 32 : 24,
-        12,
+        actionsBottomPadding,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -427,7 +432,8 @@ void _showVideoModal(BuildContext context) {
           ),
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(20)),
               child: WebViewWidget(controller: controller),
             ),
           ),
@@ -531,7 +537,8 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
   @override
   void initState() {
     super.initState();
-    _autoAdvance = Timer.periodic(const Duration(seconds: 7), (_) => _advance());
+    _autoAdvance =
+        Timer.periodic(const Duration(seconds: 7), (_) => _advance());
   }
 
   @override
