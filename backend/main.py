@@ -26,7 +26,7 @@ ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
         "ALLOWED_ORIGINS",
-        "https://moonridgecompany.com,https://www.moonridgecompany.com",
+        "https://moonridgecompany.com,https://www.moonridgecompany.com,https://hatfinder.moonridgecompany.com",
     ).split(",")
     if origin.strip()
 ]

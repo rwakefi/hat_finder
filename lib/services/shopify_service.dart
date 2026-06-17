@@ -158,8 +158,10 @@ class ShopifyService {
     if (aRank != null) return -1;
     if (bRank != null) return 1;
 
-    final aNum = parseInchesFromText(a) ?? double.tryParse(aKey.split(RegExp(r'\s')).first);
-    final bNum = parseInchesFromText(b) ?? double.tryParse(bKey.split(RegExp(r'\s')).first);
+    final aNum = parseInchesFromText(a) ??
+        double.tryParse(aKey.split(RegExp(r'\s')).first);
+    final bNum = parseInchesFromText(b) ??
+        double.tryParse(bKey.split(RegExp(r'\s')).first);
     if (aNum != null && bNum != null) return aNum.compareTo(bNum);
     if (aNum != null) return -1;
     if (bNum != null) return 1;
@@ -177,7 +179,8 @@ class ShopifyService {
   static List<String> _variantOptionValues(dynamic product, String optionName) {
     final values = <String>{};
     final optLower = optionName.toLowerCase();
-    for (final edge in (product['variants']?['edges'] as List<dynamic>? ?? [])) {
+    for (final edge
+        in (product['variants']?['edges'] as List<dynamic>? ?? [])) {
       final node = edge['node'];
       if (node == null) continue;
       for (final opt in (node['selectedOptions'] as List<dynamic>? ?? [])) {
@@ -311,7 +314,8 @@ class ShopifyService {
     }
   }
 
-  static bool _inchesMatchList(List<double> productValues, List<double> selected) {
+  static bool _inchesMatchList(
+      List<double> productValues, List<double> selected) {
     if (selected.isEmpty) return true;
     if (productValues.isEmpty) return false;
     return selected.any(
@@ -582,44 +586,61 @@ class ShopifyService {
     final nodes = (data['data']['products']['edges'] as List<dynamic>)
         .map((p) => p['node'] as Map<String, dynamic>)
         .map((node) {
-          final metafields = node['metafields'] as List<dynamic>? ?? [];
-          final meta = <String, dynamic>{};
-          for (final mf in metafields) {
-            if (mf == null) continue;
-            final key = mf['key']?.toString() ?? '';
-            final value = mf['value'];
-            switch (key) {
-              case 'felt_straw_or_ballcap': meta['feltStrawOrBallcap'] = {'value': value}; break;
-              case 'crown_shape': meta['crownShape'] = {'value': value}; break;
-              case 'brim_shape': meta['brimShape'] = {'value': value}; break;
-              case 'crown_height': meta['crownHeight'] = {'value': value}; break;
-              case 'brim_width': meta['brimWidth'] = {'value': value}; break;
-              case 'stetson_profile': meta['stetsonProfile'] = {'value': value}; break;
-              case 'city': meta['city'] = {'value': value}; break;
-              case 'outdoors': meta['outdoors'] = {'value': value}; break;
-              case 'hat_finder_exclude_from_examples':
-                meta['hatFinderExcludeFromExamples'] = {'value': value};
-                break;
-            }
-          }
-          // Flatten first image for app compatibility (UI reads featuredImage).
-          final imagesEdges = (node['images']?['edges'] as List<dynamic>?) ?? [];
-          if (imagesEdges.isNotEmpty) {
-            final imgNode = imagesEdges.first['node'];
-            final imagePayload = <String, dynamic>{
-              'url': imgNode?['url'],
-              'altText': imgNode?['altText'],
-            };
-            meta['image'] = imagePayload;
-            meta['featuredImage'] = imagePayload;
-          }
-          return {...node, ...meta};
-        }).toList();
+      final metafields = node['metafields'] as List<dynamic>? ?? [];
+      final meta = <String, dynamic>{};
+      for (final mf in metafields) {
+        if (mf == null) continue;
+        final key = mf['key']?.toString() ?? '';
+        final value = mf['value'];
+        switch (key) {
+          case 'felt_straw_or_ballcap':
+            meta['feltStrawOrBallcap'] = {'value': value};
+            break;
+          case 'crown_shape':
+            meta['crownShape'] = {'value': value};
+            break;
+          case 'brim_shape':
+            meta['brimShape'] = {'value': value};
+            break;
+          case 'crown_height':
+            meta['crownHeight'] = {'value': value};
+            break;
+          case 'brim_width':
+            meta['brimWidth'] = {'value': value};
+            break;
+          case 'stetson_profile':
+            meta['stetsonProfile'] = {'value': value};
+            break;
+          case 'city':
+            meta['city'] = {'value': value};
+            break;
+          case 'outdoors':
+            meta['outdoors'] = {'value': value};
+            break;
+          case 'hat_finder_exclude_from_examples':
+            meta['hatFinderExcludeFromExamples'] = {'value': value};
+            break;
+        }
+      }
+      // Flatten first image for app compatibility (UI reads featuredImage).
+      final imagesEdges = (node['images']?['edges'] as List<dynamic>?) ?? [];
+      if (imagesEdges.isNotEmpty) {
+        final imgNode = imagesEdges.first['node'];
+        final imagePayload = <String, dynamic>{
+          'url': imgNode?['url'],
+          'altText': imgNode?['altText'],
+        };
+        meta['image'] = imagePayload;
+        meta['featuredImage'] = imagePayload;
+      }
+      return {...node, ...meta};
+    }).toList();
     return _eligibleCatalogProducts(nodes);
   }
 
   static Future<List<dynamic>> _downloadProducts({required bool lite}) async {
-    final query = lite ? r"""
+    final query = lite
+        ? r"""
     {
       products(first: 250) {
         edges {
@@ -653,7 +674,8 @@ class ShopifyService {
         }
       }
     }
-    """ : r"""
+    """
+        : r"""
     {
       products(first: 250) {
         edges {
@@ -703,17 +725,19 @@ class ShopifyService {
     }
     """;
 
-    final response = await http.post(
-      Uri.parse(AppConfig.storefrontApiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': AppConfig.storefrontApiToken,
-      },
-      body: jsonEncode({'query': query}),
-    ).timeout(_requestTimeout);
+    final response = await http
+        .post(
+          Uri.parse(AppConfig.storefrontApiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': AppConfig.storefrontApiToken,
+          },
+          body: jsonEncode({'query': query}),
+        )
+        .timeout(_requestTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load products: \${response.statusCode}');
+      throw Exception('Failed to load products: HTTP ${response.statusCode}');
     }
 
     // Web release builds can fail silently in isolates; parse on main thread.
@@ -808,10 +832,8 @@ class ShopifyService {
       }
       if (brimWidths != null && brimWidths.isNotEmpty) {
         final productWidths = parseBrimWidthValues(product['brimWidth']);
-        final selectedWidths = brimWidths
-            .map(parseInchesFromText)
-            .whereType<double>()
-            .toList();
+        final selectedWidths =
+            brimWidths.map(parseInchesFromText).whereType<double>().toList();
         if (!_inchesMatchList(productWidths, selectedWidths)) {
           matches = false;
         }
@@ -1049,8 +1071,10 @@ class ShopifyService {
     return _downloadProductValidationChoices(forceRefresh: forceRefresh);
   }
 
-  static Future<Map<String, List<String>>> _downloadAdminValidationChoices() async {
-    final uri = Uri.parse('${AppConfig.hatFinderApiBaseUrl}/api/validation_choices');
+  static Future<Map<String, List<String>>>
+      _downloadAdminValidationChoices() async {
+    final uri =
+        Uri.parse('${AppConfig.hatFinderApiBaseUrl}/api/validation_choices');
     final response = await http.get(uri).timeout(_requestTimeout);
     if (response.statusCode != 200) {
       throw Exception(
@@ -1099,7 +1123,8 @@ class ShopifyService {
     for (final product in products) {
       final crown = parseMetafieldValue(product['crownShape'] ?? '').trim();
       final brim = parseMetafieldValue(product['brimShape'] ?? '').trim();
-      final material = parseMetafieldValue(product['feltStrawOrBallcap'] ?? '').trim();
+      final material =
+          parseMetafieldValue(product['feltStrawOrBallcap'] ?? '').trim();
       if (crown.isNotEmpty) apiCrownValues.add(crown);
       if (brim.isNotEmpty) apiBrimValues.add(brim);
       if (material.isNotEmpty) materialTypes.add(material);

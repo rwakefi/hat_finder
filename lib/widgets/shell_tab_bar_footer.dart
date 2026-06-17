@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../config/app_breakpoints.dart';
 import '../screens/app_shell.dart';
-import '../screens/hat_results_screen.dart';
 import 'moon_ridge_bottom_nav.dart';
 
 /// Shell tab bar for pushed routes that cover [AppShell]'s persistent nav.
@@ -27,13 +26,7 @@ class ShellTabBarFooter extends StatelessWidget {
       selectedIndex: selectedIndex,
       layout: layoutFor(context),
       onSelected: (index) {
-        if (index == 1) {
-          Navigator.of(context).push(
-            _instantRoute(const HatResultsScreen()),
-          );
-        } else {
-          AppShell.navigateToTab(index);
-        }
+        AppShell.navigateToTab(index);
       },
     );
   }
@@ -62,7 +55,8 @@ class ShellNavigationHost extends StatelessWidget {
     if (!showNavigation) return child;
 
     final useTopNav = AppBreakpoints.useWebTopNavigation(context);
-    final nav = ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
+    final nav =
+        ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -73,14 +67,6 @@ class ShellNavigationHost extends StatelessWidget {
       ],
     );
   }
-}
-
-PageRouteBuilder<void> _instantRoute(Widget child) {
-  return PageRouteBuilder<void>(
-    pageBuilder: (_, __, ___) => child,
-    transitionDuration: Duration.zero,
-    reverseTransitionDuration: Duration.zero,
-  );
 }
 
 /// Page-specific footer controls stacked above the shell tab bar.
@@ -97,7 +83,8 @@ class ShellTabBarWithFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useTopNav = AppBreakpoints.useWebTopNavigation(context);
-    final nav = ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
+    final nav =
+        ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
 
     if (useTopNav) {
       return Column(

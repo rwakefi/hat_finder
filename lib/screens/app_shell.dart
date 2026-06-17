@@ -4,7 +4,6 @@ import '../config/app_breakpoints.dart';
 import '../widgets/moon_ridge_bottom_nav.dart';
 import '../widgets/web_content_scope.dart';
 import 'hat_input_screen.dart';
-import 'hat_results_screen.dart';
 import 'head_shape_screen.dart';
 import 'home_screen.dart';
 import 'shop_webview_screen.dart';
@@ -98,13 +97,7 @@ class _AppShellState extends State<AppShell> {
       selectedIndex: _selectedIndex,
       layout: useTopNav ? AppNavLayout.top : AppNavLayout.bottom,
       onSelected: (index) {
-        if (index == 1) {
-          Navigator.of(context).push(
-            _instantRoute(const HatResultsScreen()),
-          );
-        } else {
-          _selectTab(index);
-        }
+        _selectTab(index);
       },
     );
 
@@ -126,14 +119,6 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
-}
-
-PageRouteBuilder<void> _instantRoute(Widget child) {
-  return PageRouteBuilder<void>(
-    pageBuilder: (_, __, ___) => child,
-    transitionDuration: Duration.zero,
-    reverseTransitionDuration: Duration.zero,
-  );
 }
 
 class _DeferredTabLoadingView extends StatelessWidget {

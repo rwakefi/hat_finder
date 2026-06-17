@@ -234,7 +234,10 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   void didUpdateWidget(covariant FineTuningTray oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.expanded && !oldWidget.expanded) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollHint());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _updateScrollHint();
+      });
     }
   }
 
@@ -245,6 +248,7 @@ class _FineTuningTrayState extends State<FineTuningTray> {
   }
 
   void _updateScrollHint() {
+    if (!mounted) return;
     if (!widget.expanded || !_scrollController.hasClients) return;
     final position = _scrollController.position;
     final canScroll = position.maxScrollExtent > 8;
@@ -442,9 +446,8 @@ class _FineTuningTrayState extends State<FineTuningTray> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: widget.expanded
-                ? _turquoise.withValues(alpha: 0.1)
-                : _surface,
+            color:
+                widget.expanded ? _turquoise.withValues(alpha: 0.1) : _surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: widget.expanded ? _turquoise : _border,
