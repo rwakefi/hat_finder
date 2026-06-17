@@ -252,6 +252,32 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     });
   }
 
+  bool get _hasActiveFilters =>
+      _filterHatType != null ||
+      _filterWesternStyle != null ||
+      _filterCrownShape != null ||
+      _filterBrimShape != null ||
+      _filterCrownHeights.isNotEmpty ||
+      _filterBrimWidths.isNotEmpty ||
+      _selectedColor != null ||
+      _selectedVariantSize != null;
+
+  void _clearAllFilters() {
+    if (!_hasActiveFilters) return;
+    setState(() {
+      _filterHatType = null;
+      _filterWesternStyle = null;
+      _filterCrownShape = null;
+      _filterBrimShape = null;
+      _filterCrownHeights = [];
+      _filterBrimWidths = [];
+      _selectedColor = null;
+      _selectedVariantSize = null;
+      _fineTuningExpanded = false;
+    });
+    _applyFilters();
+  }
+
   void _onFineTuningChanged(FineTuningValues values) {
     _filterCrownHeights = List<double>.from(values.crownHeights);
     _filterBrimWidths = List<String>.from(values.brimWidths);
@@ -1390,57 +1416,92 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       children: [
         Material(
           color: Colors.transparent,
-          child: InkWell(
-            onTap: () => setState(
-              () => _summaryFiltersExpanded = !_summaryFiltersExpanded,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                color: _summaryFiltersExpanded
-                    ? _turquoise.withValues(alpha: 0.1)
-                    : _offWhite,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _summaryFiltersExpanded ? _turquoise : _borderGrey,
-                  width: _summaryFiltersExpanded ? 1.5 : 1,
-                ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: _summaryFiltersExpanded
+                  ? _turquoise.withValues(alpha: 0.1)
+                  : _offWhite,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _summaryFiltersExpanded ? _turquoise : _borderGrey,
+                width: _summaryFiltersExpanded ? 1.5 : 1,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.filter_list_rounded,
-                    size: 15,
-                    color: _summaryFiltersExpanded
-                        ? _turquoise
-                        : _espresso.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'FILTERS',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: _summaryFiltersExpanded ? _turquoise : _espresso,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(
+                      () => _summaryFiltersExpanded = !_summaryFiltersExpanded,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.filter_list_rounded,
+                          size: 15,
+                          color: _summaryFiltersExpanded
+                              ? _turquoise
+                              : _espresso.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'FILTERS',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                            color: _summaryFiltersExpanded
+                                ? _turquoise
+                                : _espresso,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        AnimatedRotation(
+                          turns: _summaryFiltersExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 220),
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 18,
+                            color: _summaryFiltersExpanded
+                                ? _turquoise
+                                : _espresso.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  AnimatedRotation(
-                    turns: _summaryFiltersExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 18,
-                      color: _summaryFiltersExpanded
-                          ? _turquoise
-                          : _espresso.withValues(alpha: 0.5),
+                ),
+                if (_hasActiveFilters) ...[
+                  Container(
+                    width: 1,
+                    height: 18,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    color: _borderGrey,
+                  ),
+                  GestureDetector(
+                    onTap: _clearAllFilters,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        'CLEAR',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          color: _turquoise,
+                        ),
+                      ),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -1465,6 +1526,25 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: _buildSummaryDropdowns()),
+        if (_hasActiveFilters) ...[
+          const SizedBox(width: 6),
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: GestureDetector(
+              onTap: _clearAllFilters,
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                'CLEAR',
+                style: GoogleFonts.montserrat(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: _turquoise,
+                ),
+              ),
+            ),
+          ),
+        ],
         if (_showsFineTuningTray) ...[
           const SizedBox(width: 6),
           FineTuningTray(
