@@ -301,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen>
                               28,
                               0,
                               28,
-                              MediaQuery.paddingOf(context).bottom + 82,
+                              MediaQuery.paddingOf(context).bottom + 92,
                             ),
                             child: _buildAuthorizedDealerSection(logoWidth),
                           ),
