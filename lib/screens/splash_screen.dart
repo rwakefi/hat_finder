@@ -16,8 +16,10 @@ const String _stetsonDealerLogo =
     'assets/images/dealers/stetson_authorized.png';
 const String _resistolDealerLogo =
     'assets/images/dealers/resistol_authorized.png';
-const double _resistolDealerOpacity = 0.60;
-const double _resistolDealerWidthFactor = 0.98;
+const double _stetsonDealerOpacity = 0.78;
+const double _resistolDealerOpacity = 0.55;
+const double _dealerLogoWidthFactor = 0.64;
+const double _resistolDealerWidthFactor = 0.94;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -297,7 +299,7 @@ class _SplashScreenState extends State<SplashScreen>
                               28,
                               0,
                               28,
-                              MediaQuery.paddingOf(context).bottom + 28,
+                              MediaQuery.paddingOf(context).bottom + 54,
                             ),
                             child: _buildAuthorizedDealerSection(logoWidth),
                           ),
@@ -315,7 +317,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildAuthorizedDealerSection(double referenceWidth) {
-    final dealerLogoWidth = (referenceWidth * 0.72).clamp(210.0, 280.0);
+    final dealerLogoWidth =
+        (referenceWidth * _dealerLogoWidthFactor).clamp(190.0, 250.0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -335,8 +338,9 @@ class _SplashScreenState extends State<SplashScreen>
           assetPath: _stetsonDealerLogo,
           label: 'Stetson',
           width: dealerLogoWidth,
+          opacity: _stetsonDealerOpacity,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
         _buildDealerLogo(
           assetPath: _resistolDealerLogo,
           label: 'Resistol',
