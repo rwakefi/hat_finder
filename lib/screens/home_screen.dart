@@ -51,8 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final screenHeight = mediaSize.height;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     final isLargePhone = AppBreakpoints.isLargePhone(context);
-    final compact = !isLargePhone &&
-        (screenHeight < 860 || mediaSize.width < 390 || textScale > 1.08);
+    final tightViewport = screenHeight < 860 || mediaSize.width < 390;
+    final largeText = textScale > 1.08;
+    final compact = !isLargePhone && (tightViewport || largeText);
     final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
     final isWideDesktop = AppBreakpoints.isWide(context);
     final heroHeight = splitLayout
@@ -64,17 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
             MoonRidgeLogoSizes.homeProMax,
             112.0,
           )
-        : compact
+        : tightViewport
             ? MoonRidgeLogoSizes.homeCompactTight
-            : (isWideDesktop
-                ? MoonRidgeLogoSizes.homeWide
-                : MoonRidgeLogoSizes.homeDefault);
+            : (largeText
+                ? MoonRidgeLogoSizes.homeCompact
+                : (isWideDesktop
+                    ? MoonRidgeLogoSizes.homeWide
+                    : MoonRidgeLogoSizes.homeDefault));
     final buttonGap = compact ? 10.0 : (isWideDesktop ? 18.0 : 16.0);
     final footerLogoGap = isLargePhone
         ? 20.0
-        : compact
+        : tightViewport
             ? 10.0
-            : (splitLayout ? 24.0 : 16.0);
+            : (largeText ? 18.0 : (splitLayout ? 24.0 : 16.0));
     final actionsBottomPadding = compact ? 28.0 : 12.0;
     final centerFooterLogo = !splitLayout;
     final heroFlex = isWideDesktop ? 12 : 11;
@@ -206,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final actionChildren = <Widget>[
       ...buttonChildren,
       if (!centerFooterLogo) ...[
-        SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
+        SizedBox(
+            height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
         Center(child: buildFooterLogo()),
       ],
     ];
@@ -228,7 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
             hasScrollBody: false,
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: buildFooterLogo(),
               ),
             ),
@@ -240,17 +245,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final actions = centerFooterLogo
         ? buildMobileActions()
         : SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        isWideDesktop ? 32 : 24,
-        splitLayout ? (isWideDesktop ? 40 : 28) : 16,
-        isWideDesktop ? 32 : 24,
-        actionsBottomPadding,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: actionChildren,
-      ),
-    );
+            padding: EdgeInsets.fromLTRB(
+              isWideDesktop ? 32 : 24,
+              splitLayout ? (isWideDesktop ? 40 : 28) : 16,
+              isWideDesktop ? 32 : 24,
+              actionsBottomPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: actionChildren,
+            ),
+          );
 
     if (webSplit) {
       return _WebHomeSplit(
