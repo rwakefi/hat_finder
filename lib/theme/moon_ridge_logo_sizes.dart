@@ -6,6 +6,7 @@ abstract final class MoonRidgeLogoSizes {
   static const double wizardWebTablet = 54;
   static const double homeCompact = 64;
   static const double homeCompactTight = 54;
+  static const double homeProMax = 100;
   static const double homeWide = 93;
   static const double homeDefault = 86;
   static const double connect = 86;

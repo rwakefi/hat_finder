@@ -8,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../config/app_breakpoints.dart';
+import '../config/app_config.dart';
 import '../screens/shape_guide_screen.dart';
 import '../services/shopify_service.dart';
 import '../theme/moon_ridge_logo_sizes.dart';
@@ -35,30 +36,70 @@ class _HomeScreenState extends State<HomeScreen> {
     ShopifyService.preloadWizardCatalog(includeFullCatalog: true);
   }
 
+  Future<void> _openMoonRidgeStore() async {
+    final uri = Uri.parse(AppConfig.publicStoreUrl);
+    if (kIsWeb) {
+      await launchUrl(uri, webOnlyWindowName: '_blank');
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaSize = MediaQuery.sizeOf(context);
     final screenHeight = mediaSize.height;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final compact =
-        screenHeight < 860 || mediaSize.width < 390 || textScale > 1.08;
+    final isLargePhone = AppBreakpoints.isLargePhone(context);
+    final compact = !isLargePhone &&
+        (screenHeight < 860 || mediaSize.width < 390 || textScale > 1.08);
     final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
     final isWideDesktop = AppBreakpoints.isWide(context);
     final heroHeight = splitLayout
         ? double.infinity
         : (screenHeight * (compact ? 0.28 : 0.36))
             .clamp(compact ? 190.0 : 240.0, compact ? 246.0 : 320.0);
-    final logoHeight = compact
-        ? MoonRidgeLogoSizes.homeCompactTight
-        : (isWideDesktop
-            ? MoonRidgeLogoSizes.homeWide
-            : MoonRidgeLogoSizes.homeDefault);
+    final logoHeight = isLargePhone
+        ? (screenHeight * 0.102).clamp(
+            MoonRidgeLogoSizes.homeProMax,
+            112.0,
+          )
+        : compact
+            ? MoonRidgeLogoSizes.homeCompactTight
+            : (isWideDesktop
+                ? MoonRidgeLogoSizes.homeWide
+                : MoonRidgeLogoSizes.homeDefault);
     final buttonGap = compact ? 10.0 : (isWideDesktop ? 18.0 : 16.0);
-    final footerLogoGap = compact ? 10.0 : (splitLayout ? 24.0 : 16.0);
+    final footerLogoGap = isLargePhone
+        ? 20.0
+        : compact
+            ? 10.0
+            : (splitLayout ? 24.0 : 16.0);
     final actionsBottomPadding = compact ? 28.0 : 12.0;
+    final centerFooterLogo = !splitLayout;
     final heroFlex = isWideDesktop ? 12 : 11;
     final actionsFlex = isWideDesktop ? 10 : 9;
     final webSplit = splitLayout && kIsWeb;
+
+    Widget buildFooterLogo({double? maxHeight}) {
+      final base = maxHeight == null
+          ? logoHeight
+          : logoHeight.clamp(48.0, maxHeight * 0.75);
+      final height = base * 1.1;
+      return Semantics(
+        button: true,
+        label: 'Visit Moon Ridge website',
+        child: GestureDetector(
+          onTap: _openMoonRidgeStore,
+          behavior: HitTestBehavior.opaque,
+          child: Image.asset(
+            'assets/images/Moon Ridge Header Logo.png',
+            height: maxHeight == null ? height : height.clamp(48.0, maxHeight),
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
 
     Widget buildHeroStack() {
       return Stack(
@@ -109,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
     );
 
-    final actionChildren = <Widget>[
+    final buttonChildren = <Widget>[
       _OptionBlock(
         icon: Icons.style_outlined,
         label: 'SEARCH BY HAT TYPE',
@@ -160,17 +201,45 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
-      Center(
-        child: Image.asset(
-          'assets/images/Moon Ridge Header Logo.png',
-          height: logoHeight,
-          fit: BoxFit.contain,
-        ),
-      ),
     ];
 
-    final actions = SingleChildScrollView(
+    final actionChildren = <Widget>[
+      ...buttonChildren,
+      if (!centerFooterLogo) ...[
+        SizedBox(height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
+        Center(child: buildFooterLogo()),
+      ],
+    ];
+
+    Widget buildMobileActions() {
+      return CustomScrollView(
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: buttonChildren,
+              ),
+            ),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: buildFooterLogo(),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final actions = centerFooterLogo
+        ? buildMobileActions()
+        : SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         isWideDesktop ? 32 : 24,
         splitLayout ? (isWideDesktop ? 40 : 28) : 16,

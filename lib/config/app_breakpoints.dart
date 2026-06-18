@@ -26,6 +26,12 @@ class AppBreakpoints {
 
   static bool isWide(BuildContext context) => widthOf(context) >= wide;
 
+  /// Pro Max class (~932pt+ logical height). Native phones only.
+  static bool isLargePhone(BuildContext context) {
+    if (kIsWeb) return false;
+    return MediaQuery.sizeOf(context).height >= 920;
+  }
+
   /// Desktop web uses a top tab bar instead of the mobile-style bottom nav.
   static bool useWebTopNavigation(BuildContext context) =>
       kIsWeb && !EmbedMode.isActive && isDesktop(context);
