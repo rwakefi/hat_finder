@@ -48,249 +48,279 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final mediaSize = MediaQuery.sizeOf(context);
-    final screenHeight = mediaSize.height;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     final isLargePhone = AppBreakpoints.isLargePhone(context);
-    final tightViewport = screenHeight < 860 || mediaSize.width < 390;
-    final largeText = textScale > 1.08;
-    final compact = !isLargePhone && (tightViewport || largeText);
     final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
     final isWideDesktop = AppBreakpoints.isWide(context);
-    final heroHeight = splitLayout
-        ? double.infinity
-        : (screenHeight * (compact ? 0.28 : 0.36))
-            .clamp(compact ? 190.0 : 240.0, compact ? 246.0 : 320.0);
-    final logoHeight = isLargePhone
-        ? (screenHeight * 0.102).clamp(
-            MoonRidgeLogoSizes.homeProMax,
-            112.0,
-          )
-        : tightViewport
-            ? MoonRidgeLogoSizes.homeCompactTight
-            : (largeText
-                ? MoonRidgeLogoSizes.homeCompact
-                : (isWideDesktop
-                    ? MoonRidgeLogoSizes.homeWide
-                    : MoonRidgeLogoSizes.homeDefault));
-    final buttonGap = compact ? 10.0 : (isWideDesktop ? 18.0 : 16.0);
-    final footerLogoGap = isLargePhone
-        ? 20.0
-        : tightViewport
-            ? 10.0
-            : (largeText ? 18.0 : (splitLayout ? 24.0 : 16.0));
-    final actionsBottomPadding = compact ? 28.0 : 12.0;
-    final centerFooterLogo = !splitLayout;
     final heroFlex = isWideDesktop ? 12 : 11;
     final actionsFlex = isWideDesktop ? 10 : 9;
     final webSplit = splitLayout && kIsWeb;
 
-    Widget buildFooterLogo({double? maxHeight}) {
-      final base = maxHeight == null
-          ? logoHeight
-          : logoHeight.clamp(48.0, maxHeight * 0.75);
-      final height = base * 1.1;
-      return Semantics(
-        button: true,
-        label: 'Visit Moon Ridge website',
-        child: GestureDetector(
-          onTap: _openMoonRidgeStore,
-          behavior: HitTestBehavior.opaque,
-          child: Image.asset(
-            'assets/images/Moon Ridge Header Logo.png',
-            height: maxHeight == null ? height : height.clamp(48.0, maxHeight),
-            fit: BoxFit.contain,
-          ),
-        ),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : mediaSize.height;
+        final tightViewport = viewportHeight < 860 || mediaSize.width < 390;
+        final largeText = textScale > 1.08;
+        final compact = !isLargePhone && (tightViewport || largeText);
+        final heroHeight = splitLayout
+            ? double.infinity
+            : (viewportHeight *
+                    (compact
+                        ? 0.28
+                        : isLargePhone
+                            ? 0.315
+                            : 0.36))
+                .clamp(
+                compact ? 190.0 : (isLargePhone ? 250.0 : 240.0),
+                compact ? 246.0 : (isLargePhone ? 288.0 : 320.0),
+              );
+        final logoHeight = isLargePhone
+            ? (viewportHeight * 0.088).clamp(76.0, 90.0)
+            : tightViewport
+                ? MoonRidgeLogoSizes.homeCompactTight
+                : (largeText
+                    ? MoonRidgeLogoSizes.homeCompact
+                    : (isWideDesktop
+                        ? MoonRidgeLogoSizes.homeWide
+                        : MoonRidgeLogoSizes.homeDefault));
+        final buttonGap = compact ? 10.0 : (isWideDesktop ? 18.0 : 16.0);
+        final footerLogoGap = isLargePhone
+            ? 12.0
+            : tightViewport
+                ? 10.0
+                : (largeText ? 18.0 : (splitLayout ? 24.0 : 16.0));
+        final actionsBottomPadding = compact ? 28.0 : 12.0;
+        final centerFooterLogo = !splitLayout;
 
-    Widget buildHeroStack() {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          const _RotatingPhotos(photos: _homePhotos),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  _HomePalette.espresso.withValues(alpha: 0.35),
-                  Colors.transparent,
-                  _HomePalette.espresso.withValues(alpha: 0.45),
-                ],
+        Widget buildFooterLogo({double? maxHeight}) {
+          final targetHeight = logoHeight * 1.1;
+          final height = maxHeight == null
+              ? targetHeight
+              : targetHeight.clamp(
+                  maxHeight < 44.0 ? maxHeight : 44.0,
+                  maxHeight,
+                );
+          return Semantics(
+            button: true,
+            label: 'Visit Moon Ridge website',
+            child: GestureDetector(
+              onTap: _openMoonRidgeStore,
+              behavior: HitTestBehavior.opaque,
+              child: Image.asset(
+                'assets/images/Moon Ridge Header Logo.png',
+                height: height,
+                fit: BoxFit.contain,
               ),
             ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _HomeHeadline(
-                    light: true,
-                    heroTop: true,
-                    compact: compact,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    final hero = SizedBox(
-      height: splitLayout ? double.infinity : heroHeight,
-      child: webSplit
-          ? buildHeroStack()
-          : ClipPath(
-              clipper: _WaveBottomClipper(),
-              child: buildHeroStack(),
-            ),
-    );
-
-    final buttonChildren = <Widget>[
-      _OptionBlock(
-        icon: Icons.style_outlined,
-        label: 'SEARCH BY HAT TYPE',
-        emphasized: true,
-        onTap: widget.onFindHat,
-        compact: compact,
-      ),
-      SizedBox(height: buttonGap),
-      _OptionBlock(
-        icon: Icons.face_outlined,
-        label: 'LEARN YOUR HEAD SHAPE',
-        onTap: widget.onFitGuide,
-        compact: compact,
-      ),
-      SizedBox(height: buttonGap),
-      _OptionBlock(
-        icon: Icons.shopping_bag_outlined,
-        label: 'JUST TAKE ME TO THE HATS!',
-        onTap: widget.onShop,
-        compact: compact,
-      ),
-      SizedBox(height: buttonGap),
-      _HomeSecondaryActions(
-        rowGap: buttonGap,
-        columnGap: splitLayout ? (isWideDesktop ? 14 : 12) : 12,
-        relaxed: splitLayout,
-        onMeasure: () => _showVideoModal(context),
-        onVirtualMeasure: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Coming soon!'),
-              duration: Duration(seconds: 2),
-            ),
           );
-        },
-        onCrownGuide: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ShapeGuideScreen.crown(),
-            ),
-          );
-        },
-        onBrimGuide: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ShapeGuideScreen.brim(),
-            ),
-          );
-        },
-      ),
-    ];
+        }
 
-    final actionChildren = <Widget>[
-      ...buttonChildren,
-      if (!centerFooterLogo) ...[
-        SizedBox(
-            height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
-        Center(child: buildFooterLogo()),
-      ],
-    ];
-
-    Widget buildMobileActions() {
-      return CustomScrollView(
-        physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: buttonChildren,
-              ),
-            ),
-          ),
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: buildFooterLogo(),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    final actions = centerFooterLogo
-        ? buildMobileActions()
-        : SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              isWideDesktop ? 32 : 24,
-              splitLayout ? (isWideDesktop ? 40 : 28) : 16,
-              isWideDesktop ? 32 : 24,
-              actionsBottomPadding,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: actionChildren,
-            ),
-          );
-
-    if (webSplit) {
-      return _WebHomeSplit(
-        hero: hero,
-        heroFlex: heroFlex,
-        actionsFlex: actionsFlex,
-        isWideDesktop: isWideDesktop,
-        actionChildren: actionChildren,
-      );
-    }
-
-    return ColoredBox(
-      color: _HomePalette.surface,
-      child: splitLayout
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(flex: heroFlex, child: hero),
-                      Expanded(flex: actionsFlex, child: actions),
+        Widget buildHeroStack() {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              const _RotatingPhotos(photos: _homePhotos),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      _HomePalette.espresso.withValues(alpha: 0.35),
+                      Colors.transparent,
+                      _HomePalette.espresso.withValues(alpha: 0.45),
                     ],
                   ),
                 ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                hero,
-                Expanded(child: actions),
-              ],
-            ),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 12, 24, compact ? 24 : 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _HomeHeadline(
+                        light: true,
+                        heroTop: true,
+                        compact: compact,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        final hero = SizedBox(
+          height: splitLayout ? double.infinity : heroHeight,
+          child: webSplit
+              ? buildHeroStack()
+              : ClipPath(
+                  clipper: _WaveBottomClipper(),
+                  child: buildHeroStack(),
+                ),
+        );
+
+        final buttonChildren = <Widget>[
+          _OptionBlock(
+            icon: Icons.style_outlined,
+            label: 'SEARCH BY HAT TYPE',
+            emphasized: true,
+            onTap: widget.onFindHat,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          _OptionBlock(
+            icon: Icons.face_outlined,
+            label: 'LEARN YOUR HEAD SHAPE',
+            onTap: widget.onFitGuide,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          _OptionBlock(
+            icon: Icons.shopping_bag_outlined,
+            label: 'JUST TAKE ME TO THE HATS!',
+            onTap: widget.onShop,
+            compact: compact,
+          ),
+          SizedBox(height: buttonGap),
+          _HomeSecondaryActions(
+            rowGap: buttonGap,
+            columnGap: splitLayout ? (isWideDesktop ? 14 : 12) : 12,
+            relaxed: splitLayout,
+            onMeasure: () => _showVideoModal(context),
+            onVirtualMeasure: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Coming soon!'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            onCrownGuide: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ShapeGuideScreen.crown(),
+                ),
+              );
+            },
+            onBrimGuide: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ShapeGuideScreen.brim(),
+                ),
+              );
+            },
+          ),
+        ];
+
+        final actionChildren = <Widget>[
+          ...buttonChildren,
+          if (!centerFooterLogo) ...[
+            SizedBox(
+                height:
+                    splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
+            Center(child: buildFooterLogo()),
+          ],
+        ];
+
+        Widget buildMobileActions() {
+          final footerVerticalPadding = isLargePhone ? 8.0 : 12.0;
+          return CustomScrollView(
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: buttonChildren,
+                  ),
+                ),
+              ),
+              SliverLayoutBuilder(
+                builder: (context, sliverConstraints) {
+                  final visibleFooterHeight = sliverConstraints
+                      .remainingPaintExtent
+                      .clamp(0.0, logoHeight * 1.1 + footerVerticalPadding * 2);
+                  final maxLogoHeight =
+                      (visibleFooterHeight - footerVerticalPadding * 2)
+                          .clamp(0.0, logoHeight * 1.1);
+
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: footerVerticalPadding,
+                        ),
+                        child: buildFooterLogo(maxHeight: maxLogoHeight),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        }
+
+        final actions = centerFooterLogo
+            ? buildMobileActions()
+            : SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  isWideDesktop ? 32 : 24,
+                  splitLayout ? (isWideDesktop ? 40 : 28) : 16,
+                  isWideDesktop ? 32 : 24,
+                  actionsBottomPadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: actionChildren,
+                ),
+              );
+
+        if (webSplit) {
+          return _WebHomeSplit(
+            hero: hero,
+            heroFlex: heroFlex,
+            actionsFlex: actionsFlex,
+            isWideDesktop: isWideDesktop,
+            actionChildren: actionChildren,
+          );
+        }
+
+        return ColoredBox(
+          color: _HomePalette.surface,
+          child: splitLayout
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: heroFlex, child: hero),
+                          Expanded(flex: actionsFlex, child: actions),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    hero,
+                    Expanded(child: actions),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
