@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/app_breakpoints.dart';
 import '../widgets/moon_ridge_bottom_nav.dart';
@@ -33,6 +35,16 @@ class _AppShellState extends State<AppShell> {
   final Set<int> _deferredTabs = {};
 
   static const Set<int> _webViewTabs = {3, 4};
+  static const _darkSurfaceOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+  );
+  static const _lightSurfaceOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  );
 
   void selectTab(int index) => _selectTab(index);
 
@@ -115,15 +127,26 @@ class _AppShellState extends State<AppShell> {
         children: List.generate(5, _buildTab),
       ),
     );
+    final safeContent = !kIsWeb && _selectedIndex != 0
+        ? SafeArea(
+            bottom: false,
+            child: content,
+          )
+        : content;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF8F5),
-      body: Column(
-        children: [
-          if (useTopNav) nav,
-          Expanded(child: content),
-          if (!useTopNav) nav,
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _selectedIndex == 0
+          ? _darkSurfaceOverlayStyle
+          : _lightSurfaceOverlayStyle,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFAF8F5),
+        body: Column(
+          children: [
+            if (useTopNav) nav,
+            Expanded(child: safeContent),
+            if (!useTopNav) nav,
+          ],
+        ),
       ),
     );
   }

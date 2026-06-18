@@ -15,7 +15,6 @@ class ResponsiveAppFrame extends StatelessWidget {
   final Widget child;
 
   static const _surface = Color(0xFFFAF8F5);
-  static const _letterboxNative = Color(0xFF2D2926);
 
   @override
   Widget build(BuildContext context) {
@@ -26,34 +25,20 @@ class ResponsiveAppFrame extends StatelessWidget {
     final isWide = AppBreakpoints.isTablet(context);
     if (!isWide) return child;
 
-    // Web (tablet+): store header + full-bleed app — no side boards.
-    if (kIsWeb) {
-      final app = ColoredBox(color: _surface, child: child);
-      if (WebsiteChrome.shouldShow(context)) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const WebsiteChrome(),
-            Expanded(child: app),
-          ],
-        );
-      }
-      return app;
-    }
+    // Native iPad should fill the App Store screenshot canvas.
+    if (!kIsWeb) return child;
 
-    // Native tablet/desktop: centered column on dark letterbox.
-    final maxWidth = AppBreakpoints.contentMaxWidth(context);
-    return ColoredBox(
-      color: _letterboxNative,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: maxWidth,
-            minHeight: MediaQuery.sizeOf(context).height,
-          ),
-          child: ColoredBox(color: _surface, child: child),
-        ),
-      ),
-    );
+    // Web (tablet+): store header + full-bleed app - no side boards.
+    final app = ColoredBox(color: _surface, child: child);
+    if (WebsiteChrome.shouldShow(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const WebsiteChrome(),
+          Expanded(child: app),
+        ],
+      );
+    }
+    return app;
   }
 }
