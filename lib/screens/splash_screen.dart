@@ -16,10 +16,10 @@ const String _stetsonDealerLogo =
     'assets/images/dealers/stetson_authorized.png';
 const String _resistolDealerLogo =
     'assets/images/dealers/resistol_authorized.png';
-const double _stetsonDealerOpacity = 0.78;
-const double _resistolDealerOpacity = 0.55;
-const double _dealerLogoWidthFactor = 0.64;
-const double _resistolDealerWidthFactor = 0.94;
+const double _stetsonDealerOpacity = 0.72;
+const double _resistolDealerOpacity = 0.50;
+const double _dealerLogoWidthFactor = 0.60;
+const double _resistolDealerWidthFactor = 0.90;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -299,7 +299,7 @@ class _SplashScreenState extends State<SplashScreen>
                               28,
                               0,
                               28,
-                              MediaQuery.paddingOf(context).bottom + 54,
+                              MediaQuery.paddingOf(context).bottom + 64,
                             ),
                             child: _buildAuthorizedDealerSection(logoWidth),
                           ),
@@ -340,7 +340,7 @@ class _SplashScreenState extends State<SplashScreen>
           width: dealerLogoWidth,
           opacity: _stetsonDealerOpacity,
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 32),
         _buildDealerLogo(
           assetPath: _resistolDealerLogo,
           label: 'Resistol',
