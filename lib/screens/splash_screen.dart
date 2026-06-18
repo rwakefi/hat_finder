@@ -10,14 +10,16 @@ const Color kSplashGlow = Color(0xFF3A2D22);
 const Color kSplashChampagne = Color(0xFFC9BBA8);
 const Color kSplashCream = Color(0xFFF2EDE6);
 const Color kSplashAccent = Color(0xFF7BA8A5);
+const Color _dealerEmbossHighlight = Color(0xFFE4D8C8);
+const Color _dealerEmbossShadow = Color(0xFF070504);
 
 const String _logoAsset = 'assets/images/moon_ridge_logo.png';
 const String _stetsonDealerLogo =
     'assets/images/dealers/stetson_authorized.png';
 const String _resistolDealerLogo =
     'assets/images/dealers/resistol_authorized.png';
-const double _stetsonDealerOpacity = 0.72;
-const double _resistolDealerOpacity = 0.50;
+const double _stetsonDealerOpacity = 0.76;
+const double _resistolDealerOpacity = 0.54;
 const double _dealerLogoWidthFactor = 0.60;
 const double _resistolDealerWidthFactor = 0.90;
 
@@ -299,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen>
                               28,
                               0,
                               28,
-                              MediaQuery.paddingOf(context).bottom + 64,
+                              MediaQuery.paddingOf(context).bottom + 82,
                             ),
                             child: _buildAuthorizedDealerSection(logoWidth),
                           ),
@@ -359,8 +361,55 @@ class _SplashScreenState extends State<SplashScreen>
   }) {
     return Semantics(
       label: '$label authorized dealer',
-      child: Opacity(
-        opacity: opacity,
+      child: SizedBox(
+        width: width,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Transform.translate(
+              offset: const Offset(1.2, 1.4),
+              child: _buildTintedDealerLogo(
+                assetPath: assetPath,
+                width: width,
+                color: _dealerEmbossShadow,
+                opacity: opacity * 0.34,
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(-0.9, -0.9),
+              child: _buildTintedDealerLogo(
+                assetPath: assetPath,
+                width: width,
+                color: _dealerEmbossHighlight,
+                opacity: opacity * 0.30,
+              ),
+            ),
+            Opacity(
+              opacity: opacity,
+              child: Image.asset(
+                assetPath,
+                width: width,
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTintedDealerLogo({
+    required String assetPath,
+    required double width,
+    required Color color,
+    required double opacity,
+  }) {
+    return Opacity(
+      opacity: opacity,
+      child: ColorFiltered(
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         child: Image.asset(
           assetPath,
           width: width,
