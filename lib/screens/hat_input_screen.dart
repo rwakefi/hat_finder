@@ -612,6 +612,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
     List<HatShapeInfo> shapes, {
     required bool isCrown,
   }) {
+    if (_allProducts == null || shapes.isEmpty) return {};
+
     final map = <String, List<Map<String, String>>>{
       for (final shape in shapes) shape.name: <Map<String, String>>[],
     };
@@ -619,23 +621,26 @@ class _HatInputScreenState extends State<HatInputScreen> {
       for (final shape in shapes) shape.name: <String>{},
     };
     final materialTarget = selectedHatType?.name.toLowerCase();
+    final styleTarget = selectedWesternStyle;
 
     for (final product in _allProducts!) {
       if (!ShopifyService.isEligibleForPickerExample(product)) continue;
-      if (product['featuredImage']?['url'] == null) continue;
+      final featuredImage = product['featuredImage'];
+      if (featuredImage == null || featuredImage['url'] == null) continue;
+
+      final prodMaterial =
+          _metaValue(product['felt_straw_or_ballcap'] ?? product['feltStrawOrBallcap']);
 
       // Respect the active hat type and style when ranking shape inventory.
-      if (materialTarget != null) {
-        final prodMaterial =
-            _metaValue(product['feltStrawOrBallcap']).toLowerCase();
-        if (!prodMaterial.contains(materialTarget)) {
+      if (materialTarget != null && materialTarget != 'any type') {
+        if (!ShopifyService.matchesHatType(prodMaterial, materialTarget)) {
           continue;
         }
       }
-      final styleTarget = selectedWesternStyle;
+
       if (styleTarget != null && styleTarget.isNotEmpty) {
         if (!ShopifyService.matchesWesternStyle(
-          hatType: _metaValue(product['feltStrawOrBallcap']),
+          hatType: prodMaterial,
           city: _metaValue(product['city']),
           outdoors: _metaValue(product['outdoors']),
           westernStyle: styleTarget,
@@ -646,10 +651,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
       final meta =
           _metaValue(isCrown ? product['crownShape'] : product['brimShape']);
+      if (meta.isEmpty) continue;
 
       for (final shape in shapes) {
-        if (!_matchShape(meta, shape.name)) continue;
-        final url = product['featuredImage']['url'] as String;
+        if (!ShopifyService.matchShape(meta, shape.name)) continue;
+        final url = featuredImage['url'] as String;
         if (!seenUrls[shape.name]!.add(url)) continue;
         map[shape.name]!.add({
           'url': url,

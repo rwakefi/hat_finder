@@ -994,34 +994,27 @@ class ShopifyService {
   }
 
   static bool _matchShape(String prod, String ui) {
-    final pNorm = prod
-        .toLowerCase()
-        .replaceAll('-', ' ')
-        .replaceAll("'s", '')
-        .replaceAll("'", '')
-        .trim();
-    final uNorm = ui
-        .toLowerCase()
-        .replaceAll('-', ' ')
-        .replaceAll("'s", '')
-        .replaceAll("'", '')
-        .trim();
-    if (pNorm.isEmpty || uNorm.isEmpty) return false;
+    if (prod.isEmpty || ui.isEmpty) return false;
 
-    final pClean = pNorm
+    // Pre-normalize both to avoid repeating work in the loop
+    final pNorm = prod.toLowerCase();
+    final uNorm = ui.toLowerCase();
+
+    if (pNorm == uNorm) return true;
+
+    String clean(String s) => s
+        .replaceAll('-', ' ')
+        .replaceAll("'s", '')
+        .replaceAll("'", '')
         .replaceAll(' shape', '')
         .replaceAll(' crease', '')
         .replaceAll(' crown', '')
         .replaceAll(' brim', '')
         .replaceAll(' curl', '')
         .trim();
-    final uClean = uNorm
-        .replaceAll(' shape', '')
-        .replaceAll(' crease', '')
-        .replaceAll(' crown', '')
-        .replaceAll(' brim', '')
-        .replaceAll(' curl', '')
-        .trim();
+
+    final pClean = clean(pNorm);
+    final uClean = clean(uNorm);
 
     return pClean == uClean ||
         pClean.contains(uClean) ||
