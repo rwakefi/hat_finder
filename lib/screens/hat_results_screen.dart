@@ -244,7 +244,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   /// Shorter cards than before — trims empty space below the CTA without changing width.
   double _resultsCardAspectRatio(BuildContext context) {
-    if (AppBreakpoints.isDesktop(context)) return 0.68;
+    if (AppBreakpoints.isDesktop(context)) return 0.76;
+    if (AppBreakpoints.isLaptop(context)) return 0.70;
     final height = MediaQuery.sizeOf(context).height;
     if (height < 700) return 0.49;
     if (height < 820) return 0.51;
@@ -728,7 +729,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         backgroundColor: _offWhite,
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: MoonRidgeLogoSizes.resultsToolbar,
+        toolbarHeight: AppBreakpoints.useWebTopNavigation(context)
+            ? 40
+            : MoonRidgeLogoSizes.resultsToolbar,
         leading: IconButton(
           icon:
               const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
@@ -848,6 +851,12 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     final displayExact = _displayExactHats;
     final displayClosest = _displayClosestHats;
+
+    final crossAxisCount = _resultsCrossAxisCount(context);
+    final emptySlots = (crossAxisCount - (displayExact.length % crossAxisCount)) % crossAxisCount;
+    final showScrollPrompt = emptySlots > 0 && displayClosest.isNotEmpty;
+    final exactGridItemCount = displayExact.length + (showScrollPrompt ? 1 : 0);
+
     final compactChips = !AppBreakpoints.isDesktop(context);
     return Column(
       children: [
@@ -912,11 +921,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           ),
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              return RepaintBoundary(
-                                child: _buildHatCard(displayExact[index]),
-                              );
+                              if (index < displayExact.length) {
+                                return RepaintBoundary(
+                                  child: _buildHatCard(displayExact[index]),
+                                );
+                              } else {
+                                return RepaintBoundary(
+                                  child: _buildScrollPromptCard(),
+                                );
+                              }
                             },
-                            childCount: displayExact.length,
+                            childCount: exactGridItemCount,
                             addAutomaticKeepAlives: false,
                             addRepaintBoundaries: true,
                           ),
@@ -1003,6 +1018,67 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _buildScrollPromptCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _turquoise.withValues(alpha: 0.3), width: 1.0),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: () {
+            if (_resultsScrollController.hasClients) {
+              _resultsScrollController.animateTo(
+                _resultsScrollController.offset + 400,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _turquoise.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_downward,
+                  color: _turquoise,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'MORE MATCHES',
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _turquoise,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Scroll down',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: _espresso.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1139,7 +1215,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             children: [
               // Hero image
               Expanded(
-                flex: 3,
+                flex: AppBreakpoints.isLaptop(context) ? 4 : 3,
                 child: Container(
                   color: _white,
                   child: Stack(
