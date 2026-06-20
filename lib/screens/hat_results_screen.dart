@@ -25,6 +25,8 @@ class HatResultsScreen extends StatefulWidget {
   /// Instant results from the wizard cache (full catalog loaded in background).
   final List<dynamic>? preloadedHats;
   final bool showingClosestMatches;
+  /// True when the brim step was skipped because no brim shapes matched.
+  final bool noBrimResults;
   final List<HatShapeInfo>? crownShapeOptions;
   final List<HatShapeInfo>? brimShapeOptions;
   final bool hideFooter;
@@ -41,6 +43,7 @@ class HatResultsScreen extends StatefulWidget {
     this.brimWidths,
     this.preloadedHats,
     this.showingClosestMatches = false,
+    this.noBrimResults = false,
     this.crownShapeOptions,
     this.brimShapeOptions,
     this.hideFooter = false,
@@ -56,7 +59,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   Map<String, List<({String color, String variantGid, String? imageUrl})>>
       _swatchCache = {};
   List<dynamic>? _fullCatalog;
-  List<dynamic> _resultHats = [];
+  List<dynamic> _exactHats = [];
+  List<dynamic> _closestHats = [];
   List<String> _resultSizes = [];
   List<String> _resultColors = [];
   List<double>? _cachedCrownHeightOptions;
@@ -74,6 +78,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   static const _westernStyleOptions = ['Western', 'City', 'Outdoor'];
   bool _showingClosestMatches = false;
 
+  // Scroll indicator
+  final ScrollController _resultsScrollController = ScrollController();
+  bool _canScrollDown = false;
+
   // Brand colors — consistent with the rest of the app & moonridgecompany.com
   static const Color _espresso = Color(0xFF2D2926);
   static const Color _turquoise = Color(0xFF559C99);
@@ -84,6 +92,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   @override
   void initState() {
     super.initState();
+    _resultsScrollController.addListener(_onResultsScroll);
     _filterHatType = widget.hatType;
     _filterWesternStyle = widget.westernStyle;
     _filterCrownShape = widget.crownShape;
@@ -92,7 +101,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _filterBrimWidths = List<String>.from(widget.brimWidths ?? []);
     _showingClosestMatches = widget.showingClosestMatches;
 
-    _loadInitialResults();
+    _loadInitialResults().then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onResultsScroll());
+    });
   }
 
   Future<void> _loadInitialResults() async {
@@ -103,7 +114,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         if (!mounted) return;
         setState(() {
           _fullCatalog = catalog;
-          _syncResultHats(widget.preloadedHats!);
+          final result = _splitPreloadedHats(widget.preloadedHats!, catalog!);
+          _showingClosestMatches = widget.showingClosestMatches;
+          _syncResultHats(exact: result.exact, closest: result.closest);
           _cachedCrownHeightOptions = _computeCrownHeightOptions();
           _resultsLoading = false;
         });
@@ -114,7 +127,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       if (!mounted) return;
       setState(() {
         _fullCatalog = catalog;
-        _syncResultHats(_filterCatalog(catalog!));
+        final result = _filterCatalog(catalog!);
+        _showingClosestMatches = result.showingClosestMatchesOnly;
+        _syncResultHats(exact: result.exact, closest: result.closest);
         _cachedCrownHeightOptions = _computeCrownHeightOptions();
         _resultsLoading = false;
       });
@@ -127,12 +142,44 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     }
   }
 
-  void _syncResultHats(List<dynamic> hats) {
-    _resultHats = hats;
-    _rebuildSwatchCache(hats);
+  ({List<dynamic> exact, List<dynamic> closest}) _splitPreloadedHats(
+      List<dynamic> preloaded, List<dynamic> catalog) {
+    if (widget.showingClosestMatches) {
+      return (exact: [], closest: preloaded);
+    }
+    final exact = preloaded;
+    List<dynamic> closest = [];
+    if (_hasActiveMainFilters) {
+      final exactIds = exact.map((e) => e['id'] as String).toSet();
+      final closestRaw = ShopifyService.closestMatchProducts(
+        catalog,
+        minimum: 250,
+        hatType: _filterHatType,
+        westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
+        crownShape: _filterCrownShape,
+        crownHeights: _filterCrownHeights.isEmpty ? null : _filterCrownHeights,
+        brimShape: _filterBrimShape,
+        brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
+      );
+      closest = closestRaw
+          .where((p) => !exactIds.contains(p['id']))
+          .take(4)
+          .toList();
+    }
+    return (exact: exact, closest: closest);
+  }
+
+  void _syncResultHats({
+    required List<dynamic> exact,
+    required List<dynamic> closest,
+  }) {
+    _exactHats = exact;
+    _closestHats = closest;
+    final allHats = [...exact, ...closest];
+    _rebuildSwatchCache(allHats);
     final sizes = <String>{};
     final colors = <String>{};
-    for (final hat in hats) {
+    for (final hat in allHats) {
       sizes.addAll(_availableSizesForHat(hat));
       for (final entry in _swatchColorsFor(hat)) {
         colors.add(entry.color);
@@ -142,15 +189,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     _resultColors = colors.toList()..sort();
   }
 
-  List<dynamic> get _displayHats {
-    var hats = _resultHats;
+  List<dynamic> _applySizeAndColorFilters(List<dynamic> hats) {
+    var filtered = hats;
     if (_selectedVariantSize != null) {
-      hats = hats
+      filtered = filtered
           .where((hat) => _hatMatchesSelectedSize(hat, _selectedVariantSize!))
           .toList();
     }
     if (_selectedColor != null) {
-      hats = hats
+      filtered = filtered
           .where(
             (hat) => _swatchColorsFor(hat).any(
               (entry) =>
@@ -159,8 +206,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           )
           .toList();
     }
-    return hats;
+    return filtered;
   }
+
+  List<dynamic> get _displayExactHats => _applySizeAndColorFilters(_exactHats);
+  List<dynamic> get _displayClosestHats => _applySizeAndColorFilters(_closestHats);
 
   List<double> _computeCrownHeightOptions() {
     final baseline = defaultCrownHeightOptions();
@@ -204,7 +254,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   int _resultsCrossAxisCount(BuildContext context) =>
       AppBreakpoints.gridCrossAxisCount(context, laptop: 3, desktop: 4);
 
-  List<dynamic> _filterCatalog(List<dynamic> catalog) {
+  bool get _hasActiveMainFilters =>
+      _filterHatType != null ||
+      _filterWesternStyle != null ||
+      _filterCrownShape != null ||
+      _filterBrimShape != null ||
+      _filterCrownHeights.isNotEmpty ||
+      _filterBrimWidths.isNotEmpty;
+
+  ({List<dynamic> exact, List<dynamic> closest, bool showingClosestMatchesOnly}) _filterCatalog(List<dynamic> catalog) {
     final filterArgs = (
       hatType: _filterHatType,
       westernStyle: _showsWesternStyleFilter ? _filterWesternStyle : null,
@@ -214,7 +272,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       brimWidths: _filterBrimWidths.isEmpty ? null : _filterBrimWidths,
     );
 
-    var filtered = ShopifyService.filterProducts(
+    final exact = ShopifyService.filterProducts(
       catalog,
       hatType: filterArgs.hatType,
       westernStyle: filterArgs.westernStyle,
@@ -224,10 +282,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       brimWidths: filterArgs.brimWidths,
     );
 
-    if (filtered.isEmpty) {
-      _showingClosestMatches = true;
-      filtered = ShopifyService.closestMatchProducts(
+    List<dynamic> closest = [];
+    bool showingClosestMatchesOnly = false;
+
+    if (exact.isEmpty) {
+      showingClosestMatchesOnly = true;
+      closest = ShopifyService.closestMatchProducts(
         catalog,
+        minimum: 4,
         hatType: filterArgs.hatType,
         westernStyle: filterArgs.westernStyle,
         crownShape: filterArgs.crownShape,
@@ -236,10 +298,30 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         brimWidths: filterArgs.brimWidths,
       );
     } else {
-      _showingClosestMatches = false;
+      if (_hasActiveMainFilters) {
+        final exactIds = exact.map((e) => e['id'] as String).toSet();
+        final closestRaw = ShopifyService.closestMatchProducts(
+          catalog,
+          minimum: 250,
+          hatType: filterArgs.hatType,
+          westernStyle: filterArgs.westernStyle,
+          crownShape: filterArgs.crownShape,
+          crownHeights: filterArgs.crownHeights,
+          brimShape: filterArgs.brimShape,
+          brimWidths: filterArgs.brimWidths,
+        );
+        closest = closestRaw
+            .where((p) => !exactIds.contains(p['id']))
+            .take(4)
+            .toList();
+      }
     }
 
-    return ShopifyService.orderResultsCatalog(filtered);
+    return (
+      exact: ShopifyService.orderResultsCatalog(exact),
+      closest: ShopifyService.orderResultsCatalog(closest),
+      showingClosestMatchesOnly: showingClosestMatchesOnly,
+    );
   }
 
   void _applyFilters() {
@@ -248,7 +330,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     setState(() {
       _selectedColor = null;
       _selectedVariantSize = null;
-      _syncResultHats(_filterCatalog(source));
+      final result = _filterCatalog(source);
+      _showingClosestMatches = result.showingClosestMatchesOnly;
+      _syncResultHats(exact: result.exact, closest: result.closest);
     });
   }
 
@@ -619,6 +703,23 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   String _productUrlForVariant(String baseUrl, String variantGid) =>
       StorefrontLinks.withVariant(baseUrl, variantGid);
 
+  void _onResultsScroll() {
+    if (!_resultsScrollController.hasClients) return;
+    final pos = _resultsScrollController.position;
+    final canScroll = pos.maxScrollExtent > 0 &&
+        pos.pixels < pos.maxScrollExtent - 24;
+    if (canScroll != _canScrollDown) {
+      setState(() => _canScrollDown = canScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    _resultsScrollController.removeListener(_onResultsScroll);
+    _resultsScrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -640,11 +741,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/images/Moon Ridge Header Logo.png',
-              height: MoonRidgeLogoSizes.results,
-            ),
-            const SizedBox(height: WizardHeaderSpacing.gap),
+            if (!AppBreakpoints.useWebTopNavigation(context)) ...[
+              Image.asset(
+                'assets/images/Moon Ridge Header Logo.png',
+                height: MoonRidgeLogoSizes.results,
+              ),
+              const SizedBox(height: WizardHeaderSpacing.gap),
+            ],
             Text(
               'RESULTS',
               style: GoogleFonts.montserrat(
@@ -709,7 +812,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         ),
       );
     }
-    if (_resultHats.isEmpty) {
+    if (_exactHats.isEmpty && _closestHats.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -743,7 +846,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       );
     }
 
-    final displayHats = _displayHats;
+    final displayExact = _displayExactHats;
+    final displayClosest = _displayClosestHats;
     final compactChips = !AppBreakpoints.isDesktop(context);
     return Column(
       children: [
@@ -772,7 +876,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         if (_resultColors.isNotEmpty)
           const Divider(height: 1, color: _borderGrey),
         Expanded(
-          child: displayHats.isEmpty
+          child: (displayExact.isEmpty && displayClosest.isEmpty)
               ? Center(
                   child: Text(
                     _selectedVariantSize != null
@@ -786,25 +890,166 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ),
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _resultsCrossAxisCount(context),
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: _resultsCardAspectRatio(context),
+              : Stack(
+                  children: [
+                    CustomScrollView(
+                      controller: _resultsScrollController,
+                      slivers: [
+                    if (displayExact.isNotEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          12,
+                          12,
+                          12,
+                          displayClosest.isNotEmpty ? 12 : 32,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: _resultsCrossAxisCount(context),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: _resultsCardAspectRatio(context),
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              return RepaintBoundary(
+                                child: _buildHatCard(displayExact[index]),
+                              );
+                            },
+                            childCount: displayExact.length,
+                            addAutomaticKeepAlives: false,
+                            addRepaintBoundaries: true,
+                          ),
+                        ),
+                      ),
+                    if (displayExact.isNotEmpty && displayClosest.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _buildClosestMatchesHeader(),
+                      ),
+                    if (displayClosest.isNotEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          12,
+                          displayExact.isNotEmpty ? 12 : 12,
+                          12,
+                          32,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: _resultsCrossAxisCount(context),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: _resultsCardAspectRatio(context),
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              return RepaintBoundary(
+                                child: _buildHatCard(displayClosest[index]),
+                              );
+                            },
+                            childCount: displayClosest.length,
+                            addAutomaticKeepAlives: false,
+                            addRepaintBoundaries: true,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemCount: displayHats.length,
-                  itemBuilder: (context, index) {
-                    return RepaintBoundary(
-                      child: _buildHatCard(displayHats[index]),
-                    );
-                  },
+                    // Scroll-down indicator — fades in when more content is below
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                      right: 20,
+                      bottom: _canScrollDown ? 28 : -60,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 300),
+                        opacity: _canScrollDown ? 1.0 : 0.0,
+                        child: GestureDetector(
+                          onTap: () {
+                            _resultsScrollController.animateTo(
+                              _resultsScrollController.offset + 320,
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeOut,
+                            );
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _turquoise.withValues(alpha: 0.35),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _espresso.withValues(alpha: 0.10),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: _turquoise,
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _buildClosestMatchesHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Divider(
+                  color: _borderGrey,
+                  thickness: 1,
+                  endIndent: 16,
+                ),
+              ),
+              Text(
+                'NEXT CLOSEST MATCHES',
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _turquoise,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const Expanded(
+                child: Divider(
+                  color: _borderGrey,
+                  thickness: 1,
+                  indent: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Hats that match some of your style preferences',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: _espresso.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1115,6 +1360,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   Widget _buildClosestMatchesBanner() {
+    final message = widget.noBrimResults
+        ? 'Sorry, we don\'t have an exact match — but here are your next closest matches.'
+        : 'No exact matches — showing the closest options we found. '
+            'Adjust filters above to narrow further.';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1126,8 +1375,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'No exact matches — showing the closest options we found. '
-              'Adjust filters above to narrow further.',
+              message,
               style: GoogleFonts.montserrat(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

@@ -83,18 +83,15 @@ class ShellTabBarWithFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useTopNav = AppBreakpoints.useWebTopNavigation(context);
+
+    // On desktop web the tab bar lives at the top of the AppShell — only
+    // show the page-specific footer controls here to avoid a duplicate nav bar.
+    if (useTopNav) {
+      return footer;
+    }
+
     final nav =
         ShellTabBarFooter.buildNav(context, selectedIndex: selectedIndex);
-
-    if (useTopNav) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          nav,
-          footer,
-        ],
-      );
-    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,

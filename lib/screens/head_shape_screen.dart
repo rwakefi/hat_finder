@@ -157,6 +157,27 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final useTopNav = AppBreakpoints.useWebTopNavigation(context);
+    if (useTopNav) {
+      return AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: _espresso,
+        toolbarHeight: 50,
+        centerTitle: true,
+        title: Text(
+          'LEARN YOUR HEAD SHAPE',
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 2,
+            color: _espresso,
+          ),
+        ),
+      );
+    }
+
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
