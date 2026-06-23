@@ -1,0 +1,21 @@
+---
+description: Default to iPad development until the user switches target
+alwaysApply: true
+---
+
+# iPad-only development (default)
+
+Work on **iPad only** until the user explicitly asks for iPhone, Android, web, or another target.
+
+## Simulator
+
+- **Device:** iPad Pro 11-inch (M4)
+- **UDID:** `A1B674BB-E009-445D-933A-E0517A47EF5C`
+- **Run:** `flutter run -d A1B674BB-E009-445D-933A-E0517A47EF5C`
+- **Env override:** `APP_STORE_DEVICE=A1B674BB-E009-445D-933A-E0517A47EF5C` for capture scripts
+
+## Implications
+
+- Prefer iPad layouts, breakpoints, and tablet screenshot/preview sizes when discussing UI or App Store assets.
+- Do not assume iPhone 6.5" unless the user asks to switch back.
+- Integration tests, manual QA, and `flutter run` should target this iPad simulator by default.

@@ -9,6 +9,7 @@ abstract final class MoonRidgeLogoSizes {
   static const double homeProMax = 100;
   static const double homeWide = 93;
   static const double homeDefault = 86;
+  static const double homeTabletFooter = 72;
   static const double connect = 86;
   static const double secondaryAppBar = 43;
   static const double secondaryAppBarToolbar = 79;

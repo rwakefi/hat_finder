@@ -1,5 +1,7 @@
 # Moon Ridge Hat Finder
 
+[![CI](https://github.com/rwakefi/hat_finder/actions/workflows/ci.yml/badge.svg)](https://github.com/rwakefi/hat_finder/actions/workflows/ci.yml)
+
 Flutter app for guided Moon Ridge hat recommendations backed by Shopify catalog
 metadata. The current v1 direction is a fit quiz, optional manual size
 measurement, and guided material, style, crown, and brim selection.

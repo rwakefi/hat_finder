@@ -57,12 +57,13 @@ for i in $(seq -w 1 10); do
 done
 
 echo ""
-echo "Recording 3 app previews…"
+echo "Recording 3 app previews (886×1920 portrait)…"
 echo "Warming simulator build (one-time)…"
 flutter build ios --simulator --debug --no-pub >/dev/null 2>&1 || true
-record_preview "preview-1-intro" "integration_test/app_store_preview_1_test.dart" 130
-record_preview "preview-2-wizard" "integration_test/app_store_preview_2_test.dart" 45
-record_preview "preview-3-learn" "integration_test/app_store_preview_3_test.dart" 45
+flutter install -d "$DEVICE" --no-pub >/dev/null 2>&1 || true
+record_preview "preview-1-intro" "integration_test/app_store_preview_1_test.dart"
+record_preview "preview-2-wizard" "integration_test/app_store_preview_2_test.dart"
+record_preview "preview-3-learn" "integration_test/app_store_preview_3_test.dart"
 
 echo ""
 echo "Done."

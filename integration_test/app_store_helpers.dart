@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hat_finder/screens/app_shell.dart';
 import 'package:hat_finder/services/shopify_service.dart';
 import 'package:hat_finder/widgets/responsive_app_frame.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Pumps [AppShell] with the same theme chrome as production (no splash).
 Future<void> launchAppShell(WidgetTester tester) async {
@@ -65,15 +67,131 @@ Future<void> tapNavTab(WidgetTester tester, String label) async {
     matching: find.byType(GestureDetector),
   );
   expect(tab, findsOneWidget);
-  await tester.tap(tab);
-  await tester.pump();
+  await previewTap(tester, tab);
   await tester.pump(const Duration(milliseconds: 600));
+}
+
+/// Programmatic tap — avoids green integration-test pointer crosshairs in recordings.
+Future<void> previewTap(WidgetTester tester, Finder finder) async {
+  final elements = finder.evaluate();
+  expect(elements, isNotEmpty);
+  for (final element in elements) {
+    if (_tryInvokeTap(element)) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      return;
+    }
+  }
+  await tester.tap(finder);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 150));
+}
+
+/// Programmatic tap at [location] — no synthetic pointer overlay.
+Future<void> previewTapAt(WidgetTester tester, Offset location) async {
+  final result = HitTestResult();
+  tester.binding.hitTestInView(result, location, tester.view.viewId);
+  for (final entry in result.path) {
+    final target = entry.target;
+    if (target is! RenderObject || !target.attached) continue;
+    final creator = target.debugCreator;
+    if (creator is! Element) continue;
+    if (_tryInvokeTap(creator)) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      return;
+    }
+  }
+  await tester.tapAt(location);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 150));
+}
+
+bool _tryInvokeTap(Element start) {
+  var invoked = false;
+  start.visitAncestorElements((element) {
+    if (!invoked && _invokeWidgetTap(element.widget)) {
+      invoked = true;
+    }
+    return true;
+  });
+  return invoked || _invokeWidgetTap(start.widget);
+}
+
+bool _invokeWidgetTap(Widget widget) {
+  if (widget is GestureDetector && widget.onTap != null) {
+    widget.onTap!();
+    return true;
+  }
+  if (widget is InkWell && widget.onTap != null) {
+    widget.onTap!();
+    return true;
+  }
+  if (widget is ListTile && widget.onTap != null) {
+    widget.onTap!();
+    return true;
+  }
+  if (widget is IconButton && widget.onPressed != null) {
+    widget.onPressed!();
+    return true;
+  }
+  if (widget is TextButton && widget.onPressed != null) {
+    widget.onPressed!();
+    return true;
+  }
+  if (widget is ElevatedButton && widget.onPressed != null) {
+    widget.onPressed!();
+    return true;
+  }
+  if (widget is FilledButton && widget.onPressed != null) {
+    widget.onPressed!();
+    return true;
+  }
+  if (widget is OutlinedButton && widget.onPressed != null) {
+    widget.onPressed!();
+    return true;
+  }
+  return false;
+}
+
+void initAppStorePreviewBinding() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.onlyPumps;
+}
+
+/// Shorter splash on preview re-runs (returning-user timing).
+Future<void> markReturningUserForPreview() async {
+  SharedPreferences.setMockInitialValues({'has_launched_before': true});
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('has_launched_before', true);
 }
 
 /// Printed when app UI is on screen — shell scripts grep for this before recording.
 void signalPreviewReady() {
   // ignore: avoid_print
   print('+0: capture ready');
+}
+
+Future<void> waitForSplashVisible(WidgetTester tester) async {
+  for (var i = 0; i < 60; i++) {
+    await tester.pump(const Duration(milliseconds: 250));
+    if (find.text('FIND YOUR').evaluate().isNotEmpty) {
+      await tester.pump(const Duration(milliseconds: 400));
+      return;
+    }
+  }
+  expect(find.text('FIND YOUR'), findsOneWidget);
+}
+
+Future<void> waitForHomeHero(WidgetTester tester) async {
+  for (var i = 0; i < 60; i++) {
+    await tester.pump(const Duration(milliseconds: 250));
+    if (find.text('SEARCH BY HAT TYPE').evaluate().isNotEmpty) {
+      await tester.pump(const Duration(milliseconds: 400));
+      return;
+    }
+  }
+  expect(find.text('SEARCH BY HAT TYPE'), findsOneWidget);
 }
 
 Future<void> pause(WidgetTester tester, Duration duration) async {
@@ -128,25 +246,21 @@ Future<void> waitForText(WidgetTester tester, String text) async {
 }
 
 Future<void> selectFeltAndWestern(WidgetTester tester) async {
-  await tester.tap(find.text('FELT'));
-  await tester.pump();
+  await previewTap(tester, find.text('FELT'));
   await tester.pump(const Duration(milliseconds: 500));
   expect(find.text('Select Style:'), findsOneWidget);
 
-  await tester.tap(find.text('WESTERN'));
-  await tester.pump();
+  await previewTap(tester, find.text('WESTERN'));
   await tester.pump(const Duration(milliseconds: 800));
   expect(find.text('Select Crown Shape:'), findsOneWidget);
 }
 
 Future<void> selectFirstCrownAndBrim(WidgetTester tester) async {
-  await tester.tapAt(tester.getCenter(find.byType(Scaffold).first));
-  await tester.pump();
+  await previewTapAt(tester, tester.getCenter(find.byType(Scaffold).first));
   await tester.pump(const Duration(milliseconds: 800));
   expect(find.text('Select Brim Shape:'), findsOneWidget);
 
-  await tester.tapAt(tester.getCenter(find.byType(Scaffold).first));
-  await tester.pump();
+  await previewTapAt(tester, tester.getCenter(find.byType(Scaffold).first));
   for (var i = 0; i < 30; i++) {
     await tester.pump(const Duration(milliseconds: 500));
     if (find.text('RESULTS').evaluate().isNotEmpty) return;
@@ -156,16 +270,14 @@ Future<void> selectFirstCrownAndBrim(WidgetTester tester) async {
 Future<void> openCrownGuideFromHome(WidgetTester tester) async {
   await tapNavTab(tester, 'Home');
   await tester.pump(const Duration(milliseconds: 400));
-  await tester.tap(find.textContaining('Crown Shape').first);
-  await tester.pump();
+  await previewTap(tester, find.textContaining('Crown Shape').first);
   await tester.pump(const Duration(milliseconds: 800));
   expect(find.text('A Field Guide to Crown Shapes'), findsOneWidget);
 }
 
 Future<void> openBrimGuideFromHome(WidgetTester tester) async {
   await popGuideScreen(tester);
-  await tester.tap(find.textContaining('Brim Shape').first);
-  await tester.pump();
+  await previewTap(tester, find.textContaining('Brim Shape').first);
   await tester.pump(const Duration(milliseconds: 800));
   expect(find.text('A Field Guide to Brim Shapes'), findsOneWidget);
 }
@@ -174,8 +286,7 @@ Future<void> popGuideScreen(WidgetTester tester) async {
   final back = find.byIcon(Icons.arrow_back);
   if (back.evaluate().isEmpty) return;
   await tester.ensureVisible(back.first);
-  await tester.tap(back.first);
-  await tester.pump();
+  await previewTap(tester, back.first);
   await tester.pump(const Duration(milliseconds: 400));
 }
 
@@ -184,8 +295,7 @@ Future<void> popToShell(WidgetTester tester) async {
   if (find.text('RESULTS').evaluate().isNotEmpty) {
     final resultsBack = find.byIcon(Icons.arrow_back_ios_new);
     if (resultsBack.evaluate().isNotEmpty) {
-      await tester.tap(resultsBack.first);
-      await tester.pump();
+      await previewTap(tester, resultsBack.first);
       await tester.pump(const Duration(milliseconds: 400));
     }
   }

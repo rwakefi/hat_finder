@@ -56,10 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final compact = !isLargePhone && (tightViewport || largeText);
     final splitLayout = AppBreakpoints.useSplitHomeLayout(context);
     final isWideDesktop = AppBreakpoints.isWide(context);
+    final nativeSplit = splitLayout && !kIsWeb;
+    final isNativeTablet = AppBreakpoints.isNativeTablet(context);
+    final nativeTabletStacked = isNativeTablet && !splitLayout;
     final heroHeight = splitLayout
         ? double.infinity
-        : (screenHeight * (compact ? 0.28 : 0.36))
-            .clamp(compact ? 190.0 : 240.0, compact ? 246.0 : 320.0);
+        : nativeTabletStacked
+            ? (screenHeight * 0.44).clamp(340.0, 520.0)
+            : (screenHeight * (compact ? 0.28 : 0.36))
+                .clamp(compact ? 190.0 : 240.0, compact ? 246.0 : 320.0);
     final logoHeight = isLargePhone
         ? (screenHeight * 0.102).clamp(
             MoonRidgeLogoSizes.homeProMax,
@@ -79,12 +84,46 @@ class _HomeScreenState extends State<HomeScreen> {
             ? 10.0
             : (largeText ? 18.0 : (splitLayout ? 24.0 : 16.0));
     final actionsBottomPadding = compact ? 28.0 : 12.0;
-    final centerFooterLogo = !splitLayout;
-    final heroFlex = isWideDesktop ? 12 : 11;
-    final actionsFlex = isWideDesktop ? 10 : 9;
+    final centerFooterLogo = !splitLayout && !nativeTabletStacked;
+    final heroFlex = isWideDesktop ? 12 : (isNativeTablet ? 11 : 11);
+    final actionsFlex = isWideDesktop ? 10 : (isNativeTablet ? 12 : 9);
     final webSplit = splitLayout && kIsWeb;
 
-    Widget buildFooterLogo({double? maxHeight}) {
+    Widget buildHeroClip(Widget child) {
+      if (webSplit) return child;
+      if (nativeSplit) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          ),
+          child: child,
+        );
+      }
+      if (nativeTabletStacked) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          ),
+          child: child,
+        );
+      }
+      return ClipPath(
+        clipper: _WaveBottomClipper(),
+        child: child,
+      );
+    }
+
+    Widget buildFooterLogo({double? maxHeight, bool tabletFooter = false}) {
+      if (tabletFooter) {
+        final height = maxHeight ?? MoonRidgeLogoSizes.homeTabletFooter;
+        return _HomeFooterBrand(
+          onTap: _openMoonRidgeStore,
+          height: height,
+        );
+      }
+
       final base = maxHeight == null
           ? logoHeight
           : logoHeight.clamp(48.0, maxHeight * 0.75);
@@ -115,9 +154,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  _HomePalette.espresso.withValues(alpha: 0.35),
+                  _HomePalette.espresso.withValues(
+                    alpha: nativeSplit || nativeTabletStacked ? 0.42 : 0.35,
+                  ),
                   Colors.transparent,
-                  _HomePalette.espresso.withValues(alpha: 0.45),
+                  _HomePalette.espresso.withValues(
+                    alpha: nativeSplit || nativeTabletStacked ? 0.55 : 0.45,
+                  ),
                 ],
               ),
             ),
@@ -134,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     light: true,
                     heroTop: true,
                     compact: compact,
+                    enlarged: nativeSplit || nativeTabletStacked,
                   ),
                 ],
               ),
@@ -145,15 +189,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final hero = SizedBox(
       height: splitLayout ? double.infinity : heroHeight,
-      child: webSplit
-          ? buildHeroStack()
-          : ClipPath(
-              clipper: _WaveBottomClipper(),
-              child: buildHeroStack(),
-            ),
+      child: buildHeroClip(buildHeroStack()),
     );
 
-    final buttonChildren = <Widget>[
+    final List<Widget> mobileButtonChildren = [
       _OptionBlock(
         icon: Icons.style_outlined,
         label: 'SEARCH BY HAT TYPE',
@@ -206,9 +245,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     ];
 
+    final nativeActionsPanel = (nativeSplit || nativeTabletStacked)
+        ? _NativeSplitHomeActions(
+            onFindHat: widget.onFindHat,
+            onFitGuide: widget.onFitGuide,
+            onShop: widget.onShop,
+            onMeasure: () => _showVideoModal(context),
+            onVirtualMeasure: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Coming soon!'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            onCrownGuide: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ShapeGuideScreen.crown(),
+                ),
+              );
+            },
+            onBrimGuide: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ShapeGuideScreen.brim(),
+                ),
+              );
+            },
+            footerLogo: buildFooterLogo(
+              tabletFooter: nativeTabletStacked || nativeSplit,
+            ),
+            spacious: isNativeTablet || isWideDesktop,
+          )
+        : null;
+
     final actionChildren = <Widget>[
-      ...buttonChildren,
-      if (!centerFooterLogo) ...[
+      ...mobileButtonChildren,
+      if (!centerFooterLogo && nativeActionsPanel == null) ...[
         SizedBox(
             height: splitLayout ? (isWideDesktop ? 28 : 24) : footerLogoGap),
         Center(child: buildFooterLogo()),
@@ -224,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: buttonChildren,
+                children: mobileButtonChildren,
               ),
             ),
           ),
@@ -244,18 +318,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final actions = centerFooterLogo
         ? buildMobileActions()
-        : SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              isWideDesktop ? 32 : 24,
-              splitLayout ? (isWideDesktop ? 40 : 28) : 16,
-              isWideDesktop ? 32 : 24,
-              actionsBottomPadding,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: actionChildren,
-            ),
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final pad = EdgeInsets.fromLTRB(
+                nativeSplit || nativeTabletStacked
+                    ? 28
+                    : (isWideDesktop ? 32 : 24),
+                splitLayout
+                    ? (nativeSplit ? 32 : (isWideDesktop ? 40 : 28))
+                    : (nativeTabletStacked ? 20 : 16),
+                nativeSplit || nativeTabletStacked
+                    ? 28
+                    : (isWideDesktop ? 32 : 24),
+                actionsBottomPadding,
+              );
+              return SingleChildScrollView(
+                padding: pad,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - pad.vertical,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      nativeActionsPanel ??
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: actionChildren,
+                          ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
+
+    if (nativeTabletStacked) {
+      return ColoredBox(
+        color: _HomePalette.surface,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            hero,
+            Expanded(child: actions),
+          ],
+        ),
+      );
+    }
 
     if (webSplit) {
       return _WebHomeSplit(
@@ -277,7 +387,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(flex: heroFlex, child: hero),
+                      Expanded(
+                        flex: heroFlex,
+                        child: Padding(
+                          padding: nativeSplit
+                              ? const EdgeInsets.fromLTRB(12, 12, 0, 12)
+                              : EdgeInsets.zero,
+                          child: hero,
+                        ),
+                      ),
                       Expanded(flex: actionsFlex, child: actions),
                     ],
                   ),
@@ -551,11 +669,13 @@ class _HomeHeadline extends StatelessWidget {
     this.light = false,
     this.heroTop = false,
     this.compact = false,
+    this.enlarged = false,
   });
 
   final bool light;
   final bool heroTop;
   final bool compact;
+  final bool enlarged;
 
   @override
   Widget build(BuildContext context) {
@@ -563,8 +683,12 @@ class _HomeHeadline extends StatelessWidget {
     final subColor = light
         ? Colors.white.withValues(alpha: 0.82)
         : _HomePalette.espresso.withValues(alpha: 0.62);
-    final titleSize = heroTop ? (compact ? 24.0 : 28.0) : 22.0;
-    final subSize = heroTop ? (compact ? 13.0 : 15.0) : 14.0;
+    final titleSize = heroTop
+        ? (enlarged ? 32.0 : (compact ? 24.0 : 28.0))
+        : 22.0;
+    final subSize = heroTop
+        ? (enlarged ? 16.0 : (compact ? 13.0 : 15.0))
+        : 14.0;
 
     return Column(
       children: [
@@ -726,6 +850,421 @@ class _WaveBottomClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _HomeFooterBrand extends StatelessWidget {
+  const _HomeFooterBrand({
+    required this.onTap,
+    required this.height,
+  });
+
+  final VoidCallback onTap;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: _HomePalette.espresso.withValues(alpha: 0.1),
+        ),
+        const SizedBox(height: 14),
+        Semantics(
+          button: true,
+          label: 'Visit Moon Ridge website',
+          child: GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Center(
+              child: Image.asset(
+                'assets/images/moon_ridge_logo_home.png',
+                height: height,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NativeSplitHomeActions extends StatelessWidget {
+  const _NativeSplitHomeActions({
+    required this.onFindHat,
+    required this.onFitGuide,
+    required this.onShop,
+    required this.onMeasure,
+    required this.onVirtualMeasure,
+    required this.onCrownGuide,
+    required this.onBrimGuide,
+    required this.footerLogo,
+    required this.spacious,
+  });
+
+  final VoidCallback onFindHat;
+  final VoidCallback onFitGuide;
+  final VoidCallback onShop;
+  final VoidCallback onMeasure;
+  final VoidCallback onVirtualMeasure;
+  final VoidCallback onCrownGuide;
+  final VoidCallback onBrimGuide;
+  final Widget footerLogo;
+  final bool spacious;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = spacious ? 13.0 : 12.0;
+    final tileGap = spacious ? 10.0 : 10.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'START HERE',
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.4,
+            color: _HomePalette.espresso.withValues(alpha: 0.45),
+          ),
+        ),
+        SizedBox(height: gap - 4),
+        _FeaturedHomeAction(
+          title: 'Search by Hat Type',
+          subtitle: 'Felt, straw, style, crown, brim & size',
+          icon: Icons.style_outlined,
+          onTap: onFindHat,
+          spacious: spacious,
+        ),
+        SizedBox(height: gap),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _CompactHomeAction(
+                title: 'Learn Your\nHead Shape',
+                icon: Icons.face_outlined,
+                onTap: onFitGuide,
+                spacious: spacious,
+              ),
+            ),
+            SizedBox(width: tileGap),
+            Expanded(
+              child: _CompactHomeAction(
+                title: 'Browse\nAll Hats',
+                icon: Icons.shopping_bag_outlined,
+                onTap: onShop,
+                spacious: spacious,
+                accent: true,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: gap + 2),
+        Text(
+          'GUIDES & TOOLS',
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.4,
+            color: _HomePalette.espresso.withValues(alpha: 0.45),
+          ),
+        ),
+        SizedBox(height: gap - 2),
+        Row(
+          children: [
+            Expanded(
+              child: _GuideTile(
+                icon: Icons.play_circle_outline_rounded,
+                label: 'How to Measure',
+                onTap: onMeasure,
+                spacious: spacious,
+              ),
+            ),
+            SizedBox(width: tileGap),
+            Expanded(
+              child: _GuideTile(
+                icon: Icons.straighten_outlined,
+                label: 'Virtual Measure',
+                onTap: onVirtualMeasure,
+                spacious: spacious,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tileGap),
+        Row(
+          children: [
+            Expanded(
+              child: _GuideTile(
+                icon: Icons.layers_outlined,
+                label: 'Crown Shapes',
+                onTap: onCrownGuide,
+                spacious: spacious,
+              ),
+            ),
+            SizedBox(width: tileGap),
+            Expanded(
+              child: _GuideTile(
+                icon: Icons.border_horizontal,
+                label: 'Brim Shapes',
+                onTap: onBrimGuide,
+                spacious: spacious,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: spacious ? 18 : 14),
+        footerLogo,
+      ],
+    );
+  }
+}
+
+class _FeaturedHomeAction extends StatelessWidget {
+  const _FeaturedHomeAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+    required this.spacious,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool spacious;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _HomePalette.beige,
+                  _HomePalette.beige.withValues(alpha: 0.72),
+                ],
+              ),
+              border: Border.all(
+                color: _HomePalette.turquoise.withValues(alpha: 0.55),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _HomePalette.espresso.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacious ? 18 : 18,
+                vertical: spacious ? 17 : 18,
+              ),
+              child: Row(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(spacious ? 11 : 14),
+                      child: Icon(
+                        icon,
+                        size: spacious ? 25 : 24,
+                        color: _HomePalette.turquoise,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: spacious ? 14 : 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title.toUpperCase(),
+                          style: GoogleFonts.montserrat(
+                            fontSize: spacious ? 15 : 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                            color: _HomePalette.espresso,
+                            height: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: spacious ? 4 : 6),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.montserrat(
+                            fontSize: spacious ? 12 : 12,
+                            fontWeight: FontWeight.w500,
+                            color: _HomePalette.espresso.withValues(alpha: 0.62),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: _HomePalette.espresso.withValues(alpha: 0.35),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactHomeAction extends StatelessWidget {
+  const _CompactHomeAction({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    required this.spacious,
+    this.accent = false,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool spacious;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: title.replaceAll('\n', ' '),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacious ? 14 : 14,
+              vertical: spacious ? 15 : 16,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: accent
+                    ? _HomePalette.turquoise.withValues(alpha: 0.35)
+                    : _HomePalette.espresso.withValues(alpha: 0.14),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  icon,
+                  size: spacious ? 23 : 22,
+                  color: accent
+                      ? _HomePalette.turquoise
+                      : _HomePalette.espresso.withValues(alpha: 0.65),
+                ),
+                SizedBox(height: spacious ? 10 : 10),
+                Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.montserrat(
+                    fontSize: spacious ? 11.5 : 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: _HomePalette.espresso,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideTile extends StatelessWidget {
+  const _GuideTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.spacious,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool spacious;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: _HomePalette.surface,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              vertical: spacious ? 13 : 14,
+              horizontal: 10,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _HomePalette.espresso.withValues(alpha: 0.12),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  size: spacious ? 22 : 22,
+                  color: _HomePalette.turquoise,
+                ),
+                SizedBox(height: spacious ? 7 : 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: spacious ? 12 : 11,
+                    fontWeight: FontWeight.w600,
+                    color: _HomePalette.espresso.withValues(alpha: 0.78),
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _OptionBlock extends StatelessWidget {

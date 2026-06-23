@@ -36,8 +36,20 @@ class AppBreakpoints {
   static bool useWebTopNavigation(BuildContext context) =>
       kIsWeb && !EmbedMode.isActive && isDesktop(context);
 
-  /// Side-by-side home hero + actions (laptop and up).
-  static bool useSplitHomeLayout(BuildContext context) => isLaptop(context);
+  /// Side-by-side home hero + actions (laptop+ and tablet landscape).
+  static bool useSplitHomeLayout(BuildContext context) {
+    if (isLaptop(context)) return true;
+    if (!kIsWeb && isTablet(context)) {
+      final size = MediaQuery.sizeOf(context);
+      // Portrait tablet: full-width hero on top reads better than a narrow side column.
+      return size.height >= 700 && size.width > size.height;
+    }
+    return false;
+  }
+
+  /// Native iPad / Android tablet (not phone, not web).
+  static bool isNativeTablet(BuildContext context) =>
+      !kIsWeb && isTablet(context);
 
   /// Max readable width for app content on large web screens.
   static double webAppMaxWidth(BuildContext context) {
