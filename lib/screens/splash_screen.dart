@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +13,11 @@ const Color kSplashCream = Color(0xFFF2EDE6);
 const Color kSplashAccent = Color(0xFF7BA8A5);
 const Color _dealerEmbossHighlight = Color(0xFFE4D8C8);
 const Color _dealerEmbossShadow = Color(0xFF070504);
+const SystemUiOverlayStyle _splashOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+);
 
 const String _logoAsset = 'assets/images/moon_ridge_logo.png';
 const String _stetsonDealerLogo =
@@ -199,121 +205,124 @@ class _SplashScreenState extends State<SplashScreen>
     final logoWidth = (size.width * 0.76).clamp(260.0, 340.0);
     final contentOpacity = _exitFade.value;
 
-    return Scaffold(
-      backgroundColor: kSplashBackground,
-      body: AnimatedBuilder(
-        animation: Listenable.merge([_introController, _exitController]),
-        builder: (context, child) {
-          return Opacity(
-            opacity: contentOpacity,
-            child: Transform.scale(
-              scale: 1.0 + (1.0 - contentOpacity) * 0.04,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  FadeTransition(
-                    opacity: _vignetteFade,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: const Alignment(0, -0.12),
-                          radius: 1.05,
-                          colors: [
-                            kSplashGlow.withValues(alpha: 0.55),
-                            const Color(0xFF1E1612),
-                            kSplashBackground,
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      const Spacer(flex: 18),
-                      FadeTransition(
-                        opacity: _logoFade,
-                        child: Transform.translate(
-                          offset: Offset(0, _logoLift.value),
-                          child: Transform.scale(
-                            scale: _logoScale.value,
-                            child: Image.asset(
-                              _logoAsset,
-                              width: logoWidth,
-                              fit: BoxFit.contain,
-                            ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _splashOverlayStyle,
+      child: Scaffold(
+        backgroundColor: kSplashBackground,
+        body: AnimatedBuilder(
+          animation: Listenable.merge([_introController, _exitController]),
+          builder: (context, child) {
+            return Opacity(
+              opacity: contentOpacity,
+              child: Transform.scale(
+                scale: 1.0 + (1.0 - contentOpacity) * 0.04,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    FadeTransition(
+                      opacity: _vignetteFade,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            center: const Alignment(0, -0.12),
+                            radius: 1.05,
+                            colors: [
+                              kSplashGlow.withValues(alpha: 0.55),
+                              const Color(0xFF1E1612),
+                              kSplashBackground,
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
                           ),
                         ),
                       ),
-                      const Spacer(flex: 12),
-                      FadeTransition(
-                        opacity: _headlineFade,
-                        child: SlideTransition(
-                          position: _headlineSlide,
-                          child: Transform.scale(
-                            scale: _headlineScale.value,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 28),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 1,
-                                    margin: const EdgeInsets.only(bottom: 18),
-                                    color:
-                                        kSplashAccent.withValues(alpha: 0.55),
-                                  ),
-                                  Text(
-                                    'FIND YOUR',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: kSplashChampagne,
-                                      letterSpacing: 5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'PERFECT HAT',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 21,
-                                      fontWeight: FontWeight.w700,
-                                      color: kSplashCream,
-                                      letterSpacing: 5.5,
-                                    ),
-                                  ),
-                                ],
+                    ),
+                    Column(
+                      children: [
+                        const Spacer(flex: 18),
+                        FadeTransition(
+                          opacity: _logoFade,
+                          child: Transform.translate(
+                            offset: Offset(0, _logoLift.value),
+                            child: Transform.scale(
+                              scale: _logoScale.value,
+                              child: Image.asset(
+                                _logoAsset,
+                                width: logoWidth,
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const Spacer(flex: 14),
-                      FadeTransition(
-                        opacity: _dealerFade,
-                        child: SlideTransition(
-                          position: _dealerSlide,
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              28,
-                              0,
-                              28,
-                              MediaQuery.paddingOf(context).bottom + 92,
+                        const Spacer(flex: 12),
+                        FadeTransition(
+                          opacity: _headlineFade,
+                          child: SlideTransition(
+                            position: _headlineSlide,
+                            child: Transform.scale(
+                              scale: _headlineScale.value,
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 28),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 1,
+                                      margin: const EdgeInsets.only(bottom: 18),
+                                      color:
+                                          kSplashAccent.withValues(alpha: 0.55),
+                                    ),
+                                    Text(
+                                      'FIND YOUR',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: kSplashChampagne,
+                                        letterSpacing: 5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'PERFECT HAT',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w700,
+                                        color: kSplashCream,
+                                        letterSpacing: 5.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: _buildAuthorizedDealerSection(logoWidth),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const Spacer(flex: 14),
+                        FadeTransition(
+                          opacity: _dealerFade,
+                          child: SlideTransition(
+                            position: _dealerSlide,
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                28,
+                                0,
+                                28,
+                                MediaQuery.paddingOf(context).bottom + 92,
+                              ),
+                              child: _buildAuthorizedDealerSection(logoWidth),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

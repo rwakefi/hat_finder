@@ -558,6 +558,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
       _flippedCardIndex = null;
       _onCrownSelectionChanged();
     });
+    // If the catalog is loaded and there are no brim shapes for this crown,
+    // skip the brim step entirely and go straight to results.
+    if (_allProducts != null && _availableBrimShapes.isEmpty) {
+      _submitSearch(noBrimResults: true);
+      return;
+    }
     _nextPage();
   }
 
@@ -1603,6 +1609,24 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final imageUrls = <String, String?>{};
     if (products == null) return imageUrls;
 
+    const westernProfiles = [
+      '01',
+      '1',
+      '2',
+      '11',
+      '18',
+      '33',
+      '45',
+      '48',
+      '50',
+      '72',
+      '75',
+      '77',
+      '91',
+      '94',
+      '9G',
+    ];
+
     try {
       var filtered = ShopifyService.sortPickerExampleProducts(
         products.where(
@@ -1625,23 +1649,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         String? foundUrl;
 
         if (styleName == 'Western') {
-          const westernProfiles = [
-            '01',
-            '1',
-            '2',
-            '11',
-            '18',
-            '33',
-            '45',
-            '48',
-            '50',
-            '72',
-            '75',
-            '77',
-            '91',
-            '94',
-            '9G',
-          ];
+          // 1. Try strict Stetson profile
           for (final product in filtered) {
             final profile = _metaValue(product['stetsonProfile']);
             final url = product['featuredImage']?['url'] as String?;
@@ -1650,6 +1658,22 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 !usedUrls.contains(url)) {
               foundUrl = url;
               break;
+            }
+          }
+          // 2. Fallback to any Western-classified product of this material
+          if (foundUrl == null) {
+            for (final product in filtered) {
+              final url = product['featuredImage']?['url'] as String?;
+              final isCity = _metaValue(product['city']).toLowerCase() == 'true';
+              final isOutdoors = _metaValue(product['outdoors']).toLowerCase() == 'true';
+              final isWestern = !isCity && !isOutdoors;
+
+              if (isWestern &&
+                  url != null &&
+                  !usedUrls.contains(url)) {
+                foundUrl = url;
+                break;
+              }
             }
           }
         } else if (styleName == 'City') {
@@ -1663,13 +1687,33 @@ class _HatInputScreenState extends State<HatInputScreen> {
             }
           }
         } else if (styleName == 'Outdoor') {
+          // 1. Try strict (purely Outdoor/Sportsman)
           for (final product in filtered) {
             final url = product['featuredImage']?['url'] as String?;
-            if (_metaValue(product['outdoors']).toLowerCase() == 'true' &&
+            final isOutdoors = _metaValue(product['outdoors']).toLowerCase() == 'true';
+            final isCity = _metaValue(product['city']).toLowerCase() == 'true';
+            final profile = _metaValue(product['stetsonProfile']);
+            final isWestern = westernProfiles.contains(profile);
+
+            if (isOutdoors && !isCity && !isWestern &&
                 url != null &&
                 !usedUrls.contains(url)) {
               foundUrl = url;
               break;
+            }
+          }
+          // 2. Fallback to relaxed (any Outdoor hat of this material)
+          if (foundUrl == null) {
+            for (final product in filtered) {
+              final url = product['featuredImage']?['url'] as String?;
+              final isOutdoors = _metaValue(product['outdoors']).toLowerCase() == 'true';
+
+              if (isOutdoors &&
+                  url != null &&
+                  !usedUrls.contains(url)) {
+                foundUrl = url;
+                break;
+              }
             }
           }
         }
@@ -2600,7 +2644,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
     widget.onExit?.call();
   }
 
-  void _submitSearch() {
+  void _submitSearch({bool noBrimResults = false}) {
     final catalog = _allProducts ?? ShopifyService.peekFullProducts();
     List<dynamic>? preloadedHats;
     var showingClosestMatches = false;
@@ -2612,7 +2656,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
         crownShape: selectedCrownShape?.name,
         brimShape: selectedBrimShape?.name,
       );
-      if (filtered.isEmpty) {
+      if (filtered.isEmpty || noBrimResults) {
         showingClosestMatches = true;
         filtered = ShopifyService.closestMatchProducts(
           catalog,
@@ -2637,6 +2681,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           brimShapeOptions: _brimOptionsForResults(),
           preloadedHats: preloadedHats,
           showingClosestMatches: showingClosestMatches,
+          noBrimResults: noBrimResults,
         ),
       ),
     );
@@ -2732,7 +2777,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                     ),
                     child: Column(
                       children: [
-                        if (_useWebCompactWizardHeader(context))
+                        if (_useWebCompactWizardHeader(context) &&
+                            !AppBreakpoints.useWebTopNavigation(context))
                           _buildWizardCenterLogo(context),
                         if (widget.headShapeProfile != null)
                           _buildHeadShapeProfileBanner(

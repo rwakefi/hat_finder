@@ -1,0 +1,226 @@
+{
+  "viewport": {
+    "width": 1180,
+    "height": 800
+  },
+  "idleSamples": [
+    {
+      "label": "idle-0",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-1",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-2",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-3",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-4",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-5",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-6",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "idle-7",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    }
+  ],
+  "scrollSamples": [
+    {
+      "label": "before-scroll",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-0",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-1",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-2",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-3",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-4",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-down-5",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-up-0",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-up-1",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-up-2",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "wheel-up-3",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-0",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-1",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-2",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-3",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-4",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-5",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-6",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    },
+    {
+      "label": "actions-scroll-7",
+      "scrollY": 0,
+      "bodyScrollHeight": 800,
+      "canvasTop": 0,
+      "canvasHeight": 0,
+      "viewportH": 800
+    }
+  ]
+}

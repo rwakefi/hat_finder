@@ -86,53 +86,66 @@ class WebsiteChrome extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       isDesktop ? 32 : 16,
-                      isDesktop ? 14 : 10,
-                      isDesktop ? 32 : 16,
                       isDesktop ? 16 : 12,
+                      isDesktop ? 32 : 16,
+                      isDesktop ? 18 : 14,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => _openStore(context),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _openStore(context),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  child: _buildBrandTitle(isDesktop: isDesktop),
                                 ),
-                                child: _buildBrandTitle(isDesktop: isDesktop),
                               ),
                             ),
                           ),
                         ),
-                        TextButton.icon(
-                          onPressed: () => _openStore(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor: _brandBrown,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isDesktop ? 12 : 8,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          icon: Icon(
-                            Icons.arrow_back_rounded,
-                            size: isDesktop ? 18 : 16,
-                            color: _brandBrown.withValues(alpha: 0.85),
-                          ),
-                          label: Text(
-                            isDesktop ? 'Back to Moon Ridge' : 'Store',
-                            style: GoogleFonts.montserrat(
-                              fontSize: isDesktop ? 13 : 12,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.3,
-                              color: _brandBrown,
+                        Image.asset(
+                          'assets/images/Moon Ridge Header Logo.png',
+                          height: 72,
+                          fit: BoxFit.contain,
+                        ),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => _openStore(context),
+                              style: TextButton.styleFrom(
+                                foregroundColor: _brandBrown,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isDesktop ? 12 : 8,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              icon: Icon(
+                                Icons.arrow_back_rounded,
+                                size: isDesktop ? 18 : 16,
+                                color: _brandBrown.withValues(alpha: 0.85),
+                              ),
+                              label: Text(
+                                isDesktop ? 'Back to Moon Ridge' : 'Store',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: isDesktop ? 13 : 12,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.3,
+                                  color: _brandBrown,
+                                ),
+                              ),
                             ),
                           ),
                         ),
