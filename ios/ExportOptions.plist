@@ -4,6 +4,10 @@
 <dict>
 	<key>method</key>
 	<string>app-store-connect</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>stripSwiftSymbols</key>
+	<true/>
 	<key>teamID</key>
 	<string>N8Q5KYB66L</string>
 	<key>uploadSymbols</key>
