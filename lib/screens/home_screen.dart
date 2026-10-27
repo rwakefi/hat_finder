@@ -201,18 +201,29 @@ class _HomeScreenState extends State<HomeScreen> {
         compact: compact,
       ),
       SizedBox(height: buttonGap),
-      _OptionBlock(
-        icon: Icons.face_outlined,
-        label: 'LEARN YOUR HEAD SHAPE',
-        onTap: widget.onFitGuide,
-        compact: compact,
-      ),
-      SizedBox(height: buttonGap),
-      _OptionBlock(
-        icon: Icons.shopping_bag_outlined,
-        label: 'JUST TAKE ME TO THE HATS!',
-        onTap: widget.onShop,
-        compact: compact,
+      IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _PairPillButton(
+                icon: Icons.face_outlined,
+                label: 'LEARN YOUR HEAD SHAPE',
+                onTap: widget.onFitGuide,
+                compact: compact,
+              ),
+            ),
+            SizedBox(width: buttonGap),
+            Expanded(
+              child: _PairPillButton(
+                icon: Icons.shopping_bag_outlined,
+                label: 'JUST TAKE ME TO THE HATS!',
+                onTap: widget.onShop,
+                compact: compact,
+              ),
+            ),
+          ],
+        ),
       ),
       SizedBox(height: buttonGap),
       _HomeSecondaryActions(
@@ -298,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: mobileButtonChildren,
@@ -1454,7 +1465,7 @@ class _HomeSecondaryActions extends StatelessWidget {
         row([
           _SmallBubble(
             icon: Icons.play_circle_outline_rounded,
-            label: 'How to Measure\nfor Hat Size',
+            label: 'How to Measure for Hat Size',
             onTap: onMeasure,
             relaxed: relaxed,
           ),
@@ -1567,6 +1578,73 @@ class _SmallBubble extends StatelessWidget {
                         ),
                       ],
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact pill used in the side-by-side secondary CTA pair on the home screen
+/// (phone/non-split layout). Icon stacked above label so text has full width
+/// to wrap across two lines without crowding.
+class _PairPillButton extends StatelessWidget {
+  const _PairPillButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.compact = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _HomePalette.espresso.withValues(alpha: 0.20),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: compact ? 11.0 : 13.0,
+              horizontal: 14.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  icon,
+                  size: compact ? 20.0 : 22.0,
+                  color: _HomePalette.espresso.withValues(alpha: 0.65),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  label,
+                  style: GoogleFonts.montserrat(
+                    fontSize: compact ? 11.5 : 12.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: _HomePalette.espresso,
+                    height: 1.25,
                   ),
                 ),
               ],
