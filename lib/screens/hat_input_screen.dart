@@ -1363,11 +1363,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 nextLabel,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2D2926),
-                  fontStyle: FontStyle.italic,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.65),
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
@@ -3094,26 +3094,42 @@ class _HatInputScreenState extends State<HatInputScreen> {
         _buildWizardStepTitle('What kind of hat?'),
         Padding(
           padding: WizardHeaderSpacing.actionRow,
-          child: OutlinedButton(
-            onPressed: () {
-              setState(() => selectedHatType = null);
-              _nextPage(overrideValidation: true);
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2D2926),
-              side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            ),
-            child: Text(
-              'ANY HAT TYPE',
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  setState(() => selectedHatType = null);
+                  _nextPage(overrideValidation: true);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2D2926),
+                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                ),
+                child: Text(
+                  'ANY HAT TYPE',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                'Skips the type filter — narrow down on the results page.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.38),
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
