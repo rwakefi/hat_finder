@@ -193,10 +193,13 @@ class ShopifyService {
     return values.toList();
   }
 
+  /// Product vendor / brand name (trimmed, empty string when absent).
+  static String vendorOf(dynamic product) =>
+      (product?['vendor'] ?? '').toString().trim();
+
   /// Bigalli Hats USA stays in the catalog but trails other suppliers in results.
   static bool isBigalliProduct(dynamic product) {
-    final vendor = (product?['vendor'] ?? '').toString().trim().toLowerCase();
-    return vendor == 'bigalli hats usa';
+    return vendorOf(product).toLowerCase() == 'bigalli hats usa';
   }
 
   /// Products opted out of wizard, shape-guide, and style example imagery via
@@ -247,6 +250,15 @@ class ShopifyService {
   /// Results grid: most stock first, Bigalli listings last.
   static List<dynamic> orderResultsCatalog(Iterable<dynamic> products) {
     return orderBigalliLast(orderByTotalInventory(products));
+  }
+
+  /// Ballcap / Beanie results: best-seller tag first, then by inventory,
+  /// Bigalli last.  Uses the same "best seller" tag signal as wizard picker
+  /// cards — no fake sales data invented.
+  static List<dynamic> orderBallcapResults(Iterable<dynamic> products) {
+    return orderBigalliLast(
+      List<dynamic>.from(products)..sort(comparePickerExampleProducts),
+    );
   }
 
   /// Best Seller tag first, then higher in-stock count, then title for stability.
@@ -986,9 +998,15 @@ class ShopifyService {
     final prod = prodHatType.toLowerCase();
     final target = hatType.toLowerCase();
     if (target.contains('beanie') && target.contains('flat')) {
+      // Accept any of the common metafield spellings for this category.
       return prod.contains('beanie') ||
           prod.contains('flat cap') ||
-          prod.contains('flatcap');
+          prod.contains('flatcap') ||
+          prod.contains('newsboy');
+    }
+    if (target == 'ballcap') {
+      // Shopify metafield may be stored as "Ball Cap" (with space).
+      return prod.contains('ballcap') || prod.contains('ball cap');
     }
     return prod.contains(target);
   }
