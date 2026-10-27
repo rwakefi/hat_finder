@@ -1164,8 +1164,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               const SizedBox(height: 8),
               Text(
                 'Scroll down',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: _espresso.withValues(alpha: 0.5),
                 ),

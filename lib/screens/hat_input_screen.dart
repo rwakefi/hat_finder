@@ -2355,7 +2355,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
-            height: 26,
+            height: 30,
             child: OutlinedButton(
               onPressed: onFlip,
               style: OutlinedButton.styleFrom(
@@ -2369,9 +2369,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 'FLIP FOR MORE INFO',
                 style: GoogleFonts.montserrat(
-                  fontSize: 7,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
             ),
@@ -2895,8 +2895,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                   profile.fitGuidance,
                   maxLines: compact ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
                     color: const Color(0xFF2D2926).withValues(alpha: 0.82),
                     height: 1.45,
                   ),
@@ -2933,8 +2933,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
               'Size starting point: ${measurement.shortLabel}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 15,
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
                 color: const Color(0xFF2D2926).withValues(alpha: 0.82),
                 height: 1.45,
                 fontWeight: FontWeight.w600,
@@ -3977,7 +3977,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                             return Padding(
                               padding: _shapeCardPagePadding,
-                              child: GestureDetector(
+                              child: Semantics(
+                                button: true,
+                                selected: isSelected,
+                                label: shape.name,
+                                hint: isFlipped
+                                    ? 'Tap to close'
+                                    : 'Tap to select',
+                                child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   if (isFlipped) {
@@ -4033,7 +4040,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     );
                                   },
                                 ),
-                              ),
+                                ), // GestureDetector
+                              ), // Semantics
                             );
                           },
                         ),
@@ -4168,7 +4176,14 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                             return Padding(
                               padding: _shapeCardPagePadding,
-                              child: GestureDetector(
+                              child: Semantics(
+                                button: true,
+                                selected: isSelected,
+                                label: shape.name,
+                                hint: isFlipped
+                                    ? 'Tap to close'
+                                    : 'Tap to select',
+                                child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   if (isFlipped) {
@@ -4224,7 +4239,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     );
                                   },
                                 ),
-                              ),
+                                ), // GestureDetector
+                              ), // Semantics
                             );
                           },
                         ),

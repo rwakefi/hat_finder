@@ -80,7 +80,7 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
           backgroundColor: _espresso,
           content: Text(
             'Add a circumference or known hat size to save.',
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
           ),
         ),
       );
@@ -246,8 +246,8 @@ class _HeadMeasurementScreenState extends State<HeadMeasurementScreen> {
                 Text(
                   'Enter a known hat size, or measure with a flexible tape '
                   'where a hat normally sits.',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
                     height: 1.5,
                     color: _espresso.withValues(alpha: 0.82),
                   ),
