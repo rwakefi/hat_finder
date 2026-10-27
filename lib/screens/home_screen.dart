@@ -832,11 +832,15 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
           transitionBuilder: (child, animation) {
             return FadeTransition(opacity: animation, child: child);
           },
-          child: LayoutBuilder(
-            key: ValueKey(_index),
-            builder: (context, constraints) {
-              return _photoImage(photo, constraints);
-            },
+          child: Semantics(
+            image: true,
+            label: 'Hat lifestyle photo ${_index + 1} of ${widget.photos.length}',
+            child: LayoutBuilder(
+              key: ValueKey(_index),
+              builder: (context, constraints) {
+                return _photoImage(photo, constraints);
+              },
+            ),
           ),
         ),
         Positioned(

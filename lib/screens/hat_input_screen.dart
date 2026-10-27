@@ -1317,17 +1317,28 @@ class _HatInputScreenState extends State<HatInputScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           itemCount.clamp(0, maxDots),
-          (i) => Container(
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: i == currentIndex ? 20 : 6,
-            height: 6,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(3),
-              color: i == currentIndex
-                  ? const Color(0xFF2D2926)
-                  : Colors.grey.shade300,
-            ),
-          ),
+          (i) {
+            final active = i == currentIndex;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: active ? 20 : 7,
+              height: active ? 6 : 7,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(active ? 3 : 4),
+                color: active
+                    ? const Color(0xFF2D2926)
+                    : const Color(0xFFBBBBBB),
+                border: active
+                    ? null
+                    : Border.all(
+                        color: const Color(0xFF2D2926).withValues(alpha: 0.18),
+                        width: 0.5,
+                      ),
+              ),
+            );
+          },
         ),
       ),
     );
