@@ -992,9 +992,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                         : _resultColors.isNotEmpty && _selectedColor != null
                             ? 'No hats in this color.'
                             : 'No hats match these filters.',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: _espresso.withValues(alpha: 0.4),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: _espresso.withValues(alpha: 0.45),
                     ),
                   ),
                 )
@@ -1196,7 +1196,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 ),
               ),
               Text(
-                'NEXT CLOSEST MATCHES',
+                'CLOSE MATCHES',
                 style: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
