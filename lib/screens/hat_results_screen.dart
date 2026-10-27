@@ -1217,7 +1217,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           Text(
             'Hats that match some of your style preferences',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.montserrat(
               fontSize: 12,
               color: _espresso.withValues(alpha: 0.5),
               fontWeight: FontWeight.w400,
@@ -1405,18 +1405,18 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                               Text(
                                 priceStr,
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: _turquoise,
                                 ),
                               ),
                             const SizedBox(height: 6),
-                            // Compact attributes
+                            // Compact attributes — only rows with real values
                             if (!isBallcap) ...[
                               _buildAttribute('Crown', crownShape),
-                              _buildAttribute('Crown Height', crownHeight),
+                              _buildAttribute('Crown Ht', crownHeight),
                               _buildAttribute('Brim', brimShape),
-                              _buildAttribute('Brim Width', brimWidth),
+                              _buildAttribute('Brim W', brimWidth),
                             ] else ...[
                               _buildAttribute('Material', material),
                             ],
@@ -1465,27 +1465,32 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   }
 
   Widget _buildAttribute(String label, String value) {
+    // Skip rows with no real data — "—" is the sentinel for an unset metafield.
+    if (value.isEmpty || value == '—') return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 0.5),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: _espresso.withValues(alpha: 0.5),
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              color: _espresso.withValues(alpha: 0.45),
               fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: _espresso,
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: _espresso.withValues(alpha: 0.82),
+                letterSpacing: 0.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
