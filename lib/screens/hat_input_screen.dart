@@ -2106,7 +2106,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
                 padding: EdgeInsets.symmetric(
                   horizontal: compactWeb ? 10 : 12,
-                  vertical: compactWeb ? 4 : 5,
+                  vertical: compactWeb ? 5 : 6,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -2115,9 +2115,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 'FLIP FOR MORE INFO',
                 style: GoogleFonts.montserrat(
-                  fontSize: compactWeb ? 8 : 9,
+                  fontSize: compactWeb ? 10 : 11,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.6,
                 ),
               ),
             ),
@@ -2786,6 +2786,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         if (widget.headMeasurementProfile != null)
                           _buildHeadMeasurementBanner(
                               widget.headMeasurementProfile!),
+                        _buildStepCounter(),
                         Expanded(
                           child: PageView(
                             controller: _pageController,
@@ -2923,6 +2924,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
         minHeight: 3,
         backgroundColor: Colors.grey[200],
         valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)),
+      ),
+    );
+  }
+
+  /// Compact "STEP X OF Y" label — placed in the body column above the PageView
+  /// so it never affects AppBar sizing. 22px total height (text + padding).
+  Widget _buildStepCounter() {
+    final total = _pages.length;
+    final current = _currentPageIndex + 1;
+    return Semantics(
+      label: 'Step $current of $total',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'STEP $current OF $total',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2D2926).withValues(alpha: 0.38),
+            letterSpacing: 2.0,
+          ),
+        ),
       ),
     );
   }
