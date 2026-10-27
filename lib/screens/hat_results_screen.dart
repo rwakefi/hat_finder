@@ -67,7 +67,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
   bool _resultsLoading = true;
   Object? _resultsError;
   bool _fineTuningExpanded = false;
-  bool _summaryFiltersExpanded = true;
+  bool _summaryFiltersExpanded = false;
   late String? _filterHatType;
   late String? _filterWesternStyle;
   late String? _filterCrownShape;
@@ -1267,15 +1267,30 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     String priceStr = '';
     try {
-      final variant = hat['variants']?['edges']?[0]?['node'];
-      if (variant != null) {
-        final priceData = variant['price'];
+      final edges =
+          hat['variants']?['edges'] as List<dynamic>? ?? [];
+      double? minPrice;
+      double? maxPrice;
+      for (final edge in edges) {
+        final node = edge['node'];
+        if (node == null || !_variantIsAvailable(node)) continue;
+        final priceData = node['price'];
+        double? p;
         if (priceData is String) {
-          priceStr = '\$${double.parse(priceData).toStringAsFixed(2)}';
+          p = double.tryParse(priceData);
         } else if (priceData != null && priceData['amount'] != null) {
-          final amount = priceData['amount'];
-          priceStr = '\$${double.parse(amount.toString()).toStringAsFixed(2)}';
+          p = double.tryParse(priceData['amount'].toString());
         }
+        if (p == null) continue;
+        if (minPrice == null || p < minPrice) minPrice = p;
+        if (maxPrice == null || p > maxPrice) maxPrice = p;
+      }
+      if (minPrice != null) {
+        final lo = '\$${minPrice.toStringAsFixed(2)}';
+        final hi = maxPrice != null && (maxPrice - minPrice) > 0.005
+            ? '\$${maxPrice.toStringAsFixed(2)}'
+            : null;
+        priceStr = hi != null ? 'From $lo' : lo;
       }
     } catch (e) {
       debugPrint('Price parse error for "$title": $e');
@@ -1318,14 +1333,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          onTap: openProduct,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Hero image
-              Expanded(
-                flex: AppBreakpoints.isLaptop(context) ? 4 : 3,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Hero image — GestureDetector only, so PageView swipes never
+            // compete with an InkWell tap recognizer in the same arena.
+            Expanded(
+              flex: AppBreakpoints.isLaptop(context) ? 4 : 3,
+              child: GestureDetector(
+                onTap: openProduct,
                 child: Container(
                   color: _white,
                   child: Stack(
@@ -1387,10 +1403,15 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   ),
                 ),
               ),
-              // Title + Price + pinned footer
-              Expanded(
-                flex: 3,
-                child: Column(
+            // Text + button — InkWell here only, so ripple never competes
+            // with the gallery PageView's horizontal drag gesture.
+            Expanded(
+              flex: 3,
+              child: Material(
+                color: _white,
+                child: InkWell(
+                  onTap: openProduct,
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
@@ -1471,6 +1492,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ),
                   ],
                 ),
+              ),
+              ),
               ),
             ],
           ),
