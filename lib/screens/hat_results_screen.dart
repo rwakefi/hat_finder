@@ -487,11 +487,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required ValueChanged<T?> onSelected,
     bool compact = false,
   }) {
-    final chipHeight = compact ? 26.0 : 32.0;
+    final chipHeight = compact ? 28.0 : 34.0;
     final chipPaddingH = compact ? 10.0 : 14.0;
-    final chipPaddingV = compact ? 4.0 : 6.0;
+    final chipPaddingV = compact ? 5.0 : 7.0;
     final chipFontSize = compact ? 10.0 : 11.0;
-    final labelFontSize = compact ? 8.0 : 9.0;
+    final labelFontSize = compact ? 10.0 : 11.0;
     final iconSize = compact ? 14.0 : 16.0;
 
     return Container(
@@ -1506,7 +1506,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     return Container(
       color: _offWhite,
-      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 260),
+      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 180),
       child: SingleChildScrollView(
         padding:
             EdgeInsets.fromLTRB(16, isLaptop ? 6 : 8, 16, isLaptop ? 4 : 6),
@@ -1935,17 +1935,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           child: Semantics(
                             button: true,
                             label: 'Clear filters',
-                            child: Padding(
+                              child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
+                                horizontal: 8,
+                                vertical: 6,
                               ),
                               child: Text(
                                 'CLEAR',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: 1.0,
                                   color: _turquoise,
                                 ),
                               ),
@@ -2258,28 +2258,43 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
               ),
             ),
           ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 4,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(widget.imageUrls.length, (index) {
-              final active = index == _pageIndex;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: active ? 6 : 5,
-                height: active ? 6 : 5,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      active ? _turquoise : _espresso.withValues(alpha: 0.22),
-                ),
-              );
-            }),
+        if (widget.imageUrls.length > 1)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.imageUrls.length, (index) {
+                final active = index == _pageIndex;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: active ? 8 : 6,
+                  height: active ? 8 : 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active
+                        ? _turquoise
+                        : Colors.white.withValues(alpha: 0.70),
+                    border: active
+                        ? null
+                        : Border.all(
+                            color: _espresso.withValues(alpha: 0.25),
+                            width: 0.5,
+                          ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
           ),
-        ),
       ],
     );
   }
