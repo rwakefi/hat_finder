@@ -7,6 +7,7 @@ import '../models/head_shape_profile.dart';
 import '../theme/moon_ridge_logo_sizes.dart';
 import '../theme/section_title_style.dart';
 import '../theme/wizard_header_spacing.dart';
+import '../widgets/segmented_progress_bar.dart';
 import 'head_measurement_screen.dart';
 import 'hat_input_screen.dart';
 
@@ -254,14 +255,12 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   Widget _buildProgressBar() {
     final current = _currentQuestion + 1;
     final total = _questions.length;
-    return Semantics(
-      label: 'Question $current of $total',
-      value: '$current of $total',
-      child: LinearProgressIndicator(
-        value: current / total,
-        backgroundColor: Colors.grey[200],
-        valueColor: const AlwaysStoppedAnimation<Color>(_accent),
-        minHeight: 3,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: SegmentedProgressBar(
+        currentStep: current,
+        totalSteps: total,
+        semanticLabel: 'Question $current of $total',
       ),
     );
   }
