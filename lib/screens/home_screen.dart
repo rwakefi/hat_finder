@@ -290,26 +290,26 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     Widget buildMobileActions() {
-      return CustomScrollView(
-        physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            sliver: SliverToBoxAdapter(
+      // Logo is pinned as a fixed footer so it remains fully visible at all
+      // iPhone heights. The buttons scroll independently inside the Expanded.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: mobileButtonChildren,
               ),
             ),
           ),
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: buildFooterLogo(),
-              ),
+          Center(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: buildFooterLogo(),
             ),
           ),
         ],

@@ -1429,57 +1429,59 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           cacheWidth: imageCacheWidth,
                         ),
                       ),
-                      if (cardSwatches.isNotEmpty)
-                        Positioned(
-                          top: 6,
-                          right: 10,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: cardSwatches.map((entry) {
-                              return Tooltip(
-                                message: entry.color,
-                                preferBelow: false,
-                                verticalOffset: 12,
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                textStyle: GoogleFonts.montserrat(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _white,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _espresso.withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Semantics(
-                                  label:
-                                      'View ${entry.color} colorway',
-                                  button: true,
-                                  hint: 'Opens product page',
-                                  child: GestureDetector(
-                                    onTap: () => openProduct(
-                                        variantGid: entry.variantGid),
-                                    behavior: HitTestBehavior.opaque,
-                                    child: Container(
-                                      margin: const EdgeInsets.only(left: 5),
-                                      width: 28,
-                                      height: 28,
-                                      alignment: Alignment.center,
-                                      child: _buildColorSwatchCircle(
-                                        colorName: entry.color,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
                     ],
                   ),
                 ),
               ),  // GestureDetector
             ),    // image Expanded
+            // Color swatches strip — sits between image and text so swatches
+            // never overlap the product photo.
+            if (cardSwatches.isNotEmpty)
+              Container(
+                color: _white,
+                height: 36,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: cardSwatches.map((entry) {
+                    return Tooltip(
+                      message: entry.color,
+                      preferBelow: false,
+                      verticalOffset: 12,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      textStyle: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _white,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _espresso.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Semantics(
+                        label: 'View ${entry.color} colorway',
+                        button: true,
+                        hint: 'Opens product page',
+                        child: GestureDetector(
+                          onTap: () =>
+                              openProduct(variantGid: entry.variantGid),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 5),
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            child: _buildColorSwatchCircle(
+                              colorName: entry.color,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             // Text + button — InkWell here only, so ripple never competes
             // with the gallery PageView's horizontal drag gesture.
             Expanded(
