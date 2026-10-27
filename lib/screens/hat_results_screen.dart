@@ -1402,7 +1402,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                     ],
                   ),
                 ),
-              ),
+              ),  // GestureDetector
+            ),    // image Expanded
             // Text + button — InkWell here only, so ripple never competes
             // with the gallery PageView's horizontal drag gesture.
             Expanded(
@@ -1412,57 +1413,54 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                 child: InkWell(
                   onTap: openProduct,
                   child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: ClipRect(
-                        child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title — mixed case reads better at small sizes
-                            Text(
-                              title,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _espresso,
-                                letterSpacing: 0.1,
-                                height: 1.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            // Price
-                            if (priceStr.isNotEmpty)
-                              Text(
-                                priceStr,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _turquoise,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ClipRect(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: _espresso,
+                                    letterSpacing: 0.1,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            const SizedBox(height: 6),
-                            // Compact attributes — only rows with real values
-                            if (!isBallcap) ...[
-                              _buildAttribute('Crown', crownShape),
-                              _buildAttribute('Crown Ht', crownHeight),
-                              _buildAttribute('Brim', brimShape),
-                              _buildAttribute('Brim W', brimWidth),
-                            ] else ...[
-                              _buildAttribute('Material', material),
-                            ],
-                          ],
+                                const SizedBox(height: 4),
+                                if (priceStr.isNotEmpty)
+                                  Text(
+                                    priceStr,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: _turquoise,
+                                    ),
+                                  ),
+                                const SizedBox(height: 6),
+                                if (!isBallcap) ...[
+                                  _buildAttribute('Crown', crownShape),
+                                  _buildAttribute('Crown Ht', crownHeight),
+                                  _buildAttribute('Brim', brimShape),
+                                  _buildAttribute('Brim W', brimWidth),
+                                ] else ...[
+                                  _buildAttribute('Material', material),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                      child: Center(
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                         child: FilledButton(
                           onPressed: openProduct,
                           style: FilledButton.styleFrom(
@@ -1489,16 +1487,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ), // ClipRRect
+      ),
     );
   }
 
