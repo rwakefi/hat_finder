@@ -1453,7 +1453,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     String? description,
   }) {
     final compactWeb = _isWebDesktopWizard(context);
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: description != null && description.isNotEmpty
+          ? '$title — $description'
+          : title,
+      child: GestureDetector(
       onTap: onSelect,
       child: Container(
         decoration: BoxDecoration(
@@ -1514,6 +1520,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
           ),
         ),
       ),
+      ), // Semantics
     );
   }
 
@@ -2955,14 +2962,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
   /// Compact "STEP X OF Y" label — placed in the body column above the PageView
   /// so it never affects AppBar sizing. 22px total height (text + padding).
   Widget _buildStepCounter() {
-    final total = _pages.length;
     final current = _currentPageIndex + 1;
     return Semantics(
-      label: 'Step $current of $total',
+      label: 'Step $current',
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Text(
-          'STEP $current OF $total',
+          'STEP $current',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
             fontSize: 11,
@@ -3201,7 +3207,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
 
                               final isSelected = selectedHatType == typeInfo;
 
-                              return Card(
+                              return Semantics(
+                                button: true,
+                                label: typeInfo.name,
+                                selected: isSelected,
+                                child: Card(
                                 elevation: 0,
                                 clipBehavior: Clip.antiAlias,
                                 color: Colors.white,
@@ -3262,7 +3272,8 @@ class _HatInputScreenState extends State<HatInputScreen> {
                                     ],
                                   ),
                                 ),
-                              );
+                                ), // Card
+                              ); // Semantics
                             }).toList(),
                           );
                         }
