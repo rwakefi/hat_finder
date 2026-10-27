@@ -1916,12 +1916,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Find Hats With As Many of Your Choices As Possible',
+                        'Find My Closest Matches',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.15,
+                          letterSpacing: 0.3,
                           height: 1.35,
                         ),
                       ),
@@ -3067,7 +3067,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualHatTypeSelection() {
     return Column(
       children: [
-        _buildWizardStepTitle('Select a Hat Type:'),
+        _buildWizardStepTitle('What kind of hat?'),
         Padding(
           padding: WizardHeaderSpacing.actionRow,
           child: OutlinedButton(
@@ -3284,7 +3284,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualWesternSelection() {
     return Column(
       children: [
-        _buildWizardStepTitle('Select Style:'),
+        _buildWizardStepTitle('Western, city, or outdoors?'),
         Padding(
           padding: WizardHeaderSpacing.actionRow,
           child: OutlinedButton(
@@ -3846,10 +3846,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (sortedShapes.isEmpty) {
           return Column(
             children: [
-              _buildWizardStepTitle('Select Crown Shape:'),
-              _buildWizardEmptyState(
+              _buildWizardStepTitle('Choose a crown shape.'),
+            _buildWizardEmptyState(
                 message: _limitsWizardShapesToCatalogInventory
-                    ? 'No crown shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                    ? 'No crown shapes in stock for ${selectedWesternStyle ?? 'this style'} right now. We can still find your closest matches.'
                     : 'No crown shapes available for your selections.',
                 showFindHats: true,
               ),
@@ -3864,7 +3864,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            _buildWizardStepTitle('Select Crown Shape:'),
+            _buildWizardStepTitle('Choose a crown shape.'),
             _buildCrownGuideLink(),
             Expanded(
               child: LayoutBuilder(
@@ -4009,7 +4009,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-              _buildWizardStepTitle('Select Brim Shape:'),
+              _buildWizardStepTitle('Now the brim.'),
               Expanded(
                 child: Center(
                   child: Padding(
@@ -4033,13 +4033,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (sortedShapes.isEmpty) {
           return Column(
             children: [
-              _buildWizardStepTitle('Select Brim Shape:'),
+              _buildWizardStepTitle('Now the brim.'),
               _buildWizardEmptyState(
                 message: selectedCrownShape == null
                     ? (_limitsWizardShapesToCatalogInventory
-                        ? 'No brim shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                        ? 'No brim shapes in stock for ${selectedWesternStyle ?? 'this style'} right now. We can still find your closest matches.'
                         : 'Select a crown shape first.')
-                    : 'No brim shapes in stock for\n${selectedCrownShape!.name}\nwith your current selections.',
+                    : 'No brim shapes in stock for ${selectedCrownShape!.name} right now. We can still find your closest matches.',
                 showFindHats: selectedCrownShape != null ||
                     _limitsWizardShapesToCatalogInventory,
               ),
@@ -4054,7 +4054,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            _buildWizardStepTitle('Select Brim Shape:'),
+            _buildWizardStepTitle('Now the brim.'),
             _buildBrimGuideLink(),
             Expanded(
               child: LayoutBuilder(
