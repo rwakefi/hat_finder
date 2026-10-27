@@ -363,6 +363,16 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
     return Scaffold(
       backgroundColor: _surface,
       appBar: _buildAppBar(),
+      // Thin progress bar while catalog images are fetching.
+      // _exampleImages is empty until the first async result arrives.
+      bottomNavigationBar: _exampleImages.isEmpty
+          ? const LinearProgressIndicator(
+              minHeight: 3,
+              backgroundColor: Color(0xFFE4DED1),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(Color(0xFF559C99)),
+            )
+          : null,
       body: WebContentScope(
         child: SingleChildScrollView(
           padding:

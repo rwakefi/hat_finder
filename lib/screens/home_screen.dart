@@ -731,10 +731,18 @@ class _RotatingPhotos extends StatefulWidget {
 class _RotatingPhotosState extends State<_RotatingPhotos> {
   Timer? _autoAdvance;
   int _index = 0;
+  // Swipe tracking — reset auto-advance after a manual swipe.
+  double _dragAccumX = 0;
+  static const _swipeThreshold = 40.0;
 
   @override
   void initState() {
     super.initState();
+    _startAutoAdvance();
+  }
+
+  void _startAutoAdvance() {
+    _autoAdvance?.cancel();
     _autoAdvance =
         Timer.periodic(const Duration(seconds: 7), (_) => _advance());
   }
@@ -748,6 +756,28 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
   void _advance() {
     if (!mounted || widget.photos.isEmpty) return;
     setState(() => _index = (_index + 1) % widget.photos.length);
+  }
+
+  void _previous() {
+    if (!mounted || widget.photos.isEmpty) return;
+    setState(() =>
+        _index = (_index - 1 + widget.photos.length) % widget.photos.length);
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails d) {
+    _dragAccumX += d.delta.dx;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails d) {
+    if (_dragAccumX.abs() >= _swipeThreshold) {
+      if (_dragAccumX < 0) {
+        _advance();
+      } else {
+        _previous();
+      }
+      _startAutoAdvance(); // reset timer after manual swipe
+    }
+    _dragAccumX = 0;
   }
 
   Widget _photoImage(_HomePhoto photo, BoxConstraints constraints) {
@@ -778,7 +808,12 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
   @override
   Widget build(BuildContext context) {
     final photo = widget.photos[_index];
-    return Stack(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragEnd: _onHorizontalDragEnd,
+      onHorizontalDragCancel: () => _dragAccumX = 0,
+      child: Stack(
       fit: StackFit.expand,
       children: [
         AnimatedSwitcher(
@@ -829,7 +864,8 @@ class _RotatingPhotosState extends State<_RotatingPhotos> {
           ),
         ),
       ],
-    );
+      ), // Stack
+    ); // GestureDetector
   }
 }
 

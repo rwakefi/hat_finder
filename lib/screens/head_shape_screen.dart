@@ -252,11 +252,17 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
   }
 
   Widget _buildProgressBar() {
-    return LinearProgressIndicator(
-      value: (_currentQuestion + 1) / _questions.length,
-      backgroundColor: Colors.grey[200],
-      valueColor: const AlwaysStoppedAnimation<Color>(_accent),
-      minHeight: 3,
+    final current = _currentQuestion + 1;
+    final total = _questions.length;
+    return Semantics(
+      label: 'Question $current of $total',
+      value: '$current of $total',
+      child: LinearProgressIndicator(
+        value: current / total,
+        backgroundColor: Colors.grey[200],
+        valueColor: const AlwaysStoppedAnimation<Color>(_accent),
+        minHeight: 3,
+      ),
     );
   }
 

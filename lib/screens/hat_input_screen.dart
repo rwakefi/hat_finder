@@ -3110,36 +3110,26 @@ class _HatInputScreenState extends State<HatInputScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              OutlinedButton(
+              TextButton(
                 onPressed: () {
                   setState(() => selectedHatType = null);
                   _nextPage(overrideValidation: true);
                 },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D2926),
-                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                style: TextButton.styleFrom(
+                  foregroundColor:
+                      const Color(0xFF2D2926).withValues(alpha: 0.50),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'ANY HAT TYPE',
+                  'Skip — any hat type',
                   style: GoogleFonts.montserrat(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
                   ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Skips the type filter — narrow down on the results page.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  color: const Color(0xFF2D2926).withValues(alpha: 0.38),
-                  height: 1.4,
                 ),
               ),
             ],
