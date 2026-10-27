@@ -616,6 +616,7 @@ void _showVideoModal(BuildContext context) {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close, color: Colors.white60),
                   onPressed: () => Navigator.pop(context),
                 ),
