@@ -58,7 +58,7 @@ void main() {
     await tester.tap(findTab);
     await tester.pump();
 
-    await tester.tap(find.text('ANY HAT TYPE'));
+    await tester.tap(find.text('Skip — any hat type'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

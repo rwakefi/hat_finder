@@ -181,7 +181,7 @@ void main() {
         (tester) async {
       await openWizard(tester);
 
-      await tester.tap(find.text('ANY HAT TYPE'));
+      await tester.tap(find.text('Skip — any hat type'));
       await pumpPageTransition(tester);
       expect(find.text('Western, city, or outdoors?'), findsNothing);
       expect(find.text('Choose a crown shape.'), findsOneWidget);
