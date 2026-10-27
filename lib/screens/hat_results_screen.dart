@@ -1694,7 +1694,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             '${profile.shortLabel}: ${profile.fitGuidance}',
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.montserrat(
               fontSize: 12,
               height: 1.35,
               color: _espresso.withValues(alpha: 0.72),
@@ -1720,7 +1720,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             'Size starting point: ${measurement.shortLabel}. ${measurement.guidance}',
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.montserrat(
               fontSize: 12,
               height: 1.35,
               color: _espresso.withValues(alpha: 0.72),
@@ -1729,6 +1729,24 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         ),
       ],
     );
+  }
+
+  /// One-liner showing active main filters, e.g. "Felt · Western · Cattleman's"
+  String _activeFilterSummary() {
+    final parts = <String>[];
+    if (_filterHatType != null) parts.add(_filterHatType!);
+    if (_filterWesternStyle != null) parts.add(_filterWesternStyle!);
+    if (_filterCrownShape != null) parts.add(_filterCrownShape!);
+    if (_filterBrimShape != null) parts.add(_filterBrimShape!);
+    if (_filterCrownHeights.isNotEmpty) {
+      parts.add(_filterCrownHeights
+          .map((h) => formatMeasurement(h))
+          .join(', '));
+    }
+    if (_filterBrimWidths.isNotEmpty) {
+      parts.add(_filterBrimWidths.join(', '));
+    }
+    return parts.join(' · ');
   }
 
   bool _urlMatchesColorName(String url, String colorName) {
@@ -2069,6 +2087,23 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ),
           ),
         ),
+        // When collapsed, show a compact one-liner of active search criteria
+        // so users always know what they searched for without having to expand.
+        if (!_summaryFiltersExpanded && _hasActiveMainFilters)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+            child: Text(
+              _activeFilterSummary(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                color: _turquoise.withValues(alpha: 0.80),
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ),
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
