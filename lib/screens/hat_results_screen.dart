@@ -1058,7 +1058,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                               return RepaintBoundary(
-                                child: _buildHatCard(displayClosest[index]),
+                                child: _buildHatCard(
+                                  displayClosest[index],
+                                  isClosestMatch: true,
+                                ),
                               );
                             },
                             childCount: displayClosest.length,
@@ -1228,7 +1231,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     );
   }
 
-  Widget _buildHatCard(dynamic hat) {
+  Widget _buildHatCard(dynamic hat, {bool isClosestMatch = false}) {
     final title = hat['title'] ?? 'Unknown Hat';
 
     // Metafield values
@@ -1292,11 +1295,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       );
     }
 
+    final cardBorderColor =
+        isClosestMatch ? _borderGrey : _turquoise;
+
     return Container(
       decoration: BoxDecoration(
         color: _white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _turquoise, width: 1.0),
+        border: Border.all(color: cardBorderColor, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1381,19 +1387,20 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: Padding(
+                      child: ClipRect(
+                        child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Title
+                            // Title — mixed case reads better at small sizes
                             Text(
-                              title.toUpperCase(),
+                              title,
                               style: GoogleFonts.montserrat(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                                 color: _espresso,
-                                letterSpacing: 1.0,
+                                letterSpacing: 0.1,
                                 height: 1.3,
                               ),
                               maxLines: 2,
@@ -1422,6 +1429,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             ],
                           ],
                         ),
+                      ),
                       ),
                     ),
                     Padding(
