@@ -732,14 +732,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         toolbarHeight: AppBreakpoints.useWebTopNavigation(context)
             ? 40
             : MoonRidgeLogoSizes.resultsToolbar,
-        leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
+        leading: Semantics(
+          label: 'Back',
+          button: true,
+          child: IconButton(
+            tooltip: 'Back',
+            icon: const Icon(
+                Icons.arrow_back_ios_new, color: _espresso, size: 20),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            },
+          ),
         ),
         title: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1355,8 +1360,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Semantics(
-                                  label: '${entry.color} color',
+                                  label:
+                                      'View ${entry.color} colorway',
                                   button: true,
+                                  hint: 'Opens product page',
                                   child: GestureDetector(
                                     onTap: () => openProduct(
                                         variantGid: entry.variantGid),
@@ -2226,16 +2233,53 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
     }
 
     final showNavArrows = AppBreakpoints.isLaptop(context);
+    final total = widget.imageUrls.length;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         PageView.builder(
           controller: _pageController,
-          itemCount: widget.imageUrls.length,
+          itemCount: total,
           onPageChanged: (index) => setState(() => _pageIndex = index),
           itemBuilder: (context, index) => _buildImage(widget.imageUrls[index]),
         ),
+        // Page counter pill — mobile only (desktop has nav arrows instead).
+        // Shown at all pages so users always know where they are.
+        if (!showNavArrows)
+          Positioned(
+            top: 6,
+            left: 8,
+            child: Semantics(
+              label: 'Image ${_pageIndex + 1} of $total',
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _espresso.withValues(alpha: 0.52),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_pageIndex + 1} / $total',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (showNavArrows && _pageIndex > 0)
           Positioned(
             left: 4,
