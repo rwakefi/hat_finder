@@ -13,6 +13,7 @@ import 'shape_guide_screen.dart';
 import 'dart:async';
 import 'dart:math' show pi, min;
 import '../services/shopify_service.dart';
+import '../widgets/segmented_progress_bar.dart';
 import '../widgets/shell_tab_bar_footer.dart';
 
 class HatInputScreen extends StatefulWidget {
@@ -2764,7 +2765,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 toolbarHeight: 0,
                 automaticallyImplyLeading: false,
                 bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(3),
+                  preferredSize: const Size.fromHeight(17),
                   child: _buildProgressBar(),
                 ),
               )
@@ -2787,7 +2788,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 automaticallyImplyLeading: false,
                 leading: null,
                 bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(3),
+                  preferredSize: const Size.fromHeight(17),
                   child: _buildProgressBar(),
                 ),
               ),
@@ -2947,14 +2948,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
   }
 
   Widget _buildProgressBar() {
-    return SizedBox(
-      height: 3,
-      width: double.infinity,
-      child: LinearProgressIndicator(
-        value: (_currentPageIndex + 1) / _pages.length.toDouble(),
-        minHeight: 3,
-        backgroundColor: Colors.grey[200],
-        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: SegmentedProgressBar(
+        currentStep: _currentPageIndex + 1,
+        totalSteps: _pages.length,
       ),
     );
   }
