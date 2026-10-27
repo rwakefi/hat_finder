@@ -2145,7 +2145,6 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final infoButtonPadding = compact
         ? const EdgeInsets.symmetric(vertical: 12)
         : const EdgeInsets.symmetric(vertical: 14);
-    final flipBackFontSize = compact ? 7.0 : 8.0;
 
     return Card(
       clipBehavior: Clip.antiAlias,
