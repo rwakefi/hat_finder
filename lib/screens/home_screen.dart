@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Widget> mobileButtonChildren = [
       _OptionBlock(
         icon: Icons.style_outlined,
-        label: 'SEARCH BY HAT TYPE',
+        label: 'FIND MY HAT',
         emphasized: true,
         onTap: widget.onFindHat,
         compact: compact,
@@ -705,7 +705,7 @@ class _HomeHeadline extends StatelessWidget {
         ),
         SizedBox(height: heroTop ? (compact ? 8 : 10) : 12),
         Text(
-          'Discover luxury hats tailored to your unique style and shape.',
+          'Find the hat that fits your head, your style, and your life.',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
             fontSize: subSize,
@@ -934,7 +934,7 @@ class _NativeSplitHomeActions extends StatelessWidget {
         ),
         SizedBox(height: gap - 4),
         _FeaturedHomeAction(
-          title: 'Search by Hat Type',
+          title: 'Find My Hat',
           subtitle: 'Felt, straw, style, crown, brim & size',
           icon: Icons.style_outlined,
           onTap: onFindHat,
@@ -992,6 +992,7 @@ class _NativeSplitHomeActions extends StatelessWidget {
                 label: 'Virtual Measure',
                 onTap: onVirtualMeasure,
                 spacious: spacious,
+                comingSoon: true,
               ),
             ),
           ],
@@ -1211,24 +1212,33 @@ class _GuideTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     required this.spacious,
+    this.comingSoon = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool spacious;
+  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = comingSoon
+        ? _HomePalette.espresso.withValues(alpha: 0.28)
+        : _HomePalette.turquoise;
+    final textColor = comingSoon
+        ? _HomePalette.espresso.withValues(alpha: 0.38)
+        : _HomePalette.espresso.withValues(alpha: 0.78);
+
     return Semantics(
-      button: true,
-      label: label,
+      button: !comingSoon,
+      label: comingSoon ? '$label — coming soon' : label,
       child: Material(
         color: _HomePalette.surface,
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: comingSoon ? null : onTap,
           child: Container(
             padding: EdgeInsets.symmetric(
               vertical: spacious ? 13 : 14,
@@ -1237,7 +1247,9 @@ class _GuideTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _HomePalette.espresso.withValues(alpha: 0.12),
+                color: _HomePalette.espresso.withValues(
+                  alpha: comingSoon ? 0.07 : 0.12,
+                ),
               ),
             ),
             child: Column(
@@ -1245,7 +1257,7 @@ class _GuideTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: spacious ? 22 : 22,
-                  color: _HomePalette.turquoise,
+                  color: iconColor,
                 ),
                 SizedBox(height: spacious ? 7 : 8),
                 Text(
@@ -1254,10 +1266,23 @@ class _GuideTile extends StatelessWidget {
                   style: GoogleFonts.montserrat(
                     fontSize: spacious ? 12 : 11,
                     fontWeight: FontWeight.w600,
-                    color: _HomePalette.espresso.withValues(alpha: 0.78),
+                    color: textColor,
                     height: 1.25,
                   ),
                 ),
+                if (comingSoon) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'COMING SOON',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      color: _HomePalette.espresso.withValues(alpha: 0.30),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1396,6 +1421,7 @@ class _HomeSecondaryActions extends StatelessWidget {
             icon: Icons.straighten_outlined,
             label: 'Virtual Head\nMeasurement',
             onTap: onVirtualMeasure,
+            comingSoon: true,
             relaxed: relaxed,
           ),
         ]),
@@ -1425,27 +1451,38 @@ class _SmallBubble extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.relaxed = false,
+    this.comingSoon = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool relaxed;
+  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = comingSoon
+        ? _HomePalette.espresso.withValues(alpha: 0.28)
+        : _HomePalette.turquoise;
+    final textColor = comingSoon
+        ? _HomePalette.espresso.withValues(alpha: 0.38)
+        : _HomePalette.espresso;
+
     return Semantics(
-      button: true,
-      label: label,
+      button: !comingSoon,
+      label: comingSoon ? '$label — coming soon' : label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: comingSoon ? null : onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _HomePalette.espresso.withValues(alpha: 0.18),
+              color: _HomePalette.espresso.withValues(
+                alpha: comingSoon ? 0.09 : 0.18,
+              ),
             ),
           ),
           child: Padding(
@@ -1458,19 +1495,37 @@ class _SmallBubble extends StatelessWidget {
                 Icon(
                   icon,
                   size: relaxed ? 22 : 20,
-                  color: _HomePalette.turquoise,
+                  color: iconColor,
                 ),
                 SizedBox(width: relaxed ? 12 : 10),
                 Expanded(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.montserrat(
-                      fontSize: relaxed ? 13 : 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: relaxed ? 0.35 : 0.5,
-                      color: _HomePalette.espresso,
-                      height: 1.35,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.montserrat(
+                          fontSize: relaxed ? 13 : 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: relaxed ? 0.35 : 0.5,
+                          color: textColor,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (comingSoon) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'COMING SOON',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: _HomePalette.espresso.withValues(alpha: 0.30),
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
