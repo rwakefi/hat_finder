@@ -56,6 +56,8 @@ class HatResultsScreen extends StatefulWidget {
 class _HatResultsScreenState extends State<HatResultsScreen> {
   String? _selectedColor;
   String? _selectedVariantSize;
+  String? _selectedBrand;
+  List<String> _resultBrands = [];
   Map<String, List<({String color, String variantGid, String? imageUrl})>>
       _swatchCache = {};
   List<dynamic>? _fullCatalog;
@@ -173,20 +175,30 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required List<dynamic> exact,
     required List<dynamic> closest,
   }) {
-    _exactHats = exact;
-    _closestHats = closest;
-    final allHats = [...exact, ...closest];
+    // Ballcap/Beanie: best-seller tag first, then inventory.
+    if (_isBallcapType) {
+      _exactHats = ShopifyService.orderBallcapResults(exact);
+      _closestHats = ShopifyService.orderBallcapResults(closest);
+    } else {
+      _exactHats = exact;
+      _closestHats = closest;
+    }
+    final allHats = [..._exactHats, ..._closestHats];
     _rebuildSwatchCache(allHats);
     final sizes = <String>{};
     final colors = <String>{};
+    final brands = <String>{};
     for (final hat in allHats) {
       sizes.addAll(_availableSizesForHat(hat));
       for (final entry in _swatchColorsFor(hat)) {
         colors.add(entry.color);
       }
+      final vendor = ShopifyService.vendorOf(hat);
+      if (vendor.isNotEmpty) brands.add(vendor);
     }
     _resultSizes = sizes.toList()..sort(ShopifyService.compareHatSizes);
     _resultColors = colors.toList()..sort();
+    _resultBrands = brands.toList()..sort();
   }
 
   List<dynamic> _applySizeAndColorFilters(List<dynamic> hats) {
@@ -204,6 +216,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   entry.color.toLowerCase() == _selectedColor!.toLowerCase(),
             ),
           )
+          .toList();
+    }
+    if (_selectedBrand != null) {
+      filtered = filtered
+          .where((hat) => ShopifyService.vendorOf(hat) == _selectedBrand)
           .toList();
     }
     return filtered;
@@ -242,18 +259,27 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         !type.contains('flat cap');
   }
 
-  /// Shorter cards than before — trims empty space below the CTA without changing width.
+  /// Card aspect ratio (width / height).  Lower = taller cards, which gives the
+  /// text section enough room for title + price + 4 attribute rows + CTA.
   double _resultsCardAspectRatio(BuildContext context) {
     if (AppBreakpoints.isDesktop(context)) return 0.76;
     if (AppBreakpoints.isLaptop(context)) return 0.70;
     final height = MediaQuery.sizeOf(context).height;
-    if (height < 700) return 0.49;
-    if (height < 820) return 0.51;
-    return 0.52;
+    if (height < 700) return 0.43;
+    if (height < 820) return 0.44;
+    return 0.45;
   }
 
   int _resultsCrossAxisCount(BuildContext context) =>
       AppBreakpoints.gridCrossAxisCount(context, laptop: 3, desktop: 4);
+
+  bool get _isBallcapType {
+    final type = (_filterHatType ?? widget.hatType ?? '').toLowerCase();
+    return type.contains('ballcap') ||
+        type.contains('ball cap') ||
+        type.contains('beanie') ||
+        type.contains('flat cap');
+  }
 
   bool get _hasActiveMainFilters =>
       _filterHatType != null ||
@@ -331,6 +357,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     setState(() {
       _selectedColor = null;
       _selectedVariantSize = null;
+      _selectedBrand = null;
       final result = _filterCatalog(source);
       _showingClosestMatches = result.showingClosestMatchesOnly;
       _syncResultHats(exact: result.exact, closest: result.closest);
@@ -345,7 +372,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       _filterCrownHeights.isNotEmpty ||
       _filterBrimWidths.isNotEmpty ||
       _selectedColor != null ||
-      _selectedVariantSize != null;
+      _selectedVariantSize != null ||
+      _selectedBrand != null;
 
   void _clearAllFilters() {
     if (!_hasActiveFilters) return;
@@ -358,6 +386,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       _filterBrimWidths = [];
       _selectedColor = null;
       _selectedVariantSize = null;
+      _selectedBrand = null;
       _fineTuningExpanded = false;
     });
     _applyFilters();
@@ -988,6 +1017,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           ),
         if (_resultColors.isNotEmpty)
           const Divider(height: 1, color: _borderGrey),
+        // Brand filter — only shown for Ballcap/Beanie when 2+ brands present.
+        if (_isBallcapType && _resultBrands.length > 1) ...[
+          _buildChipFilterBar<String>(
+            icon: Icons.storefront_outlined,
+            label: 'BRAND',
+            options: _resultBrands,
+            selected: _selectedBrand,
+            labelFor: (brand) => brand,
+            onSelected: (brand) => setState(() => _selectedBrand = brand),
+            compact: compactChips,
+          ),
+          const Divider(height: 1, color: _borderGrey),
+        ],
         Expanded(
           child: (displayExact.isEmpty && displayClosest.isEmpty)
               ? _buildChipFilteredEmptyState()
@@ -1002,7 +1044,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           12,
                           12,
                           12,
-                          displayClosest.isNotEmpty ? 12 : 32,
+                          displayClosest.isNotEmpty ? 12 : 80,
                         ),
                         sliver: SliverGrid(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1039,7 +1081,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           12,
                           displayExact.isNotEmpty ? 12 : 12,
                           12,
-                          32,
+                          80,
                         ),
                         sliver: SliverGrid(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1230,13 +1272,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     final hasUnderlying = _exactHats.isNotEmpty || _closestHats.isNotEmpty;
     final isSize = _selectedVariantSize != null;
     final isColor = _selectedColor != null;
+    final isBrand = _selectedBrand != null;
 
     String message;
     String? hint;
     String ctaLabel;
     VoidCallback onClear;
 
-    if (hasUnderlying && (isSize || isColor)) {
+    if (hasUnderlying && isBrand) {
+      message = 'No matches for brand "$_selectedBrand".';
+      hint = 'Other brands carry this style — clear the brand filter to see all.';
+      ctaLabel = 'Clear brand filter';
+      onClear = () => setState(() => _selectedBrand = null);
+    } else if (hasUnderlying && (isSize || isColor)) {
       final what = isSize ? 'size $_selectedVariantSize' : 'color $_selectedColor';
       message = 'No matches in $what.';
       hint = isSize
@@ -1248,11 +1296,13 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             if (isColor) _selectedColor = null;
           });
     } else {
-      message = isSize
-          ? 'No hats in this size.'
-          : isColor
-              ? 'No hats in this color.'
-              : 'No hats match these filters.';
+      message = isBrand
+          ? 'No hats from this brand.'
+          : isSize
+              ? 'No hats in this size.'
+              : isColor
+                  ? 'No hats in this color.'
+                  : 'No hats match these filters.';
       hint = null;
       ctaLabel = 'Clear all filters';
       onClear = _clearAllFilters;
@@ -1429,17 +1479,66 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           cacheWidth: imageCacheWidth,
                         ),
                       ),
+                      // Laptop/desktop: swatches fit in the image corner because
+                      // the larger card has room.  Mobile uses a strip below.
+                      if (cardSwatches.isNotEmpty &&
+                          AppBreakpoints.isLaptop(context))
+                        Positioned(
+                          top: 6,
+                          right: 10,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: cardSwatches.map((entry) {
+                              return Tooltip(
+                                message: entry.color,
+                                preferBelow: false,
+                                verticalOffset: 12,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 8),
+                                textStyle: GoogleFonts.montserrat(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _white,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _espresso.withValues(alpha: 0.92),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Semantics(
+                                  label: 'View ${entry.color} colorway',
+                                  button: true,
+                                  hint: 'Opens product page',
+                                  child: GestureDetector(
+                                    onTap: () => openProduct(
+                                        variantGid: entry.variantGid),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Container(
+                                      margin:
+                                          const EdgeInsets.only(left: 5),
+                                      width: 28,
+                                      height: 28,
+                                      alignment: Alignment.center,
+                                      child: _buildColorSwatchCircle(
+                                        colorName: entry.color,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),  // GestureDetector
             ),    // image Expanded
-            // Color swatches strip — sits between image and text so swatches
-            // never overlap the product photo.
-            if (cardSwatches.isNotEmpty)
+            // Mobile swatch strip — 28 px between image and text so dots
+            // never overlap the product photo on small screens.
+            if (cardSwatches.isNotEmpty && !AppBreakpoints.isLaptop(context))
               Container(
                 color: _white,
-                height: 36,
+                height: 28,
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 8),
                 child: Row(
@@ -1469,8 +1568,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           behavior: HitTestBehavior.opaque,
                           child: Container(
                             margin: const EdgeInsets.only(left: 5),
-                            width: 28,
-                            height: 28,
+                            width: 22,
+                            height: 22,
                             alignment: Alignment.center,
                             child: _buildColorSwatchCircle(
                               colorName: entry.color,
@@ -1485,7 +1584,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             // Text + button — InkWell here only, so ripple never competes
             // with the gallery PageView's horizontal drag gesture.
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Material(
                 color: _white,
                 child: InkWell(
@@ -2096,7 +2195,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
             child: Text(
               _activeFilterSummary(),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.montserrat(
                 fontSize: 11,
