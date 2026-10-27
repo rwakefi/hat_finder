@@ -752,11 +752,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
               const SizedBox(height: WizardHeaderSpacing.gap),
             ],
             Text(
-              'RESULTS',
+              'YOUR MATCHES',
               style: GoogleFonts.montserrat(
                 fontSize: 13,
                 color: _espresso,
-                letterSpacing: 3.0,
+                letterSpacing: 2.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -809,9 +809,82 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     }
     if (_resultsError != null) {
       return Center(
-        child: Text(
-          'Error: $_resultsError',
-          style: const TextStyle(color: Colors.red),
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                size: 56,
+                color: _espresso.withValues(alpha: 0.2),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Couldn\'t load hats',
+                style: GoogleFonts.montserrat(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _espresso,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Check your connection and try again.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  color: _espresso.withValues(alpha: 0.55),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              FilledButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _resultsError = null;
+                    _resultsLoading = true;
+                  });
+                  _loadInitialResults();
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  'TRY AGAIN',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _turquoise,
+                  foregroundColor: _white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                },
+                child: Text(
+                  'Go back',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _espresso.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -824,23 +897,49 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             children: [
               Icon(Icons.search_off_rounded,
                   size: 56, color: _espresso.withValues(alpha: 0.2)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text(
-                'No Matches Found',
+                'Nothing matches these filters',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.montserrat(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: _espresso,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.0,
+                  height: 1.3,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
-                'Try adjusting your shape or size filters.',
+                'Loosen up your shape or size choices and we\'ll find something.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
                   color: _espresso.withValues(alpha: 0.5),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              FilledButton(
+                onPressed: _clearAllFilters,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _turquoise,
+                  foregroundColor: _white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  'CLEAR ALL FILTERS',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
             ],
@@ -1334,10 +1433,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             backgroundColor: _turquoise,
                             foregroundColor: _white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 14,
+                              vertical: 8,
                             ),
-                            minimumSize: const Size(0, 28),
+                            minimumSize: const Size(double.infinity, 36),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -1347,9 +1446,9 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           child: Text(
                             'MORE INFO / BUY',
                             style: GoogleFonts.montserrat(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
                             ),
                           ),
                         ),
@@ -1437,8 +1536,8 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
   Widget _buildClosestMatchesBanner() {
     final message = widget.noBrimResults
-        ? 'Sorry, we don\'t have an exact match — but here are your next closest matches.'
-        : 'No exact matches — showing the closest options we found. '
+        ? 'No exact match on brim — here are the closest options we carry.'
+        : 'No exact matches on all filters — showing the closest options we found. '
             'Adjust filters above to narrow further.';
     return Container(
       width: double.infinity,
