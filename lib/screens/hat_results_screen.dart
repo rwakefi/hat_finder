@@ -990,19 +990,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
           const Divider(height: 1, color: _borderGrey),
         Expanded(
           child: (displayExact.isEmpty && displayClosest.isEmpty)
-              ? Center(
-                  child: Text(
-                    _selectedVariantSize != null
-                        ? 'No hats in this size.'
-                        : _resultColors.isNotEmpty && _selectedColor != null
-                            ? 'No hats in this color.'
-                            : 'No hats match these filters.',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      color: _espresso.withValues(alpha: 0.45),
-                    ),
-                  ),
-                )
+              ? _buildChipFilteredEmptyState()
               : Stack(
                   children: [
                     CustomScrollView(
@@ -1232,6 +1220,94 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Empty state when size/color chips filter ALL results to zero.
+  /// Differentiates "data exists but filtered out" from "genuinely no matches."
+  Widget _buildChipFilteredEmptyState() {
+    final hasUnderlying = _exactHats.isNotEmpty || _closestHats.isNotEmpty;
+    final isSize = _selectedVariantSize != null;
+    final isColor = _selectedColor != null;
+
+    String message;
+    String? hint;
+    String ctaLabel;
+    VoidCallback onClear;
+
+    if (hasUnderlying && (isSize || isColor)) {
+      final what = isSize ? 'size $_selectedVariantSize' : 'color $_selectedColor';
+      message = 'No matches in $what.';
+      hint = isSize
+          ? 'Hats exist for your style — try a nearby size or clear the filter.'
+          : 'Those hats don\'t come in this color. Clear to see all options.';
+      ctaLabel = isSize ? 'Clear size filter' : 'Clear color filter';
+      onClear = () => setState(() {
+            if (isSize) _selectedVariantSize = null;
+            if (isColor) _selectedColor = null;
+          });
+    } else {
+      message = isSize
+          ? 'No hats in this size.'
+          : isColor
+              ? 'No hats in this color.'
+              : 'No hats match these filters.';
+      hint = null;
+      ctaLabel = 'Clear all filters';
+      onClear = _clearAllFilters;
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_alt_off_rounded,
+              size: 40,
+              color: _espresso.withValues(alpha: 0.18),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: _espresso.withValues(alpha: 0.65),
+              ),
+            ),
+            if (hint != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                hint,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: _espresso.withValues(alpha: 0.42),
+                  height: 1.45,
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                foregroundColor: _turquoise,
+              ),
+              child: Text(
+                ctaLabel,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
