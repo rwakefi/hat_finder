@@ -7,10 +7,10 @@ void main() {
     SharedPreferences.setMockInitialValues({'has_launched_before': true});
 
     await tester.pumpWidget(const HatFinderApp());
-    await _pumpUntilFound(tester, find.text('SEARCH BY HAT TYPE'));
+    await _pumpUntilFound(tester, find.text('FIND MY HAT'));
 
     expect(find.text('FIND YOUR PERFECT HAT'), findsOneWidget);
-    expect(find.text('SEARCH BY HAT TYPE'), findsOneWidget);
+    expect(find.text('FIND MY HAT'), findsOneWidget);
   });
 }
 

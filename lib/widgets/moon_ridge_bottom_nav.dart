@@ -45,9 +45,9 @@ class _MoonRidgeBottomNavState extends State<MoonRidgeBottomNav> {
       icon: Icons.search_rounded,
     ),
     _NavTab.stacked(
-      topLine: 'Head',
-      bottomLine: 'Shape',
-      topLabel: 'Head Shape',
+      topLine: 'Fit',
+      bottomLine: 'Quiz',
+      topLabel: 'Fit Quiz',
       icon: Icons.face_retouching_natural_rounded,
     ),
     _NavTab.label('Shop', icon: Icons.shopping_bag_outlined),

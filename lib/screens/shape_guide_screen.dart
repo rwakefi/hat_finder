@@ -433,7 +433,39 @@ class _ShapeGuideScreenState extends State<ShapeGuideScreen> {
                   _buildCrownNonTraditionalSection(twoUp),
                 ],
               ],
+              const SizedBox(height: 36),
+              _buildFindHatCta(),
+              const SizedBox(height: 8),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFindHatCta() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: FilledButton.icon(
+          onPressed: _goBack,
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+          label: Text(
+            'BACK TO HAT FINDER',
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: _accent,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: 0,
           ),
         ),
       ),

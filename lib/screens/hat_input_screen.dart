@@ -1363,11 +1363,11 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 nextLabel,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2D2926),
-                  fontStyle: FontStyle.italic,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.65),
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
@@ -1916,12 +1916,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Find Hats With As Many of Your Choices As Possible',
+                        'Find My Closest Matches',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.15,
+                          letterSpacing: 0.3,
                           height: 1.35,
                         ),
                       ),
@@ -2106,7 +2106,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 side: const BorderSide(color: Color(0xFF559C99), width: 1.2),
                 padding: EdgeInsets.symmetric(
                   horizontal: compactWeb ? 10 : 12,
-                  vertical: compactWeb ? 4 : 5,
+                  vertical: compactWeb ? 5 : 6,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -2115,9 +2115,9 @@ class _HatInputScreenState extends State<HatInputScreen> {
               child: Text(
                 'FLIP FOR MORE INFO',
                 style: GoogleFonts.montserrat(
-                  fontSize: compactWeb ? 8 : 9,
+                  fontSize: compactWeb ? 10 : 11,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.6,
                 ),
               ),
             ),
@@ -2786,6 +2786,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                         if (widget.headMeasurementProfile != null)
                           _buildHeadMeasurementBanner(
                               widget.headMeasurementProfile!),
+                        _buildStepCounter(),
                         Expanded(
                           child: PageView(
                             controller: _pageController,
@@ -2923,6 +2924,29 @@ class _HatInputScreenState extends State<HatInputScreen> {
         minHeight: 3,
         backgroundColor: Colors.grey[200],
         valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF559C99)),
+      ),
+    );
+  }
+
+  /// Compact "STEP X OF Y" label — placed in the body column above the PageView
+  /// so it never affects AppBar sizing. 22px total height (text + padding).
+  Widget _buildStepCounter() {
+    final total = _pages.length;
+    final current = _currentPageIndex + 1;
+    return Semantics(
+      label: 'Step $current of $total',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'STEP $current OF $total',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2D2926).withValues(alpha: 0.38),
+            letterSpacing: 2.0,
+          ),
+        ),
       ),
     );
   }
@@ -3067,29 +3091,45 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualHatTypeSelection() {
     return Column(
       children: [
-        _buildWizardStepTitle('Select a Hat Type:'),
+        _buildWizardStepTitle('What kind of hat?'),
         Padding(
           padding: WizardHeaderSpacing.actionRow,
-          child: OutlinedButton(
-            onPressed: () {
-              setState(() => selectedHatType = null);
-              _nextPage(overrideValidation: true);
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2D2926),
-              side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            ),
-            child: Text(
-              'ANY HAT TYPE',
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  setState(() => selectedHatType = null);
+                  _nextPage(overrideValidation: true);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2D2926),
+                  side: const BorderSide(color: Color(0xFF2D2926), width: 1.0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                ),
+                child: Text(
+                  'ANY HAT TYPE',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                'Skips the type filter — narrow down on the results page.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  color: const Color(0xFF2D2926).withValues(alpha: 0.38),
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -3284,7 +3324,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
   Widget _buildVisualWesternSelection() {
     return Column(
       children: [
-        _buildWizardStepTitle('Select Style:'),
+        _buildWizardStepTitle('Western, city, or outdoors?'),
         Padding(
           padding: WizardHeaderSpacing.actionRow,
           child: OutlinedButton(
@@ -3846,10 +3886,10 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (sortedShapes.isEmpty) {
           return Column(
             children: [
-              _buildWizardStepTitle('Select Crown Shape:'),
-              _buildWizardEmptyState(
+              _buildWizardStepTitle('Choose a crown shape.'),
+            _buildWizardEmptyState(
                 message: _limitsWizardShapesToCatalogInventory
-                    ? 'No crown shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                    ? 'No crown shapes in stock for ${selectedWesternStyle ?? 'this style'} right now. We can still find your closest matches.'
                     : 'No crown shapes available for your selections.',
                 showFindHats: true,
               ),
@@ -3864,7 +3904,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            _buildWizardStepTitle('Select Crown Shape:'),
+            _buildWizardStepTitle('Choose a crown shape.'),
             _buildCrownGuideLink(),
             Expanded(
               child: LayoutBuilder(
@@ -4009,7 +4049,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-              _buildWizardStepTitle('Select Brim Shape:'),
+              _buildWizardStepTitle('Now the brim.'),
               Expanded(
                 child: Center(
                   child: Padding(
@@ -4033,13 +4073,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
         if (sortedShapes.isEmpty) {
           return Column(
             children: [
-              _buildWizardStepTitle('Select Brim Shape:'),
+              _buildWizardStepTitle('Now the brim.'),
               _buildWizardEmptyState(
                 message: selectedCrownShape == null
                     ? (_limitsWizardShapesToCatalogInventory
-                        ? 'No brim shapes in stock for\n${selectedWesternStyle ?? 'this style'}\nwith your current selections.'
+                        ? 'No brim shapes in stock for ${selectedWesternStyle ?? 'this style'} right now. We can still find your closest matches.'
                         : 'Select a crown shape first.')
-                    : 'No brim shapes in stock for\n${selectedCrownShape!.name}\nwith your current selections.',
+                    : 'No brim shapes in stock for ${selectedCrownShape!.name} right now. We can still find your closest matches.',
                 showFindHats: selectedCrownShape != null ||
                     _limitsWizardShapesToCatalogInventory,
               ),
@@ -4054,7 +4094,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                 minHeight: 2,
                 color: Color(0xFF559C99),
               ),
-            _buildWizardStepTitle('Select Brim Shape:'),
+            _buildWizardStepTitle('Now the brim.'),
             _buildBrimGuideLink(),
             Expanded(
               child: LayoutBuilder(

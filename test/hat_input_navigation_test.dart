@@ -55,7 +55,7 @@ void main() {
     await tester.tap(find.text('OPEN WIZARD'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Select a Hat Type:'), findsOneWidget);
+    expect(find.text('What kind of hat?'), findsOneWidget);
   }
 
   Future<void> pumpPageTransition(WidgetTester tester) async {
@@ -127,16 +127,16 @@ void main() {
       await openWizard(tester);
 
       await tapHatTypeCard(tester, 'FELT');
-      expect(find.text('Select Style:'), findsOneWidget);
+      expect(find.text('Western, city, or outdoors?'), findsOneWidget);
 
       await tapStyleCard(tester, 'WESTERN');
-      expect(find.text('Select Crown Shape:'), findsOneWidget);
+      expect(find.text('Choose a crown shape.'), findsOneWidget);
 
       await tapSelectCrown(tester);
-      expect(find.text('Select Brim Shape:'), findsOneWidget);
+      expect(find.text('Now the brim.'), findsOneWidget);
 
       await finishBrimStep(tester);
-      expect(find.text('RESULTS'), findsOneWidget);
+      expect(find.text('YOUR MATCHES'), findsOneWidget);
     });
 
     testWidgets('Straw navigates Style → Crown → Brim → Results',
@@ -144,16 +144,16 @@ void main() {
       await openWizard(tester);
 
       await tapHatTypeCard(tester, 'STRAW');
-      expect(find.text('Select Style:'), findsOneWidget);
+      expect(find.text('Western, city, or outdoors?'), findsOneWidget);
 
       await tapStyleCard(tester, 'CITY');
-      expect(find.text('Select Crown Shape:'), findsOneWidget);
+      expect(find.text('Choose a crown shape.'), findsOneWidget);
 
       await tapSelectCrown(tester);
-      expect(find.text('Select Brim Shape:'), findsOneWidget);
+      expect(find.text('Now the brim.'), findsOneWidget);
 
       await finishBrimStep(tester);
-      expect(find.text('RESULTS'), findsOneWidget);
+      expect(find.text('YOUR MATCHES'), findsOneWidget);
     });
 
     testWidgets('Ballcap skips shape wizard and opens Results', (tester) async {
@@ -161,8 +161,8 @@ void main() {
 
       await tapHatTypeCard(tester, 'BALLCAP');
 
-      expect(find.text('Select Crown Shape:'), findsNothing);
-      expect(find.text('Select Brim Shape:'), findsNothing);
+      expect(find.text('Choose a crown shape.'), findsNothing);
+      expect(find.text('Now the brim.'), findsNothing);
       expect(find.byType(HatResultsScreen), findsOneWidget);
     });
 
@@ -172,8 +172,8 @@ void main() {
 
       await tapHatTypeCard(tester, 'BEANIE/FLAT CAP');
 
-      expect(find.text('Select Crown Shape:'), findsNothing);
-      expect(find.text('Select Brim Shape:'), findsNothing);
+      expect(find.text('Choose a crown shape.'), findsNothing);
+      expect(find.text('Now the brim.'), findsNothing);
       expect(find.byType(HatResultsScreen), findsOneWidget);
     });
 
@@ -183,14 +183,14 @@ void main() {
 
       await tester.tap(find.text('ANY HAT TYPE'));
       await pumpPageTransition(tester);
-      expect(find.text('Select Style:'), findsNothing);
-      expect(find.text('Select Crown Shape:'), findsOneWidget);
+      expect(find.text('Western, city, or outdoors?'), findsNothing);
+      expect(find.text('Choose a crown shape.'), findsOneWidget);
 
       await tapWizardNext(tester);
-      expect(find.text('Select Brim Shape:'), findsOneWidget);
+      expect(find.text('Now the brim.'), findsOneWidget);
 
       await tapWizardFindHats(tester);
-      expect(find.text('RESULTS'), findsOneWidget);
+      expect(find.text('YOUR MATCHES'), findsOneWidget);
       final results =
           tester.widget<HatResultsScreen>(find.byType(HatResultsScreen));
       expect(results.crownShape, isNull);
@@ -203,15 +203,15 @@ void main() {
 
       await tapHatTypeCard(tester, 'FELT');
       await tapStyleCard(tester, 'WESTERN');
-      expect(find.text('Select Crown Shape:'), findsOneWidget);
+      expect(find.text('Choose a crown shape.'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'BACK'));
       await pumpPageTransition(tester);
-      expect(find.text('Select Style:'), findsOneWidget);
+      expect(find.text('Western, city, or outdoors?'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'BACK'));
       await pumpPageTransition(tester);
-      expect(find.text('Select a Hat Type:'), findsOneWidget);
+      expect(find.text('What kind of hat?'), findsOneWidget);
     });
   });
 }

@@ -35,7 +35,7 @@ void main() {
 
     expect(find.byType(HatInputScreen), findsOneWidget);
     expect(find.byType(HatResultsScreen), findsNothing);
-    expect(find.text('Select a Hat Type:'), findsOneWidget);
+    expect(find.text('What kind of hat?'), findsOneWidget);
   });
 
   testWidgets('Home tab resets the hat finder wizard', (tester) async {
@@ -62,7 +62,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Select Crown Shape:'), findsOneWidget);
+    expect(find.text('Choose a crown shape.'), findsOneWidget);
 
     final homeTab = find.ancestor(
       of: find.text('Home'),
@@ -71,12 +71,12 @@ void main() {
     await tester.tap(homeTab);
     await tester.pump();
 
-    expect(find.textContaining('Select a Hat Type'), findsNothing);
+    expect(find.textContaining('What kind of hat'), findsNothing);
 
     await tester.tap(findTab);
     await tester.pump();
 
-    expect(find.text('Select a Hat Type:'), findsOneWidget);
-    expect(find.text('Select Crown Shape:'), findsNothing);
+    expect(find.text('What kind of hat?'), findsOneWidget);
+    expect(find.text('Choose a crown shape.'), findsNothing);
   });
 }
