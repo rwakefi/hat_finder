@@ -3758,7 +3758,12 @@ class _HatInputScreenState extends State<HatInputScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: InkWell(
+                          child: Semantics(
+                            button: true,
+                            selected: isSelected,
+                            label: shape.name,
+                            hint: 'Tap to select',
+                            child: InkWell(
                             onTap: onSelect,
                             child: _buildHatTypeCardImage(
                               context: context,
@@ -3766,6 +3771,7 @@ class _HatInputScreenState extends State<HatInputScreen> {
                               imagePath: shape.imagePath,
                               compact: true,
                             ),
+                          ),
                           ),
                         ),
                         InkWell(

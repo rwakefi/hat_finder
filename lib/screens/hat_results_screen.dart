@@ -2271,10 +2271,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                fontSize: 8,
+                fontSize: 10,
                 color: _turquoise,
                 fontWeight: FontWeight.w700,
-                letterSpacing: isLaptop ? 1.2 : 1.4,
+                letterSpacing: isLaptop ? 1.0 : 1.2,
               ),
             ),
             const SizedBox(height: 2),
