@@ -47,7 +47,7 @@ void main() {
     await tester.tap(find.text('CONTINUE TO STYLES'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select a Hat Type:'), findsOneWidget);
+    expect(find.text('What kind of hat?'), findsOneWidget);
 
     await tester.tap(find.text('BACK'));
     await tester.pumpAndSettle();
