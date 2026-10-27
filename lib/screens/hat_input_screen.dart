@@ -2138,14 +2138,13 @@ class _HatInputScreenState extends State<HatInputScreen> {
     final padding = compact
         ? const EdgeInsets.fromLTRB(10, 8, 10, 6)
         : const EdgeInsets.fromLTRB(20, 16, 20, 12);
-    final sectionLabelSize = compact ? 8.0 : 10.0;
-    final sectionBodySize = compact ? 11.0 : 16.0;
-    final infoIconSize = compact ? 14.0 : 18.0;
-    final infoLabelSize = compact ? 7.0 : 10.0;
+    final sectionLabelSize = compact ? 9.0 : 10.0;
+    final sectionBodySize = compact ? 12.0 : 16.0;
+    final infoIconSize = compact ? 15.0 : 18.0;
+    final infoLabelSize = compact ? 9.0 : 10.0;
     final infoButtonPadding = compact
-        ? const EdgeInsets.symmetric(vertical: 8)
+        ? const EdgeInsets.symmetric(vertical: 12)
         : const EdgeInsets.symmetric(vertical: 14);
-    final flipBackFontSize = compact ? 7.0 : 8.0;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -2226,18 +2225,32 @@ class _HatInputScreenState extends State<HatInputScreen> {
             TextButton(
               onPressed: onUnflip,
               style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'TAP TO FLIP BACK',
-                style: GoogleFonts.montserrat(
-                  fontSize: flipBackFontSize,
-                  color: Colors.white30,
-                  letterSpacing: compact ? 1.5 : 2.0,
-                  fontWeight: FontWeight.w500,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: compact ? 6 : 8,
                 ),
+                minimumSize: const Size(88, 36),
+                tapTargetSize: MaterialTapTargetSize.padded,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.flip_rounded,
+                    size: compact ? 11 : 13,
+                    color: Colors.white54,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'FLIP BACK',
+                    style: GoogleFonts.montserrat(
+                      fontSize: compact ? 10 : 11,
+                      color: Colors.white54,
+                      letterSpacing: compact ? 1.2 : 1.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

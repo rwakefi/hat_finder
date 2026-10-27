@@ -335,8 +335,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
             child: Text(
               'This is about how hats feel on your head, not your face shape. '
               'Think about pressure points when wearing a real hat.',
-              style: GoogleFonts.inter(
-                fontSize: 15,
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
                 height: 1.5,
                 color: _espresso.withValues(alpha: 0.82),
               ),
@@ -418,8 +418,8 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
           child: Text(
             _getRecommendation(),
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 15,
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
               height: 1.55,
               color: _espresso.withValues(alpha: 0.82),
             ),
@@ -430,7 +430,17 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
           _buildMeasurementSummary(),
         ],
         const SizedBox(height: 32),
-        _buildPrimaryButton('CONTINUE TO STYLES', _continueToStyles),
+        _buildPrimaryButton('FIND MY HAT', _continueToStyles),
+        const SizedBox(height: 8),
+        Text(
+          'Your fit profile travels with you into the search.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            color: _espresso.withValues(alpha: 0.42),
+            height: 1.4,
+          ),
+        ),
         const SizedBox(height: 12),
         _buildSecondaryButton(
           _measurementProfile == null
@@ -489,9 +499,10 @@ class _HeadShapeScreenState extends State<HeadShapeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   measurement.shortLabel,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
                     height: 1.45,
+                    fontWeight: FontWeight.w600,
                     color: _espresso.withValues(alpha: 0.82),
                   ),
                 ),

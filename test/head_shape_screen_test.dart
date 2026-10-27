@@ -44,7 +44,7 @@ void main() {
     expect(find.text('SIZE STARTING POINT'), findsOneWidget);
     expect(find.textContaining('58.0 cm'), findsOneWidget);
 
-    await tester.tap(find.text('CONTINUE TO STYLES'));
+    await tester.tap(find.text('FIND MY HAT'));
     await tester.pumpAndSettle();
 
     expect(find.text('What kind of hat?'), findsOneWidget);

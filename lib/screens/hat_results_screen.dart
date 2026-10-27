@@ -487,11 +487,11 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     required ValueChanged<T?> onSelected,
     bool compact = false,
   }) {
-    final chipHeight = compact ? 26.0 : 32.0;
+    final chipHeight = compact ? 28.0 : 34.0;
     final chipPaddingH = compact ? 10.0 : 14.0;
-    final chipPaddingV = compact ? 4.0 : 6.0;
+    final chipPaddingV = compact ? 5.0 : 7.0;
     final chipFontSize = compact ? 10.0 : 11.0;
-    final labelFontSize = compact ? 8.0 : 9.0;
+    final labelFontSize = compact ? 10.0 : 11.0;
     final iconSize = compact ? 14.0 : 16.0;
 
     return Container(
@@ -732,14 +732,19 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
         toolbarHeight: AppBreakpoints.useWebTopNavigation(context)
             ? 40
             : MoonRidgeLogoSizes.resultsToolbar,
-        leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new, color: _espresso, size: 20),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
+        leading: Semantics(
+          label: 'Back',
+          button: true,
+          child: IconButton(
+            tooltip: 'Back',
+            icon: const Icon(
+                Icons.arrow_back_ios_new, color: _espresso, size: 20),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            },
+          ),
         ),
         title: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1058,7 +1063,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                               return RepaintBoundary(
-                                child: _buildHatCard(displayClosest[index]),
+                                child: _buildHatCard(
+                                  displayClosest[index],
+                                  isClosestMatch: true,
+                                ),
                               );
                             },
                             childCount: displayClosest.length,
@@ -1228,7 +1236,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
     );
   }
 
-  Widget _buildHatCard(dynamic hat) {
+  Widget _buildHatCard(dynamic hat, {bool isClosestMatch = false}) {
     final title = hat['title'] ?? 'Unknown Hat';
 
     // Metafield values
@@ -1292,11 +1300,14 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
       );
     }
 
+    final cardBorderColor =
+        isClosestMatch ? _borderGrey : _turquoise;
+
     return Container(
       decoration: BoxDecoration(
         color: _white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _turquoise, width: 1.0),
+        border: Border.all(color: cardBorderColor, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1349,8 +1360,10 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Semantics(
-                                  label: '${entry.color} color',
+                                  label:
+                                      'View ${entry.color} colorway',
                                   button: true,
+                                  hint: 'Opens product page',
                                   child: GestureDetector(
                                     onTap: () => openProduct(
                                         variantGid: entry.variantGid),
@@ -1381,19 +1394,20 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      child: Padding(
+                      child: ClipRect(
+                        child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Title
+                            // Title — mixed case reads better at small sizes
                             Text(
-                              title.toUpperCase(),
+                              title,
                               style: GoogleFonts.montserrat(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                                 color: _espresso,
-                                letterSpacing: 1.0,
+                                letterSpacing: 0.1,
                                 height: 1.3,
                               ),
                               maxLines: 2,
@@ -1422,6 +1436,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                             ],
                           ],
                         ),
+                      ),
                       ),
                     ),
                     Padding(
@@ -1506,7 +1521,7 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
 
     return Container(
       color: _offWhite,
-      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 260),
+      constraints: BoxConstraints(maxHeight: isLaptop ? 140 : 180),
       child: SingleChildScrollView(
         padding:
             EdgeInsets.fromLTRB(16, isLaptop ? 6 : 8, 16, isLaptop ? 4 : 6),
@@ -1935,17 +1950,17 @@ class _HatResultsScreenState extends State<HatResultsScreen> {
                           child: Semantics(
                             button: true,
                             label: 'Clear filters',
-                            child: Padding(
+                              child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
+                                horizontal: 8,
+                                vertical: 6,
                               ),
                               child: Text(
                                 'CLEAR',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: 1.0,
                                   color: _turquoise,
                                 ),
                               ),
@@ -2218,16 +2233,53 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
     }
 
     final showNavArrows = AppBreakpoints.isLaptop(context);
+    final total = widget.imageUrls.length;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         PageView.builder(
           controller: _pageController,
-          itemCount: widget.imageUrls.length,
+          itemCount: total,
           onPageChanged: (index) => setState(() => _pageIndex = index),
           itemBuilder: (context, index) => _buildImage(widget.imageUrls[index]),
         ),
+        // Page counter pill — mobile only (desktop has nav arrows instead).
+        // Shown at all pages so users always know where they are.
+        if (!showNavArrows)
+          Positioned(
+            top: 6,
+            left: 8,
+            child: Semantics(
+              label: 'Image ${_pageIndex + 1} of $total',
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _espresso.withValues(alpha: 0.52),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_pageIndex + 1} / $total',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (showNavArrows && _pageIndex > 0)
           Positioned(
             left: 4,
@@ -2258,28 +2310,43 @@ class _CardImageGalleryState extends State<_CardImageGallery> {
               ),
             ),
           ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 4,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(widget.imageUrls.length, (index) {
-              final active = index == _pageIndex;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: active ? 6 : 5,
-                height: active ? 6 : 5,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      active ? _turquoise : _espresso.withValues(alpha: 0.22),
-                ),
-              );
-            }),
+        if (widget.imageUrls.length > 1)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.imageUrls.length, (index) {
+                final active = index == _pageIndex;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: active ? 8 : 6,
+                  height: active ? 8 : 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active
+                        ? _turquoise
+                        : Colors.white.withValues(alpha: 0.70),
+                    border: active
+                        ? null
+                        : Border.all(
+                            color: _espresso.withValues(alpha: 0.25),
+                            width: 0.5,
+                          ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
           ),
-        ),
       ],
     );
   }
