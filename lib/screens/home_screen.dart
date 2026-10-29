@@ -1102,82 +1102,71 @@ class _FeaturedHomeAction extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: LinearGradient(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  _HomePalette.beige,
-                  _HomePalette.beige.withValues(alpha: 0.72),
-                ],
+                colors: [_HomePalette.beige, Color(0xFFD5ECEA)],
               ),
               border: Border.all(
-                color: _HomePalette.turquoise.withValues(alpha: 0.55),
-                width: 1.5,
+                color: _HomePalette.turquoise.withValues(alpha: 0.72),
+                width: 2.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _HomePalette.espresso.withValues(alpha: 0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+                  color: _HomePalette.espresso.withValues(alpha: 0.12),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: spacious ? 18 : 18,
-                vertical: spacious ? 17 : 18,
+                horizontal: spacious ? 20 : 20,
+                vertical: spacious ? 22 : 24,
               ),
-              child: Row(
+              child: Column(
                 children: [
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.72),
+                      color: Colors.white.withValues(alpha: 0.80),
                       shape: BoxShape.circle,
                     ),
                     child: Padding(
-                      padding: EdgeInsets.all(spacious ? 11 : 14),
+                      padding: EdgeInsets.all(spacious ? 13 : 14),
                       child: Icon(
                         icon,
-                        size: spacious ? 25 : 24,
+                        size: spacious ? 28 : 28,
                         color: _HomePalette.turquoise,
                       ),
                     ),
                   ),
-                  SizedBox(width: spacious ? 14 : 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title.toUpperCase(),
-                          style: GoogleFonts.montserrat(
-                            fontSize: spacious ? 15 : 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                            color: _HomePalette.espresso,
-                            height: 1.2,
-                          ),
-                        ),
-                        SizedBox(height: spacious ? 4 : 6),
-                        Text(
-                          subtitle,
-                          style: GoogleFonts.montserrat(
-                            fontSize: spacious ? 12 : 12,
-                            fontWeight: FontWeight.w500,
-                            color: _HomePalette.espresso.withValues(alpha: 0.62),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+                  SizedBox(height: spacious ? 12 : 12),
+                  Text(
+                    title.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: spacious ? 16 : 15.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: _HomePalette.espresso,
+                      height: 1.2,
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: _HomePalette.espresso.withValues(alpha: 0.35),
+                  SizedBox(height: spacious ? 5 : 5),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      fontSize: spacious ? 12 : 12,
+                      fontWeight: FontWeight.w500,
+                      color: _HomePalette.espresso.withValues(alpha: 0.62),
+                      height: 1.35,
+                    ),
                   ),
                 ],
               ),
@@ -1369,55 +1358,87 @@ class _OptionBlock extends StatelessWidget {
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: emphasized ? _HomePalette.beige : Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            color: emphasized ? null : Colors.white,
+            gradient: emphasized
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [_HomePalette.beige, Color(0xFFD5ECEA)],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(emphasized ? 16 : 14),
             border: Border.all(
               color: emphasized
-                  ? _HomePalette.turquoise.withValues(alpha: 0.45)
+                  ? _HomePalette.turquoise.withValues(alpha: 0.70)
                   : _HomePalette.espresso.withValues(alpha: 0.22),
-              width: emphasized ? 1.5 : 1,
+              width: emphasized ? 2.0 : 1,
             ),
             boxShadow: [
               if (emphasized)
                 BoxShadow(
-                  color: _HomePalette.espresso.withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: _HomePalette.espresso.withValues(alpha: 0.11),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 6),
                 ),
             ],
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              vertical: compact ? 14 : 16,
+              vertical: emphasized
+                  ? (compact ? 18 : 22)
+                  : (compact ? 14 : 16),
               horizontal: 18,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: compact ? 22 : 24,
-                  color: _HomePalette.espresso.withValues(alpha: 0.7),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.montserrat(
-                      fontSize: compact ? 14 : 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: _HomePalette.espresso,
-                      height: 1.25,
-                    ),
+            child: emphasized
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: compact ? 23 : 26,
+                        color: _HomePalette.turquoise,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        label,
+                        style: GoogleFonts.montserrat(
+                          fontSize: compact ? 16.0 : 17.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                          color: _HomePalette.espresso,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: compact ? 22 : 24,
+                        color: _HomePalette.espresso.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: GoogleFonts.montserrat(
+                            fontSize: compact ? 14 : 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: _HomePalette.espresso,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: _HomePalette.espresso.withValues(alpha: 0.35),
+                      ),
+                    ],
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: _HomePalette.espresso.withValues(alpha: 0.35),
-                ),
-              ],
-            ),
           ),
         ),
       ),
